@@ -1,9 +1,29 @@
 [package]
 name = "jwt-simple"
-version = "0.1.0"
+version = "0.0.1"
+description = "Easy to use, secure, unopinonated JWT (JSON Web Tokens) implementation for Rust."
 authors = ["Frank Denis <github@pureftpd.org>"]
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "ISC"
+repository = "https://github.com/jedisct1/rust-jwt-simple"
+homepage = "https://github.com/jedisct1/rust-jwt-simple"
+categories = ["wasm", "api-bindings", "web-programming", "cryptography"]
+keywords = ["jwt", "authentication", "tokens", "json", "simple"]
+readme = "README.md"
 
 [dependencies]
+anyhow = "1.0"
+chrono = { version = "0.4", features = ["std"], default-features = false }
+coarsetime = "0.1"
+ct-codecs = "0.1"
+ed25519-compact = "0.1"
+hmac-sha256 = { version = "0.1", features = ["traits"] }
+hmac-sha512 = { version = "0.1", features = ["traits", "sha384"] }
+k256 = { version = "0.4", features = ["ecdsa", "ecdsa-core", "std"] }
+p256 = { version = "0.4", features = ["ecdsa", "ecdsa-core", "std"] }
+rand = "0.7"
+rsa = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+zeroize = "1.1"
