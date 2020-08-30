@@ -90,7 +90,7 @@ options.max_validity = Some(Duration::from_hours(1));
 options.required_issuer = Some("example app".to_string());
 // see the documentation for the full list of available options
 
-let claims = key.verify_token::<NoCustomClaims>(&token, options)?;
+let claims = key.verify_token::<NoCustomClaims>(&token, Some(options))?;
 ```
 
 ## Signatures (asymmetric, `RS*`, `PS*`, `ES*` and `EdDSA` algorithms) example
@@ -124,7 +124,7 @@ openssl rsa -in private.pem -outform PEM -pubout -out public.pem
 
 ```rust
 let key_pair = RS384KeyPair::from_pem(private_pem_file_content)?;
-let public_key = RSA384PublicKey::from_pem(public_pem_file_content)?;
+let public_key = RS384PublicKey::from_pem(public_pem_file_content)?;
 ```
 
 Token creation and verification work the same way as with `HS*` algorithms, except that tokens are created with a key pair, and verified using the corresponding public key.
@@ -180,7 +180,7 @@ Claim verification wit custom data. Note the presence of the custom data type:
 
 ```rust
 let claims = public_key.verify_token::<MyAdditionalData>(&token, None)?;
-let user_id_admin = claims.custom.user_id_admin;
+let user_is_admin = claims.custom.user_is_admin;
 ```
 
 ### Peeking at metadata before verification
