@@ -5,7 +5,7 @@ pub(crate) struct JWTHeader {
     #[serde(rename = "alg")]
     pub algorithm: String,
 
-    #[serde(rename = "cty")]
+    #[serde(rename = "cty", default, skip_serializing_if = "Option::is_none")]
     pub content_type: Option<String>,
 
     #[serde(rename = "jku", default, skip_serializing_if = "Option::is_none")]
