@@ -23,8 +23,8 @@ impl TokenMetadata {
     }
 
     /// The content type for this token
-    pub fn content_type(&self) -> &str {
-        &self.jwt_header.content_type
+    pub fn content_type(&self) -> Option<&str> {
+        self.jwt_header.content_type.as_deref()
     }
 
     /// The key set URL for this token

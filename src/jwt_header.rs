@@ -6,7 +6,7 @@ pub(crate) struct JWTHeader {
     pub algorithm: String,
 
     #[serde(rename = "cty")]
-    pub content_type: String,
+    pub content_type: Option<String>,
 
     #[serde(rename = "jku", default, skip_serializing_if = "Option::is_none")]
     pub key_set_url: Option<String>,
@@ -40,7 +40,7 @@ impl Default for JWTHeader {
     fn default() -> Self {
         JWTHeader {
             algorithm: "Not set".to_string(),
-            content_type: "JSON".to_string(),
+            content_type: None,
             key_set_url: None,
             public_key: None,
             key_id: None,
