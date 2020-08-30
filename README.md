@@ -8,23 +8,20 @@ A new JWT implementation for Rust that focuses on simplicity, while avoid common
 
 `jwt-simple` is unopinionated and supports all commonly deployed authentication and signature algorithms:
 
-* HMAC-SHA2:
-  * `HS256`
-  * `HS384`
-  * `HS512`
-* RSA
-  * `RS256`
-  * `RS384`
-  * `RS512`
-  * `PS256`
-  * `PS384`
-  * `PS512`
-* p256
-  * `ES256`
-* secp256k1
-  * `ES256K`
-* Ed25519
-  * `EdDSA`
+| JWT algorithm name | Description                         |
+| ------------------ | ----------------------------------- |
+| `HS256`            | HMAC-SHA-256                        |
+| `HS384`            | HMAC-SHA-384                        |
+| `HS512`            | HMAC-SHA-512                        |
+| `RS256`            | RSA with PKCS1v15 padding / SHA-256 |
+| `RS384`            | RSA with PKCS1v15 padding / SHA-384 |
+| `RS512`            | RSA with PKCS1v15 padding / SHA-512 |
+| `PS256`            | RSA with PSS padding / SHA-256      |
+| `PS384`            | RSA with PSS padding / SHA-384      |
+| `PS512`            | RSA with PSS padding / SHA-512      |
+| `ES256`            | ECDSA over p256 / SHA-256           |
+| `ES256K`           | ECDSA over secp256k1 / SHA-256      |
+| `EdDSA`            | Ed25519                             |
 
 `jwt-simple` uses only pure Rust implementations, and can be compiled out of the box to WebAssembly/WASI. It is fully compatible with Fastly's _Compute@Edge_ service.
 
@@ -236,4 +233,5 @@ This crate was designed to:
 * Automatically perform common tasks to prevent misuse. Signature verification and claims validation happen automatically instead of relying on applications.
 * Still allow power users to access everything JWT tokens include if they really need to
 * Be as portable as possible by using only Rust implementations of cryptographic primitives
+* No OpenSSL dependency
 * Work out of the box in a WebAssembly environment, so that it can be used in function-as-a-service platforms.

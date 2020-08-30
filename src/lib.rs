@@ -97,7 +97,7 @@
 //! # use jwt_simple::prelude::*;
 //! # fn main() -> Result<(), Error> {
 //! # let key = HS256Key::generate();
-//! # let token = key.authenticate(Claims::create(Duration::from_secs(10)).with_issuer("example app".to_string()))?;
+//! # let token = key.authenticate(Claims::create(Duration::from_secs(10)).with_issuer("example app"))?;
 //! let mut options = VerificationOptions::default();
 //! // Accept tokens that will only be valid in the future
 //! options.accept_future = true;
