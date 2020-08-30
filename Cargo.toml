@@ -27,3 +27,12 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "1.0"
 zeroize = "1.1"
+
+[profile.release]
+codegen-units = 1
+incremental = false
+panic = "abort"
+lto = "fat"
+
+[profile.bench]
+codegen-units = 1
