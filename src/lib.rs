@@ -2,7 +2,7 @@
 //! [![Docs.rs](https://docs.rs/jwt-simple/badge.svg)](https://docs.rs/jwt-simple/)
 //! [![crates.io](https://img.shields.io/crates/v/jwt-simple.svg)](https://crates.io/crates/jwt-simple)
 //!
-//! # JWT-Simple (WIP)
+//! # JWT-Simple
 //!
 //! A new JWT implementation for Rust that focuses on simplicity, while avoid common JWT security pitfalls.
 //!
