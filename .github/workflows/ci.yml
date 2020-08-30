@@ -2,23 +2,24 @@ name: Rust
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --verbose
-    - name: WASI Build
-      run: cargo build --verbose --target=wasm32-wasi
-    - name: Run tests
-      run: cargo test --verbose
+      - uses: actions/checkout@v2
+      - name: Build
+        run: cargo build --verbose
+      - name: WASI Build
+        run: |
+          rustup target add wasm32-wasi
+          cargo build --verbose --target=wasm32-wasi
+      - name: Run tests
+        run: cargo test --verbose
