@@ -4,6 +4,9 @@ use coarsetime::{Duration, UnixTimeStamp};
 #[derive(Clone, Debug, Default)]
 pub struct VerificationOptions {
     /// Reject tokens created before the given date
+    ///
+    /// For a given user, the time of the last successful authentication can be kept in a database,
+    /// and `reject_before` can then be used to reject older (replayed) tokens.
     pub reject_before: Option<UnixTimeStamp>,
 
     /// Accept tokens created with a date in the future
