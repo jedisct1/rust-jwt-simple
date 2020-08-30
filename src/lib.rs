@@ -87,7 +87,7 @@
 //!
 //! No additional steps required.
 //!
-//! Key expiration, start time, authentication tag, etc. are automatically performed. The function call fails with `JWTError::InvalidAuthenticationTag` if the authentication tag is invalid for the given key.
+//! Key expiration, start time, authentication tag, etc. are automatically verified. The function call fails with `JWTError::InvalidAuthenticationTag` if the authentication tag is invalid for the given key.
 //!
 //! The full set of claims can be inspected in the `claims` object if necessary. `NoCustomClaims` means that only the standard set of claims is used by the application, but application-defined claims are also supported.
 //!
