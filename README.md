@@ -2,7 +2,7 @@
 
 A new JWT implementation for Rust that focuses on simplicity.
 
-JWT-Simple is unopinionated and supports all commonly deployed authentication and signature algorithms:
+`jwt-simple` is unopinionated and supports all commonly deployed authentication and signature algorithms:
 
 * HMAC-SHA2
   * `HS256`
@@ -22,4 +22,4 @@ JWT-Simple is unopinionated and supports all commonly deployed authentication an
 * Ed25519
   * `EdDSA`
 
-JWT-Simple uses only pure Rust implementations, and compiled out of the box to WebAssembly/WASI. It is fully compatible with Fastly's Compute@Edge service.
+`jwt-simple` uses only pure Rust implementations, and compiled out of the box to WebAssembly/WASI. It is fully compatible with Fastly's _Compute@Edge_ service.
