@@ -65,9 +65,15 @@ impl K256KeyPair {
     }
 }
 
+#[doc(hidden)]
 pub trait ECDSAP256kKeyPairLike {
+    #[doc(hidden)]
     fn jwt_alg_name() -> &'static str;
+
+    #[doc(hidden)]
     fn key_pair(&self) -> &K256KeyPair;
+
+    #[doc(hidden)]
     fn key_id(&self) -> &Option<String>;
 
     fn sign<CustomClaims: Serialize + DeserializeOwned>(
@@ -88,6 +94,7 @@ pub trait ECDSAP256kKeyPairLike {
     }
 }
 
+#[doc(hidden)]
 pub trait ECDSAP256kPublicKeyLike {
     fn jwt_alg_name() -> &'static str;
     fn public_key(&self) -> &K256PublicKey;

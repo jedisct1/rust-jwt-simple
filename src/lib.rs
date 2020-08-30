@@ -79,8 +79,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
     #[test]
     fn hs384() {
         let key = HS384Key::from_bytes(b"your-256-bit-secret").with_key_id("my-key-id");
-        let mut claims = Claims::create(Duration::from_secs(86400));
-        claims.issuer = Some("test issuer".to_string());
+        let claims = Claims::create(Duration::from_secs(86400)).with_issuer("test issuer");
         let token = key.authenticate(claims).unwrap();
         let mut options = VerificationOptions::default();
         options.required_issuer = Some("test issuer".to_string());

@@ -60,6 +60,7 @@ impl Edwards25519KeyPair {
     }
 }
 
+#[doc(hidden)]
 pub trait EdDSAKeyPairLike {
     fn jwt_alg_name() -> &'static str;
     fn key_pair(&self) -> &Edwards25519KeyPair;
@@ -80,6 +81,7 @@ pub trait EdDSAKeyPairLike {
     }
 }
 
+#[doc(hidden)]
 pub trait EdDSAPublicKeyLike {
     fn jwt_alg_name() -> &'static str;
     fn public_key(&self) -> &Edwards25519PublicKey;

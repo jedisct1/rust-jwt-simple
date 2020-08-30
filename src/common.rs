@@ -8,7 +8,7 @@ pub struct VerificationOptions {
     pub required_subject: Option<String>,
     pub required_key_id: Option<String>,
     pub required_public_key: Option<String>,
-    pub time_toleratnce: Option<Duration>,
+    pub time_tolerance: Option<Duration>,
     pub max_validity: Option<Duration>,
 }
 

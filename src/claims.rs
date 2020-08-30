@@ -56,7 +56,7 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
     pub(crate) fn validate(&self, options: &VerificationOptions) -> Result<(), Error> {
         let now = Clock::now_since_epoch();
         let time_tolerance = options
-            .time_toleratnce
+            .time_tolerance
             .unwrap_or_else(|| Duration::from_secs(DEFAULT_TIME_TOLERANCE_SECS));
 
         if let Some(reject_before) = options.reject_before {
@@ -107,23 +107,23 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         self
     }
 
-    pub fn with_issuer(mut self, issuer: String) -> Self {
-        self.issuer = Some(issuer);
+    pub fn with_issuer(mut self, issuer: impl ToString) -> Self {
+        self.issuer = Some(issuer.to_string());
         self
     }
 
-    pub fn with_subject(mut self, subject: String) -> Self {
-        self.issuer = Some(subject);
+    pub fn with_subject(mut self, subject: impl ToString) -> Self {
+        self.issuer = Some(subject.to_string());
         self
     }
 
-    pub fn with_audience(mut self, audience: String) -> Self {
-        self.issuer = Some(audience);
+    pub fn with_audience(mut self, audience: impl ToString) -> Self {
+        self.issuer = Some(audience.to_string());
         self
     }
 
-    pub fn with_jwt_id(mut self, jwt_id: String) -> Self {
-        self.issuer = Some(jwt_id);
+    pub fn with_jwt_id(mut self, jwt_id: impl ToString) -> Self {
+        self.issuer = Some(jwt_id.to_string());
         self
     }
 }
