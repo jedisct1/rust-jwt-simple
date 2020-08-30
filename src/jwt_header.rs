@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub(crate) struct JWTHeader {
     #[serde(rename = "alg")]
     pub algorithm: String,
@@ -49,7 +48,7 @@ impl Default for JWTHeader {
             certificate_chain: None,
             certificate_sha1_thumbprint: None,
             certificate_sha256_thumbprint: None,
-            signature_type: None,
+            signature_type: Some("JWT".to_string()),
             critical: None,
         }
     }

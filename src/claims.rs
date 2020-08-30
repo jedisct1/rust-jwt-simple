@@ -1,4 +1,6 @@
 use coarsetime::{Clock, Duration, UnixTimeStamp};
+use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
+use rand::RngCore;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::common::VerificationOptions;
@@ -66,6 +68,10 @@ pub struct JWTClaims<CustomClaims> {
     #[serde(rename = "jti", default, skip_serializing_if = "Option::is_none")]
     pub jwt_id: Option<String>,
 
+    /// Nonce
+    #[serde(rename = "nonce", default, skip_serializing_if = "Option::is_none")]
+    pub nonce: Option<String>,
+
     /// Custom (application-defined) claims
     #[serde(flatten)]
     pub custom: CustomClaims,
@@ -118,6 +124,13 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
                 bail!(JWTError::RequiredSubjectMissing);
             }
         }
+        if let Some(required_nonce) = &options.required_nonce {
+            if let Some(nonce) = &self.subject {
+                ensure!(nonce == required_nonce, JWTError::RequiredNonceMismatch);
+            } else {
+                bail!(JWTError::RequiredNonceMissing);
+            }
+        }
         Ok(())
     }
 
@@ -150,6 +163,22 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         self.issuer = Some(jwt_id.to_string());
         self
     }
+
+    /// Set the nonce
+    pub fn with_nonce(mut self, nonce: impl ToString) -> Self {
+        self.nonce = Some(nonce.to_string());
+        self
+    }
+
+    /// Create a nonce, attach it and return it
+    pub fn create_nonce(&mut self) -> &str {
+        let mut raw_nonce = [0u8; 24];
+        let mut rng = rand::thread_rng();
+        rng.fill_bytes(&mut raw_nonce);
+        let nonce = Base64UrlSafeNoPadding::encode_to_string(raw_nonce).unwrap();
+        self.nonce = Some(nonce);
+        &self.nonce.as_ref().map(|x| x.as_str()).unwrap()
+    }
 }
 
 pub struct Claims;
@@ -166,6 +195,7 @@ impl Claims {
             issuer: None,
             jwt_id: None,
             subject: None,
+            nonce: None,
             custom: NoCustomClaims {},
         }
     }
@@ -184,6 +214,7 @@ impl Claims {
             issuer: None,
             jwt_id: None,
             subject: None,
+            nonce: None,
             custom: custom_claims,
         }
     }

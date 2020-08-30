@@ -21,6 +21,9 @@ pub struct VerificationOptions {
     /// Require a specific public key to be present
     pub required_public_key: Option<String>,
 
+    /// Require a specific nonce to be present
+    pub required_nonce: Option<String>,
+
     /// Time tolerance for validating expiration dates
     pub time_tolerance: Option<Duration>,
 

@@ -28,6 +28,10 @@ pub enum JWTError {
     TokenNotValidYet,
     #[error("Token has expired")]
     TokenHasExpired,
+    #[error("Required nonce missing")]
+    RequiredNonceMissing,
+    #[error("Required nonce mismatch")]
+    RequiredNonceMismatch,
     #[error("Required issuer mismatch")]
     RequiredIssuerMismatch,
     #[error("Required issuer missing")]
