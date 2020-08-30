@@ -30,11 +30,17 @@ A new JWT implementation for Rust that focuses on simplicity, while avoid common
 
 ## Usage
 
-## `cargo.toml`
+`cargo.toml`:
 
 ```toml
 [dependencies]
 jwt-simple = "0.1"
+```
+
+Rust:
+
+```rust
+use jwt_simple::prelude::*;
 ```
 
 ## Authentication (symmetric, `HS*` JWT algorithms) example

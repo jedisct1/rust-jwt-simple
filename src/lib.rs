@@ -30,11 +30,17 @@
 //!
 //! ## Usage
 //!
-//! ## `cargo.toml`
+//! `cargo.toml`:
 //!
 //! ```toml
 //! [dependencies]
 //! jwt-simple = "0.1"
+//! ```
+//!
+//! Rust:
+//!
+//! ```rust
+//! use jwt_simple::prelude::*;
 //! ```
 //!
 //! ## Authentication (symmetric, `HS*` JWT algorithms) example
@@ -266,7 +272,6 @@ mod jwt_header;
 mod serde_additions;
 
 pub use coarsetime;
-pub use serde;
 
 pub mod prelude {
     pub use crate::algorithms::*;
@@ -275,7 +280,7 @@ pub mod prelude {
     pub use crate::error::Error;
     pub use crate::token::*;
     pub use coarsetime::{self, Clock, Duration, UnixTimeStamp};
-    pub use serde::{self, Deserialize, Serialize};
+    pub use serde::{Deserialize, Serialize};
 }
 
 #[cfg(test)]
