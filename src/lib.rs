@@ -210,7 +210,7 @@
 //! // Claim creation with custom data:
 //!
 //! # use jwt_simple::prelude::*;
-//! let mut claims = Claims::with_custom_claims(my_additional_data, Duration::from_secs(30));
+//! let claims = Claims::with_custom_claims(my_additional_data, Duration::from_secs(30));
 //!
 //! // Claim verification wit custom data. Note the presence of the custom data type:
 //!
