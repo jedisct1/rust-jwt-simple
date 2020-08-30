@@ -212,3 +212,22 @@ let key_id = public_key.create_key_id();
 This creates an text-encoded identifier for the key, attaches it, and returns it.
 
 If an identifier has been attached to a shared key or a key pair, tokens created with them will include it.
+
+## Why yet another JWT crate
+
+This crate is not an endorsement of JWT. JWT is an awful design, and one of the many examples that "but this is a standard" doesn't necessarily mean that it is good.
+
+I would highly recommend [PASETO](https://github.com/paragonie/paseto) instead if you control both token creation and verification.
+
+However, JWT is still widely used in the industry, and remains absolutely mandatory to communicate with popular APIs.
+
+This crate was designed to:
+
+* Be simple to use, even to people who are new to Rust
+* Avoid common JWT API pitfalls
+* Support features widely in use. I'd love to limit the algorithm choices to Ed25519, but other methods are required to connect to existing APIs, so just provide them (with the exception of the `None` signature method for obvious reasons).
+* Minimize code complexity and external dependencies
+* Automatically perform common tasks to prevent misuse. Signature verification and claims validation happen automatically instead of relying on applications.
+* Still allow power users to access everything JWT tokens include if they really need to
+* Be as portable as possible by using only Rust implementations of cryptographic primitives
+* Work out of the box in a WebAssembly environment, so that it can be used in function-as-a-service platforms.
