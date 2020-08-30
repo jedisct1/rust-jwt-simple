@@ -3,7 +3,7 @@
 
 # JWT-Simple (WIP)
 
-A new JWT implementation for Rust that focuses on simplicity.
+A new JWT implementation for Rust that focuses on simplicity, while avoid common JWT security pitfalls.
 
 `jwt-simple` is unopinionated and supports all commonly deployed authentication and signature algorithms:
 
@@ -178,6 +178,36 @@ let mut claims = Claims::with_custom_claims(my_additional_data, Duration::from_s
 Claim verification wit custom data. Note the presence of the custom data type:
 
 ```rust
-let claims = public_key.verify_token::<MyAdditionalData>(&token, None);
+let claims = public_key.verify_token::<MyAdditionalData>(&token, None)?;
 let user_id_admin = claims.custom.user_id_admin;
 ```
+
+### Peeking at metadata before verification
+
+Properties such as the key identifier can be useful prior to tag or signature verification in order to pick the right key out of a set.
+
+```rust
+let metadata = Token::decode_metadata(&token)?;
+let key_id = metadata.key_id();
+let algorithm = metadata.algorithm();
+// all other standard properties are also accessible
+```
+
+### Creating and attaching key identifiers
+
+Key identifiers indicate to verifiers what public key (or shared key) should be used for verification.
+They can be attached at any time to existing shared keys, key pairs and public keys:
+
+```rust
+let public_key_with_id = public_key.with_key_id(&"unique key identifier");
+```
+
+Instead of delegating this to applications, `jwt-simple` can also create such an identifier for an existing key:
+
+```rust
+let key_id = public_key.create_key_id();
+```
+
+This creates an text-encoded identifier for the key, attaches it, and returns it.
+
+If an identifier has been attached to a shared key or a key pair, tokens created with them will include it.
