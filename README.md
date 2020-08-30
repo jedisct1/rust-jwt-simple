@@ -1,4 +1,4 @@
-![GitHub CI](https://github.com/jedisct1/rust-jwt-simple/workflows/CI/badge.svg)
+![GitHub CI](https://github.com/jedisct1/rust-jwt-simple/workflows/Rust/badge.svg)
 [![Docs.rs](https://docs.rs/jwt-simple/badge.svg)](https://docs.rs/jwt-simple/)
 
 # JWT-Simple (WIP)
