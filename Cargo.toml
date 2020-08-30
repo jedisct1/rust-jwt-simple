@@ -8,7 +8,7 @@ license = "ISC"
 repository = "https://github.com/jedisct1/rust-jwt-simple"
 homepage = "https://github.com/jedisct1/rust-jwt-simple"
 categories = ["wasm", "api-bindings", "web-programming", "cryptography"]
-keywords = ["jwt", "jws", "authentication", "tokens", "json", "simple"]
+keywords = ["jwt", "jws", "authentication", "tokens", "json"]
 readme = "README.md"
 
 [dependencies]

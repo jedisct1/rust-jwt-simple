@@ -125,7 +125,7 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
             }
         }
         if let Some(required_nonce) = &options.required_nonce {
-            if let Some(nonce) = &self.subject {
+            if let Some(nonce) = &self.nonce {
                 ensure!(nonce == required_nonce, JWTError::RequiredNonceMismatch);
             } else {
                 bail!(JWTError::RequiredNonceMissing);
