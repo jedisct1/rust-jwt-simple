@@ -216,6 +216,14 @@ This creates an text-encoded identifier for the key, attaches it, and returns it
 
 If an identifier has been attached to a shared key or a key pair, tokens created with them will include it.
 
+### Mitigations against replay attacks
+
+`jwt-simple` includes mechanisms to mitigate replay attacks:
+
+* Nonces can be created and attached to new tokens using the `create_nonce()` claim function. The verification procedure can later reject any token that doesn't include the expected nonce (`required_nonce` verification option).
+* The verification procedure can reject tokens created too long ago, no matter what their expiration date is. This prevents tokens from malicious (or compromised) signers from being used for too long.
+* The verification procedure can reject tokens created before a date. For a given user, the date of the last successful authentication can be stored in a database, and used later along with this option to reject older (replayed) tokens.
+
 ## Why yet another JWT crate
 
 This crate is not an endorsement of JWT. JWT is [an awful design](https://paragonie.com/blog/2017/03/jwt-json-web-tokens-is-bad-standard-that-everyone-should-avoid), and one of the many examples that "but this is a standard" doesn't necessarily mean that it is good.
