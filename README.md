@@ -4,7 +4,7 @@
 
 # JWT-Simple
 
-A new JWT implementation for Rust that focuses on simplicity, while avoid common JWT security pitfalls.
+A new JWT (JSON Web Tokens) implementation for Rust that focuses on simplicity, while avoid common JWT security pitfalls.
 
 `jwt-simple` is unopinionated and supports all commonly deployed authentication and signature algorithms:
 
@@ -218,7 +218,7 @@ If an identifier has been attached to a shared key or a key pair, tokens created
 
 ## Why yet another JWT crate
 
-This crate is not an endorsement of JWT. JWT is an awful design, and one of the many examples that "but this is a standard" doesn't necessarily mean that it is good.
+This crate is not an endorsement of JWT. JWT is [an awful design](https://paragonie.com/blog/2017/03/jwt-json-web-tokens-is-bad-standard-that-everyone-should-avoid), and one of the many examples that "but this is a standard" doesn't necessarily mean that it is good.
 
 I would highly recommend [PASETO](https://github.com/paragonie/paseto) instead if you control both token creation and verification.
 
