@@ -25,7 +25,7 @@ A new JWT implementation for Rust that focuses on simplicity.
 * Ed25519
   * `EdDSA`
 
-`jwt-simple` uses only pure Rust implementations, and compiled out of the box to WebAssembly/WASI. It is fully compatible with Fastly's _Compute@Edge_ service.
+`jwt-simple` uses only pure Rust implementations, and can be compiled out of the box to WebAssembly/WASI. It is fully compatible with Fastly's _Compute@Edge_ service.
 
 ## Usage
 
@@ -155,10 +155,9 @@ let claims = Claims::create(Duration::from_hours(2)).
     with_issuer("Example issuer").with_subject("Example subject");
 ```
 
-But application-defined claims can also be defined. These simply have to be present in a serializable type:
+But application-defined claims can also be defined. These simply have to be present in a serializable type (this requires the `serde` crate):
 
 ```rust
-// this requires the `serde` crate
 #[derive(Serialize, Deserialize)]
 struct MyAdditionalData {
    user_is_admin: bool,
@@ -168,11 +167,17 @@ let my_additional_data = MyAdditionalData {
    user_is_admin: false,
    user_country: "FR".to_string(),
 };
+```
 
-// claim creation with custom data
+Claim creation with custom data:
+
+```rust
 let mut claims = Claims::with_custom_claims(my_additional_data, Duration::from_secs(30));
+```
 
-// claim verification wit custom data. Note the presence of the custom data type.
+Claim verification wit custom data. Note the presence of the custom data type:
+
+```rust
 let claims = public_key.verify_token::<MyAdditionalData>(&token, None);
 let user_id_admin = claims.custom.user_id_admin;
 ```
