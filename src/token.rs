@@ -8,53 +8,66 @@ use crate::jwt_header::*;
 
 pub const MAX_HEADER_LENGTH: usize = 4096;
 
+/// Utilities to get information about a JWT token
 pub struct Token;
 
+/// JWT token information useful before signature/tag verification
 pub struct TokenMetadata {
     jwt_header: JWTHeader,
 }
 
 impl TokenMetadata {
+    /// The JWT algorithm for this token
     pub fn algorithm(&self) -> &str {
         &self.jwt_header.algorithm
     }
 
+    /// The content type for this token
     pub fn content_type(&self) -> &str {
         &self.jwt_header.content_type
     }
 
+    /// The key set URL for this token
     pub fn key_set_url(&self) -> Option<&str> {
         self.jwt_header.key_set_url.as_deref()
     }
 
+    /// The public key for this token
     pub fn public_key(&self) -> Option<&str> {
         self.jwt_header.public_key.as_deref()
     }
 
+    /// The key, or public key identifier for this token
     pub fn key_id(&self) -> Option<&str> {
         self.jwt_header.key_id.as_deref()
     }
 
+    /// The certificate URL for this token
     pub fn certificate_url(&self) -> Option<&str> {
         self.jwt_header.certificate_url.as_deref()
     }
 
+    /// The certificate chain for this token
     pub fn certificate_chain(&self) -> Option<&str> {
         self.jwt_header.certificate_chain.as_deref()
     }
 
+    /// The SHA-1 certificate fingerprint
     pub fn certificate_sha1_thumbprint(&self) -> Option<&str> {
         self.jwt_header.certificate_sha1_thumbprint.as_deref()
     }
 
+    /// The SHA-256 certificate fingerprint
     pub fn certificate_sha256_thumbprint(&self) -> Option<&str> {
         self.jwt_header.certificate_sha256_thumbprint.as_deref()
     }
 
+    /// The signature type for this token
     pub fn signature_type(&self) -> Option<&str> {
         self.jwt_header.signature_type.as_deref()
     }
 
+    /// The set of critical properties for this token
     pub fn critical(&self) -> Option<&str> {
         self.jwt_header.critical.as_deref()
     }
@@ -128,6 +141,7 @@ impl Token {
         Ok(claims)
     }
 
+    /// Decode token information that can be usedful prior to signature/tag verification
     pub fn decode_metadata(token: &str) -> Result<TokenMetadata, Error> {
         let mut parts = token.split('.');
         let jwt_header_b64 = parts.next().ok_or(JWTError::CompactEncodingError)?;

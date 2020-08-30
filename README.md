@@ -1,3 +1,6 @@
+![GitHub CI](https://github.com/jedisct1/rust-jwt-simple/workflows/CI/badge.svg)
+[![Docs.rs](https://docs.rs/jwt-simple/badge.svg)](https://docs.rs/jwt-simple/)
+
 # JWT-Simple (WIP)
 
 A new JWT implementation for Rust that focuses on simplicity.
@@ -33,7 +36,7 @@ A new JWT implementation for Rust that focuses on simplicity.
 jwt-simple = "0.1"
 ```
 
-## Authentication (symmetric, `HS*` JWT algorithm) example
+## Authentication (symmetric, `HS*` JWT algorithms) example
 
 Authentication schemes uses the same key for creating and verifying tokens. In other words, both parties need to be ultimately trusting each other, or else the verifier could also create arbitrary tokens.
 
@@ -48,6 +51,8 @@ use jwt_simple::prelude::*;
 let key = HS256Key::generate();
 ```
 
+A key can be exported as bytes with `key.to_bytes()`, and restored with `HS256Key::from_bytes()`.
+
 Token creation:
 
 ```rust
@@ -56,13 +61,15 @@ let claims = Claims::create(Duration::from_hours(2));
 let token = key.authenticate(claims)?;
 ```
 
-A key can be exported as bytes with `key.to_bytes()`, and restored with `HS256Key::from_bytes()`.
+Done!
 
 ### Token verification
 
 ```rust
 let claims = key.verify_token::<NoCustomClaims>(&token, None)?;
 ```
+
+No additional steps required.
 
 Key expiration, start time, authentication tag, etc. are automatically performed. The function call fails with `JWTError::InvalidAuthenticationTag` if the authentication tag is invalid for the given key.
 
@@ -73,7 +80,7 @@ Extra verification steps can optionally be enabled via the `ValidationOptions` s
 ```rust
 let mut options = VerificationOptions::default();
 // Accept tokens that will only be valid in the future
-options.accept_future = true; 
+options.accept_future = true;
 // accept tokens even if they have expired up to 15 minutes after the deadline
 options.time_tolerance = Some(Duration::from_mins(15));
 // reject tokens if they were issued more than 1 hour ago
@@ -169,4 +176,3 @@ let mut claims = Claims::with_custom_claims(my_additional_data, Duration::from_s
 let claims = public_key.verify_token::<MyAdditionalData>(&token, None);
 let user_id_admin = claims.custom.user_id_admin;
 ```
-
