@@ -177,7 +177,7 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         rng.fill_bytes(&mut raw_nonce);
         let nonce = Base64UrlSafeNoPadding::encode_to_string(raw_nonce).unwrap();
         self.nonce = Some(nonce);
-        &self.nonce.as_ref().map(|x| x.as_str()).unwrap()
+        &self.nonce.as_deref().unwrap()
     }
 }
 
