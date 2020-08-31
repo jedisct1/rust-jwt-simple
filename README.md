@@ -179,7 +179,7 @@ Claim creation with custom data:
 let claims = Claims::with_custom_claims(my_additional_data, Duration::from_secs(30));
 ```
 
-Claim verification wit custom data. Note the presence of the custom data type:
+Claim verification with custom data. Note the presence of the custom data type:
 
 ```rust
 let claims = public_key.verify_token::<MyAdditionalData>(&token, None)?;

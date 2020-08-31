@@ -212,7 +212,7 @@
 //! # use jwt_simple::prelude::*;
 //! let claims = Claims::with_custom_claims(my_additional_data, Duration::from_secs(30));
 //!
-//! // Claim verification wit custom data. Note the presence of the custom data type:
+//! // Claim verification with custom data. Note the presence of the custom data type:
 //!
 //! # let key_pair = Ed25519KeyPair::generate();
 //! # let public_key = key_pair.public_key();
