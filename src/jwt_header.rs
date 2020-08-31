@@ -21,7 +21,7 @@ pub(crate) struct JWTHeader {
     pub certificate_url: Option<String>,
 
     #[serde(rename = "x5c", default, skip_serializing_if = "Option::is_none")]
-    pub certificate_chain: Option<String>,
+    pub certificate_chain: Option<Vec<String>>,
 
     #[serde(rename = "x5t", default, skip_serializing_if = "Option::is_none")]
     pub certificate_sha1_thumbprint: Option<String>,
@@ -33,7 +33,7 @@ pub(crate) struct JWTHeader {
     pub signature_type: Option<String>,
 
     #[serde(rename = "crit", default, skip_serializing_if = "Option::is_none")]
-    pub critical: Option<String>,
+    pub critical: Option<Vec<String>>,
 }
 
 impl Default for JWTHeader {

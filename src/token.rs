@@ -48,7 +48,7 @@ impl TokenMetadata {
     }
 
     /// The certificate chain for this token
-    pub fn certificate_chain(&self) -> Option<&str> {
+    pub fn certificate_chain(&self) -> Option<&[String]> {
         self.jwt_header.certificate_chain.as_deref()
     }
 
@@ -68,7 +68,7 @@ impl TokenMetadata {
     }
 
     /// The set of critical properties for this token
-    pub fn critical(&self) -> Option<&str> {
+    pub fn critical(&self) -> Option<&[String]> {
         self.jwt_header.critical.as_deref()
     }
 }
