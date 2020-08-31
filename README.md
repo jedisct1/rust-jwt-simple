@@ -4,7 +4,7 @@
 
 # JWT-Simple
 
-A new JWT (JSON Web Tokens) implementation for Rust that focuses on simplicity, while avoid common JWT security pitfalls.
+A new JWT (JSON Web Tokens) implementation for Rust that focuses on simplicity, while avoiding common JWT security pitfalls.
 
 `jwt-simple` is unopinionated and supports all commonly deployed authentication and signature algorithms:
 
