@@ -42,7 +42,7 @@ use jwt_simple::prelude::*;
 
 ## Authentication (symmetric, `HS*` JWT algorithms) example
 
-Authentication schemes uses the same key for creating and verifying tokens. In other words, both parties need to be ultimately trusting each other, or else the verifier could also create arbitrary tokens.
+Authentication schemes use the same key for creating and verifying tokens. In other words, both parties need to ultimately trust each other, or else the verifier could also create arbitrary tokens.
 
 ### Keys and tokens creation
 
@@ -65,7 +65,7 @@ let claims = Claims::create(Duration::from_hours(2));
 let token = key.authenticate(claims)?;
 ```
 
-Done!
+-> Done!
 
 ### Token verification
 
@@ -73,11 +73,11 @@ Done!
 let claims = key.verify_token::<NoCustomClaims>(&token, None)?;
 ```
 
-No additional steps required.
+-> Done! No additional steps required.
 
-Key expiration, start time, authentication tag, etc. are automatically verified. The function call fails with `JWTError::InvalidAuthenticationTag` if the authentication tag is invalid for the given key.
+Key expiration, start time, authentication tags, etc. are automatically verified. The function fails with `JWTError::InvalidAuthenticationTag` if the authentication tag is invalid for the given key.
 
-The full set of claims can be inspected in the `claims` object if necessary. `NoCustomClaims` means that only the standard set of claims is used by the application, but application-defined claims are also supported.
+The full set of claims can be inspected in the `claims` object if necessary. `NoCustomClaims` means that only the standard set of claims is used by the application, but application-defined claims can also be supported.
 
 Extra verification steps can optionally be enabled via the `ValidationOptions` structure:
 
@@ -118,7 +118,7 @@ let public_key = key_pair.public_key();
 
 Keys can be exported as bytes for later reuse, and imported from bytes or, for RSA, from individual parameters, DER-encoded data or PEM-encoded data.
 
-RSA key pair creation, using OpenSSL and PEM importation:
+RSA key pair creation, using OpenSSL and PEM importation of the secret key:
 
 ```sh
 openssl genrsa -out private.pem 2048
