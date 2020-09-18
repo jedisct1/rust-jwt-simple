@@ -1,6 +1,6 @@
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use p256::{
-    ecdsa::{self, signature::RandomizedSigner, signature::Verifier as _},
+    ecdsa::{self, signature::DigestVerifier as _, signature::RandomizedDigestSigner},
     elliptic_curve::Generate as _,
 };
 use serde::{de::DeserializeOwned, Serialize};
@@ -79,11 +79,12 @@ pub trait ECDSAP256KeyPairLike {
         jwt_header.algorithm = Self::jwt_alg_name().to_string();
         jwt_header.key_id = self.key_id().clone();
         Token::build(&jwt_header, claims, |authenticated| {
-            let mut rng = rand::thread_rng();
             let signer = ecdsa::Signer::new(self.key_pair().as_ref())
                 .map_err(|_| JWTError::InvalidKeyPair)?;
-            let signature: ecdsa::Signature =
-                signer.sign_with_rng(&mut rng, authenticated.as_bytes());
+            let mut digest = hmac_sha256::Hash::new();
+            digest.update(authenticated.as_bytes());
+            let rng = rand::thread_rng();
+            let signature: ecdsa::Signature = signer.sign_digest_with_rng(rng, digest);
             Ok(signature.as_ref().to_vec())
         })
     }
@@ -110,8 +111,10 @@ pub trait ECDSAP256PublicKeyLike {
                     .map_err(|_| JWTError::InvalidPublicKey)?;
                 let ecdsa_signature = ecdsa::Signature::try_from(signature)
                     .map_err(|_| JWTError::InvalidSignature)?;
+                let mut digest = hmac_sha256::Hash::new();
+                digest.update(authenticated.as_bytes());
                 verifier
-                    .verify(authenticated.as_bytes(), &ecdsa_signature)
+                    .verify_digest(digest, &ecdsa_signature)
                     .map_err(|_| JWTError::InvalidSignature)?;
                 Ok(())
             },
