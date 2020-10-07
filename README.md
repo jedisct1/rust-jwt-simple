@@ -195,6 +195,7 @@ Properties such as the key identifier can be useful prior to tag or signature ve
 ```rust
 let metadata = Token::decode_metadata(&token)?;
 let key_id = metadata.key_id();
+let algorithm = metadata.algorithm();
 // all other standard properties are also accessible
 ```
 
