@@ -199,6 +199,13 @@ let algorithm = metadata.algorithm();
 // all other standard properties are also accessible
 ```
 
+**IMPORTANT:** neither the key ID nor the algorithm can be trusted. This is an unfixable design flaw in the JWT standard.
+
+As a result, `algorithm` should be used only for debugging purposes, and never to select a key type.
+Similarly, `key_id` should be used only to select a key in a set of keys made for the same algorithm.
+
+At the bare minimum, verification using `HS*` must be prohibited if a signature scheme was originally used to create the token.
+
 ### Creating and attaching key identifiers
 
 Key identifiers indicate to verifiers what public key (or shared key) should be used for verification.
