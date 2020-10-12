@@ -148,19 +148,19 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
 
     /// Set the subject
     pub fn with_subject(mut self, subject: impl ToString) -> Self {
-        self.issuer = Some(subject.to_string());
+        self.subject = Some(subject.to_string());
         self
     }
 
     /// Set the audience
     pub fn with_audience(mut self, audience: impl ToString) -> Self {
-        self.issuer = Some(audience.to_string());
+        self.audience = Some(audience.to_string());
         self
     }
 
     /// Set the JWT identifier
     pub fn with_jwt_id(mut self, jwt_id: impl ToString) -> Self {
-        self.issuer = Some(jwt_id.to_string());
+        self.jwt_id = Some(jwt_id.to_string());
         self
     }
 
@@ -217,5 +217,27 @@ impl Claims {
             nonce: None,
             custom: custom_claims,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_set_standard_claims() {
+        let exp = Duration::from_mins(10);
+        let claims = Claims::create(exp)
+            .with_audience("audience")
+            .with_issuer("issuer")
+            .with_jwt_id("jwt_id")
+            .with_nonce("nonce")
+            .with_subject("subject");
+
+        assert_eq!(claims.audience, Some("audience".to_owned()));
+        assert_eq!(claims.issuer, Some("issuer".to_owned()));
+        assert_eq!(claims.jwt_id, Some("jwt_id".to_owned()));
+        assert_eq!(claims.nonce, Some("nonce".to_owned()));
+        assert_eq!(claims.subject, Some("subject".to_owned()));
     }
 }
