@@ -1,5 +1,6 @@
 use coarsetime::{Clock, Duration, UnixTimeStamp};
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
+use either::Either;
 use rand::RngCore;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -55,8 +56,13 @@ pub struct JWTClaims<CustomClaims> {
     pub subject: Option<String>,
 
     /// Audience
-    #[serde(rename = "aud", default, skip_serializing_if = "Option::is_none")]
-    pub audience: Option<String>,
+    #[serde(
+        with = "either::serde_untagged_optional",
+        rename = "aud",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub audience: Option<Either<String, Vec<String>>>,
 
     /// JWT identifier
     ///
@@ -154,7 +160,15 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
 
     /// Set the audience
     pub fn with_audience(mut self, audience: impl ToString) -> Self {
-        self.audience = Some(audience.to_string());
+        self.audience = Some(Either::Left(audience.to_string()));
+        self
+    }
+
+    /// Set many audiences
+    pub fn with_audiences(mut self, audiences: Vec<impl ToString>) -> Self {
+        self.audience = Some(Either::Right(
+            audiences.iter().map(ToString::to_string).collect(),
+        ));
         self
     }
 
@@ -178,6 +192,15 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         let nonce = Base64UrlSafeNoPadding::encode_to_string(raw_nonce).unwrap();
         self.nonce = Some(nonce);
         &self.nonce.as_deref().unwrap()
+    }
+
+    /// Get the audience as String
+    pub fn audience_as_str(&self) -> String {
+        match &self.audience {
+            None => "".to_owned(),
+            Some(either::Left(s)) => s.to_string(),
+            Some(either::Right(v)) => v.join(","),
+        }
     }
 }
 
@@ -234,10 +257,34 @@ mod tests {
             .with_nonce("nonce")
             .with_subject("subject");
 
-        assert_eq!(claims.audience, Some("audience".to_owned()));
+        assert_eq!(claims.audience, Some(either::Left("audience".to_owned())));
         assert_eq!(claims.issuer, Some("issuer".to_owned()));
         assert_eq!(claims.jwt_id, Some("jwt_id".to_owned()));
         assert_eq!(claims.nonce, Some("nonce".to_owned()));
         assert_eq!(claims.subject, Some("subject".to_owned()));
+    }
+
+    #[test]
+    fn should_get_audience_as_empty_string() {
+        let exp = Duration::from_mins(10);
+        let claims = Claims::create(exp);
+
+        assert_eq!(claims.audience_as_str(), "");
+    }
+
+    #[test]
+    fn should_get_audience_as_single_string() {
+        let exp = Duration::from_mins(10);
+        let claims = Claims::create(exp).with_audience("audience1");
+
+        assert_eq!(claims.audience_as_str(), "audience1");
+    }
+
+    #[test]
+    fn should_get_audience_as_concatenated_strings() {
+        let exp = Duration::from_mins(10);
+        let claims = Claims::create(exp).with_audiences(vec!["audience1", "audience2"]);
+
+        assert_eq!(claims.audience_as_str(), "audience1,audience2");
     }
 }
