@@ -40,12 +40,18 @@ pub enum JWTError {
     RequiredSubjectMismatch,
     #[error("Required subject missing")]
     RequiredSubjectMissing,
+    #[error("Required audiences missing")]
+    RequiredAudiencesMissing,
+    #[error("Required audiences mismatch")]
+    RequiredAudiencesMismatch,
     #[error("Unsupported RSA modulus")]
     UnsupportedRSAModulus,
     #[error("Invalid public key")]
     InvalidPublicKey,
     #[error("Invalid key pair")]
     InvalidKeyPair,
+    #[error("A single audience can be represented as a string instead of a set")]
+    TooManyAudiences,
 }
 
 impl From<&str> for JWTError {
