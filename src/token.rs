@@ -155,3 +155,25 @@ impl Token {
         Ok(TokenMetadata { jwt_header })
     }
 }
+
+#[test]
+fn should_verify_token() {
+    use crate::prelude::*;
+
+    let key = HS256Key::generate();
+
+    let issuer = "issuer";
+    let audience = "recipient";
+    let mut claims = Claims::create(Duration::from_mins(10))
+        .with_issuer(issuer)
+        .with_audience(audience);
+    let nonce = claims.create_nonce();
+    let token = key.authenticate(claims).unwrap();
+
+    let mut options = VerificationOptions::default();
+    options.required_nonce = Some(nonce);
+    options.required_issuer = Some(issuer.to_string());
+    options.required_audience = Some(audience.to_string());
+    key.verify_token::<NoCustomClaims>(&token, Some(options))
+        .unwrap();
+}

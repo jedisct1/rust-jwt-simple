@@ -15,7 +15,7 @@ pub const DEFAULT_TIME_TOLERANCE_SECS: u64 = 900;
 #[derive(Copy, Clone, Serialize, Deserialize)]
 pub struct NoCustomClaims {}
 
-/// The `audiences` property is usually an array (set), but some applications may require it to be a string.
+/// Depending on applications, the `audiences` property may be either a set or a string.
 /// We support both.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub enum Audiences {
@@ -134,10 +134,6 @@ pub struct JWTClaims<CustomClaims> {
     #[serde(rename = "aud", default, skip_serializing_if = "Option::is_none")]
     pub audiences: Option<Audiences>,
 
-    /// The audience should be a set, but some applications require a string instead.
-    #[serde(skip, default)]
-    audiences_as_string: bool,
-
     /// JWT identifier
     ///
     /// That property was originally designed to avoid replay attacks, but keeping
@@ -248,7 +244,7 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         self
     }
 
-    /// Set the audiences, as an array
+    /// Register one or more audiences (optional recipient identifiers), as an set
     pub fn with_audiences(mut self, audiences: HashSet<impl ToString>) -> Self {
         self.audiences = Some(Audiences::AsSet(
             audiences.iter().map(|x| x.to_string()).collect(),
@@ -256,7 +252,7 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         self
     }
 
-    /// Set a unique audience, as a string
+    /// Set a unique audience (an optional recipient identifier), as a string
     pub fn with_audience(mut self, audience: impl ToString) -> Self {
         self.audiences = Some(Audiences::AsString(audience.to_string()));
         self
@@ -275,13 +271,13 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
     }
 
     /// Create a nonce, attach it and return it
-    pub fn create_nonce(&mut self) -> &str {
+    pub fn create_nonce(&mut self) -> String {
         let mut raw_nonce = [0u8; 24];
         let mut rng = rand::thread_rng();
         rng.fill_bytes(&mut raw_nonce);
         let nonce = Base64UrlSafeNoPadding::encode_to_string(raw_nonce).unwrap();
         self.nonce = Some(nonce);
-        &self.nonce.as_deref().unwrap()
+        self.nonce.as_deref().unwrap().to_string()
     }
 }
 
@@ -296,7 +292,6 @@ impl Claims {
             expires_at: Some(now.unwrap() + valid_for),
             invalid_before: now,
             audiences: None,
-            audiences_as_string: false,
             issuer: None,
             jwt_id: None,
             subject: None,
@@ -316,7 +311,6 @@ impl Claims {
             expires_at: Some(now.unwrap() + valid_for),
             invalid_before: now,
             audiences: None,
-            audiences_as_string: false,
             issuer: None,
             jwt_id: None,
             subject: None,
