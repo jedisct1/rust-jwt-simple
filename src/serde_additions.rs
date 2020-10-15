@@ -107,14 +107,6 @@ pub mod audiences {
         deserializer: D,
     ) -> Result<Option<Audiences>, D::Error> {
         let audiences = deserializer.deserialize_any(AudiencesVisitor)?;
-        let is_empty = match &audiences {
-            Audiences::AsString(audience) => audience.is_empty(),
-            Audiences::AsSet(audiences) => audiences.is_empty(),
-        };
-        if is_empty {
-            Ok(None)
-        } else {
-            Ok(Some(audiences))
-        }
+        Ok(Some(audiences))
     }
 }
