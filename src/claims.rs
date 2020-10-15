@@ -254,17 +254,17 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
     }
 
     /// Set the audiences, as an array
-    pub fn with_audiences(mut self, audiences: HashSet<impl ToString>) -> Result<Self, Error> {
+    pub fn with_audiences(mut self, audiences: HashSet<impl ToString>) -> Self {
         self.audiences = Some(Audiences::AsSet(
             audiences.iter().map(|x| x.to_string()).collect(),
         ));
-        Ok(self)
+        self
     }
 
     /// Set a unique audience, as a string
-    pub fn with_audience(mut self, audience: impl ToString) -> Result<Self, Error> {
+    pub fn with_audience(mut self, audience: impl ToString) -> Self {
         self.audiences = Some(Audiences::AsString(audience.to_string()));
-        Ok(self)
+        self
     }
 
     /// Set the JWT identifier
@@ -343,7 +343,6 @@ mod tests {
         audiences.insert("audience2".to_string());
         let claims = Claims::create(exp)
             .with_audiences(audiences.clone())
-            .unwrap()
             .with_issuer("issuer")
             .with_jwt_id("jwt_id")
             .with_nonce("nonce")
