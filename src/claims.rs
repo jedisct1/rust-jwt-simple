@@ -3,6 +3,7 @@ use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use rand::RngCore;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::HashSet;
+use std::convert::TryInto;
 
 use crate::common::VerificationOptions;
 use crate::error::*;
@@ -23,6 +24,7 @@ pub enum Audiences {
 }
 
 impl Audiences {
+    /// Return `true` if the audiences are represented as a set.
     pub fn is_set(&self) -> bool {
         match self {
             Audiences::AsSet(_) => true,
@@ -30,8 +32,60 @@ impl Audiences {
         }
     }
 
+    /// Return `true` if the audiences are represented as a string.
     pub fn is_string(&self) -> bool {
         return !self.is_set();
+    }
+
+    /// Get the audiences as a set
+    pub fn into_set(self) -> HashSet<String> {
+        match self {
+            Audiences::AsSet(audiences_set) => audiences_set,
+            Audiences::AsString(audiences) => {
+                let mut audiences_set = HashSet::new();
+                if !audiences.is_empty() {
+                    audiences_set.insert(audiences.to_string());
+                }
+                audiences_set
+            }
+        }
+    }
+
+    /// Get the audiences as a string.
+    /// If it was originally serialized as a set, it can be only converted to a string if it contains at most one element.
+    pub fn into_string(self) -> Result<String, Error> {
+        match self {
+            Audiences::AsString(audiences_str) => Ok(audiences_str),
+            Audiences::AsSet(audiences) => {
+                if audiences.len() > 1 {
+                    bail!(JWTError::TooManyAudiences);
+                }
+                Ok(audiences
+                    .iter()
+                    .next()
+                    .map(|x| x.to_string())
+                    .unwrap_or_default())
+            }
+        }
+    }
+}
+
+impl TryInto<String> for Audiences {
+    type Error = Error;
+    fn try_into(self) -> Result<String, Error> {
+        self.into_string()
+    }
+}
+
+impl Into<HashSet<String>> for Audiences {
+    fn into(self) -> HashSet<String> {
+        self.into_set()
+    }
+}
+
+impl<T: ToString> From<T> for Audiences {
+    fn from(audience: T) -> Self {
+        Audiences::AsString(audience.to_string())
     }
 }
 
@@ -199,58 +253,17 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         self
     }
 
-    fn convert_audiences_format(&mut self) -> Result<(), Error> {
-        let audiences = self.audiences.as_ref();
-        let updated_audiences;
-        if self.audiences_as_string {
-            // convert audiences to a string
-            match audiences {
-                Some(Audiences::AsString(_)) | None => return Ok(()),
-                Some(Audiences::AsSet(audiences)) => {
-                    if audiences.len() > 1 {
-                        bail!(JWTError::TooManyAudiences);
-                    }
-                    updated_audiences = Some(Audiences::AsString(
-                        audiences
-                            .iter()
-                            .next()
-                            .map(|x| x.to_string())
-                            .unwrap_or_default(),
-                    ));
-                }
-            }
-        } else {
-            // convert audiences to a set
-            match audiences {
-                Some(Audiences::AsSet(_)) | None => return Ok(()),
-                Some(Audiences::AsString(audiences)) => {
-                    let mut audiences_set = HashSet::new();
-                    if !audiences.is_empty() {
-                        audiences_set.insert(audiences.to_string());
-                    }
-                    updated_audiences = Some(Audiences::AsSet(audiences_set));
-                }
-            }
-        }
-        self.audiences = updated_audiences;
-        Ok(())
-    }
-
-    /// The audiences should be a set (and this is the default), but some applications expect a string instead.
-    /// Call this function in order to create a token where the audiences will be serialized as a string.
-    /// If this is the case, no more than one element is allowed (but it can includes commas, or whatever delimiter the application expects).
-    pub fn audiences_as_string(mut self, serialize_as_string: bool) -> Result<Self, Error> {
-        self.audiences_as_string = serialize_as_string;
-        self.convert_audiences_format()?;
-        Ok(self)
-    }
-
-    /// Set the audiences
+    /// Set the audiences, as an array
     pub fn with_audiences(mut self, audiences: HashSet<impl ToString>) -> Result<Self, Error> {
         self.audiences = Some(Audiences::AsSet(
             audiences.iter().map(|x| x.to_string()).collect(),
         ));
-        self.convert_audiences_format()?;
+        Ok(self)
+    }
+
+    /// Set a unique audience, as a string
+    pub fn with_audience(mut self, audience: impl ToString) -> Result<Self, Error> {
+        self.audiences = Some(Audiences::AsString(audience.to_string()));
         Ok(self)
     }
 

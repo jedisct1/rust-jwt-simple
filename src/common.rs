@@ -28,7 +28,7 @@ pub struct VerificationOptions {
     /// Require a specific nonce to be present
     pub required_nonce: Option<String>,
 
-    /// Require a set of audiences to be present
+    /// Require a one or more audiences to be present
     pub required_audiences: Option<HashSet<String>>,
 
     /// Time tolerance for validating expiration dates
