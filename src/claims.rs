@@ -211,25 +211,20 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
                 bail!(JWTError::RequiredNonceMissing);
             }
         }
-        if let Some(required_audiences) = &options.required_audiences {
+        if let Some(required_audience) = &options.required_audience {
             if let Some(audiences) = &self.audiences {
-                let mut single_audience;
-                let audiences = match audiences {
-                    Audiences::AsString(audience) => {
-                        single_audience = HashSet::new();
-                        single_audience.insert(audience.to_string());
-                        &single_audience
-                    }
-                    Audiences::AsSet(audiences) => audiences,
-                };
-                for required_audience in required_audiences {
-                    ensure!(
+                match audiences {
+                    Audiences::AsString(audience) => ensure!(
+                        audience == required_audience,
+                        JWTError::RequiredAudienceMismatch
+                    ),
+                    Audiences::AsSet(audiences) => ensure!(
                         audiences.contains(required_audience),
-                        JWTError::RequiredAudiencesMismatch
-                    )
-                }
-            } else if !required_audiences.is_empty() {
-                bail!(JWTError::RequiredAudiencesMissing);
+                        JWTError::RequiredAudienceMismatch
+                    ),
+                };
+            } else {
+                bail!(JWTError::RequiredAudienceMissing);
             }
         }
         Ok(())
