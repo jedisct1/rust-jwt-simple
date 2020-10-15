@@ -26,15 +26,12 @@ pub enum Audiences {
 impl Audiences {
     /// Return `true` if the audiences are represented as a set.
     pub fn is_set(&self) -> bool {
-        match self {
-            Audiences::AsSet(_) => true,
-            _ => false,
-        }
+        matches!(self, Audiences::AsSet(_))
     }
 
     /// Return `true` if the audiences are represented as a string.
     pub fn is_string(&self) -> bool {
-        return !self.is_set();
+        matches!(self, Audiences::AsString(_))
     }
 
     /// Get the audiences as a set
@@ -44,7 +41,7 @@ impl Audiences {
             Audiences::AsString(audiences) => {
                 let mut audiences_set = HashSet::new();
                 if !audiences.is_empty() {
-                    audiences_set.insert(audiences.to_string());
+                    audiences_set.insert(audiences);
                 }
                 audiences_set
             }
