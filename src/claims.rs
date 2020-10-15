@@ -17,7 +17,7 @@ pub struct NoCustomClaims {}
 
 /// Depending on applications, the `audiences` property may be either a set or a string.
 /// We support both.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Audiences {
     AsSet(HashSet<String>),
     AsString(String),
@@ -134,7 +134,11 @@ pub struct JWTClaims<CustomClaims> {
         skip_serializing_if = "Option::is_none",
         with = "self::serde_additions::audiences"
     )]
-    pub audiences: Option<Audiences>,
+    pub(crate) audiences: Option<Audiences>,
+
+    /// Audience
+    #[serde(skip)]
+    pub audience: Option<String>,
 
     /// JWT identifier
     ///
@@ -251,12 +255,14 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         self.audiences = Some(Audiences::AsSet(
             audiences.iter().map(|x| x.to_string()).collect(),
         ));
+        self.audience = self.audiences.clone().unwrap().into_string().ok();
         self
     }
 
     /// Set a unique audience (an optional recipient identifier), as a string
     pub fn with_audience(mut self, audience: impl ToString) -> Self {
         self.audiences = Some(Audiences::AsString(audience.to_string()));
+        self.audience = Some(audience.to_string());
         self
     }
 
@@ -294,6 +300,7 @@ impl Claims {
             expires_at: Some(now.unwrap() + valid_for),
             invalid_before: now,
             audiences: None,
+            audience: None,
             issuer: None,
             jwt_id: None,
             subject: None,
@@ -313,6 +320,7 @@ impl Claims {
             expires_at: Some(now.unwrap() + valid_for),
             invalid_before: now,
             audiences: None,
+            audience: None,
             issuer: None,
             jwt_id: None,
             subject: None,

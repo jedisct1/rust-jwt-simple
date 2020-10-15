@@ -135,9 +135,14 @@ impl Token {
             Base64UrlSafeNoPadding::decode_to_vec(&authentication_tag_b64, None)?;
         let authenticated = &token[..jwt_header_b64.len() + 1 + claims_b64.len()];
         authentication_or_signature_fn(authenticated, &authentication_tag)?;
-        let claims: JWTClaims<CustomClaims> =
+        let mut claims: JWTClaims<CustomClaims> =
             serde_json::from_slice(&Base64UrlSafeNoPadding::decode_to_vec(&claims_b64, None)?)?;
         claims.validate(&options)?;
+
+        if let Some(audiences) = &claims.audiences {
+            claims.audience = audiences.clone().into_string().ok();
+        }
+
         Ok(claims)
     }
 
@@ -209,15 +214,15 @@ fn explicitly_empty_audiences() {
     let claims = Claims::create(Duration::from_mins(10)).with_audiences(audiences);
     let token = key.authenticate(claims).unwrap();
     let decoded = key.verify_token::<NoCustomClaims>(&token, None).unwrap();
-    assert!(decoded.audiences.is_some());
+    assert!(decoded.audience.is_some());
 
     let claims = Claims::create(Duration::from_mins(10)).with_audience("");
     let token = key.authenticate(claims).unwrap();
     let decoded = key.verify_token::<NoCustomClaims>(&token, None).unwrap();
-    assert!(decoded.audiences.is_some());
+    assert!(decoded.audience.is_some());
 
     let claims = Claims::create(Duration::from_mins(10));
     let token = key.authenticate(claims).unwrap();
     let decoded = key.verify_token::<NoCustomClaims>(&token, None).unwrap();
-    assert!(decoded.audiences.is_none());
+    assert!(decoded.audience.is_none());
 }
