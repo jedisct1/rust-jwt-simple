@@ -17,7 +17,7 @@ pub struct NoCustomClaims {}
 
 /// Depending on applications, the `audiences` property may be either a set or a string.
 /// We support both.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Audiences {
     AsSet(HashSet<String>),
     AsString(String),
@@ -131,7 +131,12 @@ pub struct JWTClaims<CustomClaims> {
     pub subject: Option<String>,
 
     /// Audience
-    #[serde(rename = "aud", default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "aud",
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "self::serde_additions::audiences"
+    )]
     pub audiences: Option<Audiences>,
 
     /// JWT identifier
