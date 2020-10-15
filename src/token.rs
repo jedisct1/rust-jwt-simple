@@ -192,10 +192,32 @@ fn multiple_audiences() {
     let claims = Claims::create(Duration::from_mins(10)).with_audiences(audiences);
     let token = key.authenticate(claims).unwrap();
 
-    dbg!(&token);
-
     let mut options = VerificationOptions::default();
     options.required_audience = Some("audience 1".to_string());
     key.verify_token::<NoCustomClaims>(&token, Some(options))
         .unwrap();
+}
+
+#[test]
+fn explicitly_empty_audiences() {
+    use crate::prelude::*;
+    use std::collections::HashSet;
+
+    let key = HS256Key::generate();
+
+    let audiences: HashSet<&str> = HashSet::new();
+    let claims = Claims::create(Duration::from_mins(10)).with_audiences(audiences);
+    let token = key.authenticate(claims).unwrap();
+    let decoded = key.verify_token::<NoCustomClaims>(&token, None).unwrap();
+    assert!(decoded.audiences.is_some());
+
+    let claims = Claims::create(Duration::from_mins(10)).with_audience("");
+    let token = key.authenticate(claims).unwrap();
+    let decoded = key.verify_token::<NoCustomClaims>(&token, None).unwrap();
+    assert!(decoded.audiences.is_some());
+
+    let claims = Claims::create(Duration::from_mins(10));
+    let token = key.authenticate(claims).unwrap();
+    let decoded = key.verify_token::<NoCustomClaims>(&token, None).unwrap();
+    assert!(decoded.audiences.is_none());
 }
