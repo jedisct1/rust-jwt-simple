@@ -6,7 +6,7 @@ use crate::common::*;
 use crate::error::*;
 use crate::jwt_header::*;
 
-pub const MAX_HEADER_LENGTH: usize = 4096;
+pub const MAX_HEADER_LENGTH: usize = 8192;
 
 /// Utilities to get information about a JWT token
 pub struct Token;
