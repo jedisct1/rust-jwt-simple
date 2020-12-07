@@ -11,17 +11,18 @@ use crate::token::*;
 
 #[doc(hidden)]
 #[derive(Debug)]
-pub struct K256PublicKey(ecdsa::VerifyKey);
+pub struct K256PublicKey(ecdsa::VerifyingKey);
 
-impl AsRef<ecdsa::VerifyKey> for K256PublicKey {
-    fn as_ref(&self) -> &ecdsa::VerifyKey {
+impl AsRef<ecdsa::VerifyingKey> for K256PublicKey {
+    fn as_ref(&self) -> &ecdsa::VerifyingKey {
         &self.0
     }
 }
 
 impl K256PublicKey {
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
-        let k256_pk = ecdsa::VerifyKey::new(raw).map_err(|_| JWTError::InvalidPublicKey)?;
+        let k256_pk =
+            ecdsa::VerifyingKey::from_sec1_bytes(raw).map_err(|_| JWTError::InvalidPublicKey)?;
         Ok(K256PublicKey(k256_pk))
     }
 
@@ -41,7 +42,8 @@ impl AsRef<ecdsa::SigningKey> for K256KeyPair {
 
 impl K256KeyPair {
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
-        let k256_key_pair = ecdsa::SigningKey::new(raw).map_err(|_| JWTError::InvalidKeyPair)?;
+        let k256_key_pair =
+            ecdsa::SigningKey::from_bytes(raw).map_err(|_| JWTError::InvalidKeyPair)?;
         Ok(K256KeyPair(k256_key_pair))
     }
 
