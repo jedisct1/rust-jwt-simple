@@ -18,7 +18,7 @@ ct-codecs = "0.1"
 ed25519-compact = "0.1"
 hmac-sha256 = { version = "0.1", features = ["traits"] }
 hmac-sha512 = { version = "0.1", features = ["traits", "sha384"] }
-k256 = { version = "0.5", features = ["ecdsa", "std"] }
+k256 = { version = "0.6", features = ["ecdsa", "std"] }
 p256 = { version = "0.5", features = ["ecdsa", "std"] }
 rand = "0.7"
 rsa = "0.3"
