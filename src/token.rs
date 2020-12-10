@@ -114,11 +114,11 @@ impl Token {
             jwt_header_b64.len() <= MAX_HEADER_LENGTH,
             JWTError::HeaderTooLarge
         );
-        let claims_b64 = parts.next().unwrap();
+        let claims_b64 = parts.next().ok_or(JWTError::CompactEncodingError)?;
         let authentication_tag_b64 = parts.next().ok_or(JWTError::CompactEncodingError)?;
         ensure!(parts.next().is_none(), JWTError::CompactEncodingError);
         let jwt_header: JWTHeader = serde_json::from_slice(
-            &Base64UrlSafeNoPadding::decode_to_vec(jwt_header_b64, None).unwrap(),
+            &Base64UrlSafeNoPadding::decode_to_vec(jwt_header_b64, None)?,
         )?;
         ensure!(
             jwt_header.algorithm == jwt_alg_name,
@@ -150,7 +150,7 @@ impl Token {
             JWTError::HeaderTooLarge
         );
         let jwt_header: JWTHeader = serde_json::from_slice(
-            &Base64UrlSafeNoPadding::decode_to_vec(jwt_header_b64, None).unwrap(),
+            &Base64UrlSafeNoPadding::decode_to_vec(jwt_header_b64, None)?,
         )?;
         Ok(TokenMetadata { jwt_header })
     }
