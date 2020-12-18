@@ -1,5 +1,6 @@
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use k256::ecdsa::{self, signature::DigestVerifier as _, signature::RandomizedDigestSigner as _};
+use p256::pkcs8::{FromPrivateKey as _, FromPublicKey as _};
 use serde::{de::DeserializeOwned, Serialize};
 use std::convert::TryFrom;
 
@@ -26,6 +27,18 @@ impl K256PublicKey {
         Ok(K256PublicKey(k256_pk))
     }
 
+    pub fn from_der(der: &[u8]) -> Result<Self, Error> {
+        let k256_pk = ecdsa::VerifyingKey::from_public_key_der(der)
+            .map_err(|_| JWTError::InvalidPublicKey)?;
+        Ok(K256PublicKey(k256_pk))
+    }
+
+    pub fn from_pem(pem: &str) -> Result<Self, Error> {
+        let k256_pk = ecdsa::VerifyingKey::from_public_key_pem(pem)
+            .map_err(|_| JWTError::InvalidPublicKey)?;
+        Ok(K256PublicKey(k256_pk))
+    }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.to_bytes().to_vec()
     }
@@ -44,6 +57,18 @@ impl K256KeyPair {
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
         let k256_key_pair =
             ecdsa::SigningKey::from_bytes(raw).map_err(|_| JWTError::InvalidKeyPair)?;
+        Ok(K256KeyPair(k256_key_pair))
+    }
+
+    pub fn from_der(der: &[u8]) -> Result<Self, Error> {
+        let k256_key_pair =
+            ecdsa::SigningKey::from_pkcs8_der(der).map_err(|_| JWTError::InvalidKeyPair)?;
+        Ok(K256KeyPair(k256_key_pair))
+    }
+
+    pub fn from_pem(pem: &str) -> Result<Self, Error> {
+        let k256_key_pair =
+            ecdsa::SigningKey::from_pkcs8_pem(pem).map_err(|_| JWTError::InvalidKeyPair)?;
         Ok(K256KeyPair(k256_key_pair))
     }
 
@@ -162,6 +187,20 @@ impl ES256kKeyPair {
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
         Ok(ES256kKeyPair {
             key_pair: K256KeyPair::from_bytes(raw)?,
+            key_id: None,
+        })
+    }
+
+    pub fn from_der(der: &[u8]) -> Result<Self, Error> {
+        Ok(ES256kKeyPair {
+            key_pair: K256KeyPair::from_der(der)?,
+            key_id: None,
+        })
+    }
+
+    pub fn from_pem(pem: &str) -> Result<Self, Error> {
+        Ok(ES256kKeyPair {
+            key_pair: K256KeyPair::from_pem(pem)?,
             key_id: None,
         })
     }
