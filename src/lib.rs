@@ -412,7 +412,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
     fn require_nonce() {
         let key = HS256Key::generate();
         let mut claims = Claims::create(Duration::from_hours(1));
-        let nonce = claims.create_nonce().to_string();
+        let nonce = claims.create_nonce();
         let token = key.authenticate(claims).unwrap();
 
         let mut options = VerificationOptions::default();

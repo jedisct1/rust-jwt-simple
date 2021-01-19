@@ -74,9 +74,9 @@ impl TryInto<String> for Audiences {
     }
 }
 
-impl Into<HashSet<String>> for Audiences {
-    fn into(self) -> HashSet<String> {
-        self.into_set()
+impl From<Audiences> for HashSet<String> {
+    fn from(audiences: Audiences) -> HashSet<String> {
+        audiences.into_set()
     }
 }
 

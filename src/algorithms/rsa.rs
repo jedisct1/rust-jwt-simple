@@ -93,9 +93,11 @@ pub trait RSAKeyPairLike {
         &self,
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
-        let mut jwt_header = JWTHeader::default();
-        jwt_header.algorithm = Self::jwt_alg_name().to_string();
-        jwt_header.key_id = self.key_id().clone();
+        let jwt_header = JWTHeader {
+            algorithm: Self::jwt_alg_name().to_string(),
+            key_id: self.key_id().clone(),
+            ..Default::default()
+        };
         Token::build(&jwt_header, claims, |authenticated| {
             let digest = Self::hash(authenticated.as_bytes());
             let mut rng = rand::thread_rng();
