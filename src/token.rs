@@ -171,10 +171,12 @@ fn should_verify_token() {
     let nonce = claims.create_nonce();
     let token = key.authenticate(claims).unwrap();
 
-    let mut options = VerificationOptions::default();
-    options.required_nonce = Some(nonce);
-    options.required_issuer = Some(issuer.to_string());
-    options.required_audience = Some(audience.to_string());
+    let options = VerificationOptions {
+        required_nonce: Some(nonce),
+        required_issuer: Some(issuer.to_string()),
+        required_audience: Some(audience.to_string()),
+        ..Default::default()
+    };
     key.verify_token::<NoCustomClaims>(&token, Some(options))
         .unwrap();
 }
@@ -193,8 +195,10 @@ fn multiple_audiences() {
     let claims = Claims::create(Duration::from_mins(10)).with_audiences(audiences);
     let token = key.authenticate(claims).unwrap();
 
-    let mut options = VerificationOptions::default();
-    options.required_audience = Some("audience 1".to_string());
+    let options = VerificationOptions {
+        required_audience: Some("audience 1".to_string()),
+        ..Default::default()
+    };
     key.verify_token::<NoCustomClaims>(&token, Some(options))
         .unwrap();
 }

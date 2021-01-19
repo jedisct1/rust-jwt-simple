@@ -336,8 +336,10 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
         let key = HS384Key::from_bytes(b"your-256-bit-secret").with_key_id("my-key-id");
         let claims = Claims::create(Duration::from_secs(86400)).with_issuer("test issuer");
         let token = key.authenticate(claims).unwrap();
-        let mut options = VerificationOptions::default();
-        options.required_issuer = Some("test issuer".to_string());
+        let options = VerificationOptions {
+            required_issuer: Some("test issuer".to_string()),
+            ..Default::default()
+        };
         let _claims = key
             .verify_token::<NoCustomClaims>(&token, Some(options))
             .unwrap();
@@ -399,11 +401,13 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
         let custom_claims = CustomClaims { is_custom: true };
         let claims = Claims::with_custom_claims(custom_claims, Duration::from_secs(86400));
         let token = key_pair.sign(claims).unwrap();
-        let mut options = VerificationOptions::default();
-        options.required_key_id = Some(key_id.to_string());
+        let options = VerificationOptions {
+            required_key_id: Some(key_id.to_string()),
+            ..Default::default()
+        };
         let claims: JWTClaims<CustomClaims> = key_pair
             .public_key()
-            .verify_token::<CustomClaims>(&token, None)
+            .verify_token::<CustomClaims>(&token, Some(options))
             .unwrap();
         assert!(claims.custom.is_custom, true);
     }
@@ -415,8 +419,10 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
         let nonce = claims.create_nonce();
         let token = key.authenticate(claims).unwrap();
 
-        let mut options = VerificationOptions::default();
-        options.required_nonce = Some(nonce);
+        let options = VerificationOptions {
+            required_nonce: Some(nonce),
+            ..Default::default()
+        };
         key.verify_token::<NoCustomClaims>(&token, Some(options))
             .unwrap();
     }
