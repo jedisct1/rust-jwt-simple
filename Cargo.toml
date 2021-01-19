@@ -1,6 +1,6 @@
 [package]
 name = "jwt-simple"
-version = "0.2.6"
+version = "0.2.7"
 description = "Easy to use, secure, unopinonated JWT (JSON Web Tokens) implementation for Rust."
 authors = ["Frank Denis <github@pureftpd.org>"]
 edition = "2018"
@@ -22,6 +22,7 @@ k256 = { version = "0.7", features = ["ecdsa", "std", "pkcs8", "pem"] }
 p256 = { version = "0.7", features = ["ecdsa", "std", "pkcs8", "pem"] }
 rand = "0.7"
 rsa = "0.3"
+rsa-export = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "1.0"

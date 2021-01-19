@@ -1,5 +1,6 @@
 use hmac_sha512::sha384 as hmac_sha384;
 use rsa::{BigUint, PublicKey as _};
+use rsa_export::{Encode as _, PemEncode as _};
 use serde::{de::DeserializeOwned, Serialize};
 use std::convert::TryFrom;
 
@@ -29,6 +30,14 @@ impl RSAPublicKey {
         let parsed_pem = rsa::pem::parse(pem)?;
         let rsa_pk = rsa::RSAPublicKey::try_from(parsed_pem)?;
         Ok(RSAPublicKey(rsa_pk))
+    }
+
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.0.as_pkcs8().map_err(Into::into)
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.0.as_pkcs8_pem().map_err(Into::into)
     }
 
     pub fn from_components(n: &[u8], e: &[u8]) -> Result<Self, Error> {
@@ -63,6 +72,14 @@ impl RSAKeyPair {
         rsa_sk.validate()?;
         rsa_sk.precompute()?;
         Ok(RSAKeyPair(rsa_sk))
+    }
+
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.0.as_pkcs8().map_err(Into::into)
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.0.as_pkcs8_pem().map_err(Into::into)
     }
 
     pub fn public_key(&self) -> RSAPublicKey {
@@ -188,6 +205,14 @@ impl RS256KeyPair {
         })
     }
 
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.key_pair.to_der()
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.key_pair.to_pem()
+    }
+
     pub fn public_key(&self) -> RS256PublicKey {
         RS256PublicKey {
             pk: self.key_pair.public_key(),
@@ -249,6 +274,14 @@ impl RS256PublicKey {
         })
     }
 
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.pk.to_der()
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.pk.to_pem()
+    }
+
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
@@ -304,6 +337,14 @@ impl RS512KeyPair {
             key_pair: RSAKeyPair::from_pem(pem)?,
             key_id: None,
         })
+    }
+
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.key_pair.to_der()
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.key_pair.to_pem()
     }
 
     pub fn public_key(&self) -> RS512PublicKey {
@@ -367,6 +408,14 @@ impl RS512PublicKey {
         })
     }
 
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.pk.to_der()
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.pk.to_pem()
+    }
+
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
@@ -422,6 +471,14 @@ impl RS384KeyPair {
             key_pair: RSAKeyPair::from_pem(pem)?,
             key_id: None,
         })
+    }
+
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.key_pair.to_der()
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.key_pair.to_pem()
     }
 
     pub fn public_key(&self) -> RS384PublicKey {
@@ -485,6 +542,14 @@ impl RS384PublicKey {
         })
     }
 
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.pk.to_der()
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.pk.to_pem()
+    }
+
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
@@ -539,6 +604,14 @@ impl PS256KeyPair {
             key_pair: RSAKeyPair::from_pem(pem)?,
             key_id: None,
         })
+    }
+
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.key_pair.to_der()
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.key_pair.to_pem()
     }
 
     pub fn public_key(&self) -> PS256PublicKey {
@@ -602,6 +675,14 @@ impl PS256PublicKey {
         })
     }
 
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.pk.to_der()
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.pk.to_pem()
+    }
+
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
@@ -656,6 +737,14 @@ impl PS512KeyPair {
             key_pair: RSAKeyPair::from_pem(pem)?,
             key_id: None,
         })
+    }
+
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.key_pair.to_der()
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.key_pair.to_pem()
     }
 
     pub fn public_key(&self) -> PS512PublicKey {
@@ -719,6 +808,14 @@ impl PS512PublicKey {
         })
     }
 
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.pk.to_der()
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.pk.to_pem()
+    }
+
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
@@ -773,6 +870,14 @@ impl PS384KeyPair {
             key_pair: RSAKeyPair::from_pem(pem)?,
             key_id: None,
         })
+    }
+
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.key_pair.to_der()
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.key_pair.to_pem()
     }
 
     pub fn public_key(&self) -> PS384PublicKey {
@@ -834,6 +939,14 @@ impl PS384PublicKey {
             pk: RSAPublicKey::from_pem(pem)?,
             key_id: None,
         })
+    }
+
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.pk.to_der()
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.pk.to_pem()
     }
 
     pub fn with_key_id(mut self, key_id: &str) -> Self {
