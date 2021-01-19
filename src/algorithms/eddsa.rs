@@ -8,7 +8,7 @@ use crate::jwt_header::*;
 use crate::token::*;
 
 #[doc(hidden)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Edwards25519PublicKey(ed25519_compact::PublicKey);
 
 impl AsRef<ed25519_compact::PublicKey> for Edwards25519PublicKey {
@@ -31,6 +31,7 @@ impl Edwards25519PublicKey {
 }
 
 #[doc(hidden)]
+#[derive(Clone)]
 pub struct Edwards25519KeyPair(ed25519_compact::KeyPair);
 
 impl AsRef<ed25519_compact::KeyPair> for Edwards25519KeyPair {
@@ -121,6 +122,7 @@ pub trait EdDSAPublicKeyLike {
     }
 }
 
+#[derive(Clone)]
 pub struct Ed25519KeyPair {
     key_pair: Edwards25519KeyPair,
     key_id: Option<String>,

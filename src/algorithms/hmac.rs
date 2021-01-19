@@ -11,7 +11,7 @@ use crate::jwt_header::*;
 use crate::token::*;
 
 #[doc(hidden)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HMACKey(Vec<u8>);
 
 impl Drop for HMACKey {
@@ -94,7 +94,7 @@ pub trait MACLike {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HS256Key {
     key: HMACKey,
     key_id: Option<String>,

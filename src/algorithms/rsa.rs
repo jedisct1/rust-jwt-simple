@@ -11,7 +11,7 @@ use crate::jwt_header::*;
 use crate::token::*;
 
 #[doc(hidden)]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct RSAPublicKey(rsa::RSAPublicKey);
 
 impl AsRef<rsa::RSAPublicKey> for RSAPublicKey {
@@ -49,7 +49,7 @@ impl RSAPublicKey {
 }
 
 #[doc(hidden)]
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct RSAKeyPair(rsa::RSAPrivateKey);
 
 impl AsRef<rsa::RSAPrivateKey> for RSAKeyPair {
@@ -157,6 +157,7 @@ pub trait RSAPublicKeyLike {
     }
 }
 
+#[derive(Clone)]
 pub struct RS256KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
