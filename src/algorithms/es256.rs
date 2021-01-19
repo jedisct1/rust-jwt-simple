@@ -10,7 +10,7 @@ use crate::jwt_header::*;
 use crate::token::*;
 
 #[doc(hidden)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct P256PublicKey(ecdsa::VerifyingKey);
 
 impl AsRef<ecdsa::VerifyingKey> for P256PublicKey {
@@ -135,7 +135,7 @@ pub struct ES256KeyPair {
     key_id: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ES256PublicKey {
     pk: P256PublicKey,
     key_id: Option<String>,

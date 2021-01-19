@@ -128,7 +128,7 @@ pub struct Ed25519KeyPair {
     key_id: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Ed25519PublicKey {
     pk: Edwards25519PublicKey,
     key_id: Option<String>,

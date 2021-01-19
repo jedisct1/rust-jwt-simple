@@ -11,7 +11,7 @@ use crate::jwt_header::*;
 use crate::token::*;
 
 #[doc(hidden)]
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct RSAPublicKey(rsa::RSAPublicKey);
 
 impl AsRef<rsa::RSAPublicKey> for RSAPublicKey {
@@ -49,7 +49,7 @@ impl RSAPublicKey {
 }
 
 #[doc(hidden)]
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct RSAKeyPair(rsa::RSAPrivateKey);
 
 impl AsRef<rsa::RSAPrivateKey> for RSAKeyPair {
@@ -157,13 +157,13 @@ pub trait RSAPublicKeyLike {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct RS256KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RS256PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
@@ -291,13 +291,13 @@ impl RS256PublicKey {
 
 //
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RS512KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RS512PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
@@ -425,13 +425,13 @@ impl RS512PublicKey {
 
 //
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RS384KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RS384PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
@@ -559,12 +559,13 @@ impl RS384PublicKey {
 
 //
 
+#[derive(Debug, Clone)]
 pub struct PS256KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PS256PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
@@ -692,12 +693,13 @@ impl PS256PublicKey {
 
 //
 
+#[derive(Debug, Clone)]
 pub struct PS512KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PS512PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
@@ -825,12 +827,13 @@ impl PS512PublicKey {
 
 //
 
+#[derive(Debug, Clone)]
 pub struct PS384KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PS384PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,

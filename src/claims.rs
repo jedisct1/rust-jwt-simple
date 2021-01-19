@@ -17,7 +17,7 @@ pub struct NoCustomClaims {}
 
 /// Depending on applications, the `audiences` property may be either a set or a string.
 /// We support both.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Audiences {
     AsSet(HashSet<String>),
     AsString(String),
@@ -90,7 +90,7 @@ impl<T: ToString> From<T> for Audiences {
 ///
 /// The `CustomClaims` parameter can be set to `NoCustomClaims` if only standard claims are used,
 /// or to a user-defined type that must be `serde`-serializable if custom claims are required.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JWTClaims<CustomClaims> {
     /// Time the claims were created at
     #[serde(

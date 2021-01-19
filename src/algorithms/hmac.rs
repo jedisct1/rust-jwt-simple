@@ -147,7 +147,7 @@ impl HS256Key {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HS512Key {
     key: HMACKey,
     key_id: Option<String>,
@@ -200,7 +200,7 @@ impl HS512Key {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HS384Key {
     key: HMACKey,
     key_id: Option<String>,

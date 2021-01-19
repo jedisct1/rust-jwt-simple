@@ -12,6 +12,7 @@ pub const MAX_HEADER_LENGTH: usize = 8192;
 pub struct Token;
 
 /// JWT token information useful before signature/tag verification
+#[derive(Debug, Clone)]
 pub struct TokenMetadata {
     jwt_header: JWTHeader,
 }
