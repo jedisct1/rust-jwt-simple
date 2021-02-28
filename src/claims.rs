@@ -185,9 +185,12 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
                 JWTError::TokenHasExpired
             );
         }
-        if let Some(required_issuer) = &options.required_issuer {
+        if let Some(required_issuers) = &options.required_issuers {
             if let Some(issuer) = &self.issuer {
-                ensure!(issuer == required_issuer, JWTError::RequiredIssuerMismatch);
+                ensure!(
+                    required_issuers.contains(issuer),
+                    JWTError::RequiredIssuerMismatch
+                );
             } else {
                 bail!(JWTError::RequiredIssuerMissing);
             }
@@ -209,15 +212,15 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
                 bail!(JWTError::RequiredNonceMissing);
             }
         }
-        if let Some(required_audience) = &options.required_audience {
+        if let Some(required_audiences) = &options.required_audiences {
             if let Some(audiences) = &self.audiences {
                 match audiences {
                     Audiences::AsString(audience) => ensure!(
-                        audience == required_audience,
+                        required_audiences.contains(audience),
                         JWTError::RequiredAudienceMismatch
                     ),
                     Audiences::AsSet(audiences) => ensure!(
-                        audiences.contains(required_audience),
+                        audiences.intersection(required_audiences).next().is_some(),
                         JWTError::RequiredAudienceMismatch
                     ),
                 };
