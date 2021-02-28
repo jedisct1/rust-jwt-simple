@@ -108,7 +108,7 @@
 //! // reject tokens if they were issued more than 1 hour ago
 //! options.max_validity = Some(Duration::from_hours(1));
 //! // reject tokens if they don't come from a specific issuer
-//! options.required_issuers = Some(["example app".to_string()].iter().cloned().collect());
+//! options.allowed_issuers = Some(["example app".to_string()].iter().cloned().collect());
 //! // see the documentation for the full list of available options
 //!
 //! let claims = key.verify_token::<NoCustomClaims>(&token, Some(options))?;
@@ -337,7 +337,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
         let claims = Claims::create(Duration::from_secs(86400)).with_issuer("test issuer");
         let token = key.authenticate(claims).unwrap();
         let options = VerificationOptions {
-            required_issuers: Some(["test issuer".to_string()].iter().cloned().collect()),
+            allowed_issuers: Some(["test issuer".to_string()].iter().cloned().collect()),
             ..Default::default()
         };
         let _claims = key
