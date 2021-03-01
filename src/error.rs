@@ -52,6 +52,8 @@ pub enum JWTError {
     InvalidKeyPair,
     #[error("At most one audience can be represented as a string instead of a set")]
     TooManyAudiences,
+    #[error("Too many issuers to be represented as a string")]
+    TooManyIssuers,
 }
 
 impl From<&str> for JWTError {

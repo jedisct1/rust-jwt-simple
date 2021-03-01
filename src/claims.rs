@@ -34,6 +34,19 @@ impl Audiences {
         matches!(self, Audiences::AsString(_))
     }
 
+    /// Return `true` if the audiences include any of the `allowed_audiences` entries
+    pub fn contains(&self, allowed_audiences: &[impl ToString]) -> bool {
+        match self {
+            Audiences::AsString(audience) => {
+                allowed_audiences.iter().any(|x| &x.to_string() == audience)
+            }
+            Audiences::AsSet(audiences) => {
+                let allowed_audiences = allowed_audiences.iter().map(|x| x.to_string()).collect();
+                audiences.intersection(&allowed_audiences).next().is_some()
+            }
+        }
+    }
+
     /// Get the audiences as a set
     pub fn into_set(self) -> HashSet<String> {
         match self {
@@ -214,16 +227,10 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         }
         if let Some(allowed_audiences) = &options.allowed_audiences {
             if let Some(audiences) = &self.audiences {
-                match audiences {
-                    Audiences::AsString(audience) => ensure!(
-                        allowed_audiences.contains(audience),
-                        JWTError::RequiredAudienceMismatch
-                    ),
-                    Audiences::AsSet(audiences) => ensure!(
-                        audiences.intersection(allowed_audiences).next().is_some(),
-                        JWTError::RequiredAudienceMismatch
-                    ),
-                };
+                ensure!(
+                    audiences.contains(allowed_audiences),
+                    JWTError::RequiredAudienceMismatch
+                );
             } else {
                 bail!(JWTError::RequiredAudienceMissing);
             }
@@ -249,7 +256,7 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         self
     }
 
-    /// Register one or more audiences (optional recipient identifiers), as an set
+    /// Register one or more audiences (optional recipient identifiers), as a set
     pub fn with_audiences(mut self, audiences: HashSet<impl ToString>) -> Self {
         self.audiences = Some(Audiences::AsSet(
             audiences.iter().map(|x| x.to_string()).collect(),
