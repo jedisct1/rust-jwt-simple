@@ -173,8 +173,8 @@ fn should_verify_token() {
 
     let options = VerificationOptions {
         required_nonce: Some(nonce),
-        required_issuer: Some(issuer.to_string()),
-        required_audience: Some(audience.to_string()),
+        allowed_issuers: Some([issuer.to_string()].iter().cloned().collect()),
+        allowed_audiences: Some([audience.to_string()].iter().cloned().collect()),
         ..Default::default()
     };
     key.verify_token::<NoCustomClaims>(&token, Some(options))
@@ -196,7 +196,7 @@ fn multiple_audiences() {
     let token = key.authenticate(claims).unwrap();
 
     let options = VerificationOptions {
-        required_audience: Some("audience 1".to_string()),
+        allowed_audiences: Some(["audience 1".to_string()].iter().cloned().collect()),
         ..Default::default()
     };
     key.verify_token::<NoCustomClaims>(&token, Some(options))

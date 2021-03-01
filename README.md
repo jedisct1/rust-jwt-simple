@@ -92,7 +92,7 @@ options.time_tolerance = Some(Duration::from_mins(15));
 // reject tokens if they were issued more than 1 hour ago
 options.max_validity = Some(Duration::from_hours(1));
 // reject tokens if they don't come from a specific issuer
-options.required_issuer = Some("example app".to_string());
+options.allowed_issuers = Some(["example app".to_string()].iter().cloned().collect());
 // see the documentation for the full list of available options
 
 let claims = key.verify_token::<NoCustomClaims>(&token, Some(options))?;
