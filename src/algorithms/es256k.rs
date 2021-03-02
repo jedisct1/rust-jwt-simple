@@ -1,5 +1,6 @@
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use k256::ecdsa::{self, signature::DigestVerifier as _, signature::RandomizedDigestSigner as _};
+use k256::elliptic_curve::{JwkEcKey, PublicKey, SecretKey};
 use p256::pkcs8::{FromPrivateKey as _, FromPublicKey as _};
 use serde::{de::DeserializeOwned, Serialize};
 use std::convert::TryFrom;
@@ -39,6 +40,30 @@ impl K256PublicKey {
         Ok(K256PublicKey(k256_pk))
     }
 
+    // TODO: waiting for crate update after [merged PR](https://github.com/RustCrypto/elliptic-curves/pull/315)
+    //
+    // pub fn from_jwk_str(jwk: &str) -> Result<Self, Error> {
+    //     let pk = PublicKey::from_jwk_str(jwk).map_err(|_| JWTError::InvalidPublicKey)?;
+    //     let pk = ecdsa::VerifyingKey::from(pk);
+    //     Ok(K256PublicKey(pk))
+    // }
+
+    // pub fn from_jwk(jwk: &JwkEcKey) -> Result<Self, Error> {
+    //     let pk = PublicKey::from_jwk(jwk).map_err(|_| JWTError::InvalidPublicKey)?;
+    //     let pk = ecdsa::VerifyingKey::from(pk);
+    //     Ok(K256PublicKey(pk))
+    // }
+
+    // pub fn to_jwk(&self) -> JwkEcKey {
+    //     let pk = PublicKey::from(&self.0);
+    //     pk.to_jwk()
+    // }
+
+    // pub fn to_jwk_str(&self) -> String {
+    //     let pk = PublicKey::from(&self.0);
+    //     pk.to_jwk_string()
+    // }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.to_bytes().to_vec()
     }
@@ -72,6 +97,26 @@ impl K256KeyPair {
         Ok(K256KeyPair(k256_key_pair))
     }
 
+    pub fn from_jwk_str(jwk: &str) -> Result<Self, Error> {
+        let sk = SecretKey::from_jwk_str(jwk).map_err(|_| JWTError::InvalidPublicKey)?;
+        let sk = ecdsa::SigningKey::from(sk);
+        Ok(K256KeyPair(sk))
+    }
+
+    pub fn from_jwk(jwk: &JwkEcKey) -> Result<Self, Error> {
+        let sk = SecretKey::from_jwk(jwk).map_err(|_| JWTError::InvalidPublicKey)?;
+        let sk = ecdsa::SigningKey::from(sk);
+        Ok(K256KeyPair(sk))
+    }
+
+    pub fn to_jwk_string(&self) -> String {
+        SecretKey::from(&self.0).to_jwk_string()
+    }
+
+    pub fn to_jwk(&self) -> JwkEcKey {
+        SecretKey::from(&self.0).to_jwk()
+    }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.to_bytes().to_vec()
     }
@@ -82,8 +127,7 @@ impl K256KeyPair {
     }
 
     pub fn generate() -> Self {
-        let rng = rand::thread_rng();
-        let k256_sk = ecdsa::SigningKey::random(rng);
+        let k256_sk = ecdsa::SigningKey::random(&mut rand_core::OsRng);
         K256KeyPair(k256_sk)
     }
 }
@@ -111,9 +155,10 @@ pub trait ECDSAP256kKeyPairLike {
         Token::build(&jwt_header, claims, |authenticated| {
             let mut digest = hmac_sha256::Hash::new();
             digest.update(authenticated.as_bytes());
-            let rng = rand::thread_rng();
-            let signature: ecdsa::Signature =
-                self.key_pair().as_ref().sign_digest_with_rng(rng, digest);
+            let signature: ecdsa::Signature = self
+                .key_pair()
+                .as_ref()
+                .sign_digest_with_rng(&mut rand_core::OsRng, digest);
             Ok(signature.as_ref().to_vec())
         })
     }

@@ -1,6 +1,5 @@
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use hmac_sha512::sha384 as hmac_sha384;
-use rand::RngCore;
 use serde::{de::DeserializeOwned, Serialize};
 use zeroize::Zeroize;
 
@@ -9,6 +8,8 @@ use crate::common::*;
 use crate::error::*;
 use crate::jwt_header::*;
 use crate::token::*;
+
+use rand_core::{OsRng, RngCore};
 
 #[doc(hidden)]
 #[derive(Debug, Clone)]
@@ -31,7 +32,7 @@ impl HMACKey {
 
     pub fn generate() -> Self {
         let mut raw_key = vec![0u8; 32];
-        rand::thread_rng().fill_bytes(&mut raw_key);
+        OsRng.fill_bytes(&mut raw_key);
         HMACKey(raw_key)
     }
 }

@@ -1,5 +1,6 @@
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use p256::ecdsa::{self, signature::DigestVerifier as _, signature::RandomizedDigestSigner as _};
+use p256::elliptic_curve::{JwkEcKey, PublicKey, SecretKey};
 use serde::{de::DeserializeOwned, Serialize};
 use std::convert::TryFrom;
 
@@ -26,6 +27,28 @@ impl P256PublicKey {
         Ok(P256PublicKey(p256_pk))
     }
 
+    pub fn from_jwk_str(jwk: &str) -> Result<Self, Error> {
+        let pk = PublicKey::from_jwk_str(jwk).map_err(|_| JWTError::InvalidPublicKey)?;
+        let pk = ecdsa::VerifyingKey::from(pk);
+        Ok(P256PublicKey(pk))
+    }
+
+    pub fn from_jwk(jwk: &JwkEcKey) -> Result<Self, Error> {
+        let pk = PublicKey::from_jwk(jwk).map_err(|_| JWTError::InvalidPublicKey)?;
+        let pk = ecdsa::VerifyingKey::from(pk);
+        Ok(P256PublicKey(pk))
+    }
+
+    pub fn to_jwk(&self) -> JwkEcKey {
+        let pk = PublicKey::<p256::NistP256>::from(&self.0);
+        pk.to_jwk()
+    }
+
+    pub fn to_jwk_str(&self) -> String {
+        let pk = PublicKey::<p256::NistP256>::from(&self.0);
+        pk.to_jwk_string()
+    }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.to_encoded_point(true).as_bytes().to_vec()
     }
@@ -47,6 +70,30 @@ impl P256KeyPair {
         Ok(P256KeyPair(p256_key_pair))
     }
 
+    pub fn from_jwk_str(jwk: &str) -> Result<Self, Error> {
+        let sk = SecretKey::from_jwk_str(jwk).map_err(|_| JWTError::InvalidKeyPair)?;
+        let sk = ecdsa::SigningKey::from(sk);
+        Ok(P256KeyPair(sk))
+    }
+
+    pub fn from_jwk(jwk: &JwkEcKey) -> Result<Self, Error> {
+        let sk = SecretKey::from_jwk(jwk).map_err(|_| JWTError::InvalidKeyPair)?;
+        let sk = ecdsa::SigningKey::from(sk);
+        Ok(P256KeyPair(sk))
+    }
+
+    pub fn to_jwk(&self) -> Result<JwkEcKey, Error> {
+        let pk = SecretKey::<p256::NistP256>::from_bytes(self.0.to_bytes())
+            .map_err(|_| JWTError::InvalidKeyPair)?;
+        Ok(pk.to_jwk())
+    }
+
+    pub fn to_jwk_str(&self) -> Result<String, Error> {
+        let pk = SecretKey::<p256::NistP256>::from_bytes(self.0.to_bytes())
+            .map_err(|_| JWTError::InvalidKeyPair)?;
+        Ok(pk.to_jwk_string())
+    }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.to_bytes().to_vec()
     }
@@ -57,8 +104,7 @@ impl P256KeyPair {
     }
 
     pub fn generate() -> Self {
-        let rng = rand::thread_rng();
-        let p256_sk = ecdsa::SigningKey::random(rng);
+        let p256_sk = ecdsa::SigningKey::random(&mut rand_core::OsRng);
         P256KeyPair(p256_sk)
     }
 }
@@ -81,9 +127,10 @@ pub trait ECDSAP256KeyPairLike {
         Token::build(&jwt_header, claims, |authenticated| {
             let mut digest = hmac_sha256::Hash::new();
             digest.update(authenticated.as_bytes());
-            let rng = rand::thread_rng();
-            let signature: ecdsa::Signature =
-                self.key_pair().as_ref().sign_digest_with_rng(rng, digest);
+            let signature: ecdsa::Signature = self
+                .key_pair()
+                .as_ref()
+                .sign_digest_with_rng(&mut rand_core::OsRng, digest);
             Ok(signature.as_ref().to_vec())
         })
     }
