@@ -35,14 +35,11 @@ impl Audiences {
     }
 
     /// Return `true` if the audiences include any of the `allowed_audiences` entries
-    pub fn contains(&self, allowed_audiences: &[impl ToString]) -> bool {
+    pub fn contains(&self, allowed_audiences: &HashSet<String>) -> bool {
         match self {
-            Audiences::AsString(audience) => {
-                allowed_audiences.iter().any(|x| &x.to_string() == audience)
-            }
+            Audiences::AsString(audience) => allowed_audiences.contains(audience),
             Audiences::AsSet(audiences) => {
-                let allowed_audiences = allowed_audiences.iter().map(|x| x.to_string()).collect();
-                audiences.intersection(&allowed_audiences).next().is_some()
+                audiences.intersection(allowed_audiences).next().is_some()
             }
         }
     }

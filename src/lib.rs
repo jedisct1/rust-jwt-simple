@@ -66,7 +66,7 @@
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
-//! # fn main() -> Result<(), Error> {
+//! # fn main() -> Result<(), jwt_simple::Error> {
 //! # let key = HS256Key::generate();
 //! /// create claims valid for 2 hours
 //! let claims = Claims::create(Duration::from_hours(2));
@@ -80,7 +80,7 @@
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
-//! # fn main() -> Result<(), Error> {
+//! # fn main() -> Result<(), jwt_simple::Error> {
 //! # let key = HS256Key::generate();
 //! # let token = key.authenticate(Claims::create(Duration::from_secs(10)))?;
 //! let claims = key.verify_token::<NoCustomClaims>(&token, None)?;
@@ -97,7 +97,7 @@
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
-//! # fn main() -> Result<(), Error> {
+//! # fn main() -> Result<(), jwt_simple::Error> {
 //! # let key = HS256Key::generate();
 //! # let token = key.authenticate(Claims::create(Duration::from_secs(10)).with_issuer("example app"))?;
 //! let mut options = VerificationOptions::default();
@@ -108,7 +108,7 @@
 //! // reject tokens if they were issued more than 1 hour ago
 //! options.max_validity = Some(Duration::from_hours(1));
 //! // reject tokens if they don't include an issuer from that list
-//! options.allowed_issuers = Some(vec!["example app".to_string()]);
+//! options.allowed_issuers = Some(HashSet::from_strings(&["example app"]));
 //! // see the documentation for the full list of available options
 //!
 //! let claims = key.verify_token::<NoCustomClaims>(&token, Some(options))?;
@@ -146,7 +146,7 @@
 //!
 //! ```no_run
 //! # use jwt_simple::prelude::*;
-//! # fn main() -> Result<(), Error> {
+//! # fn main() -> Result<(), jwt_simple::Error> {
 //! # let private_pem_file_content = "";
 //! # let public_pem_file_content = "";
 //! let key_pair = RS384KeyPair::from_pem(private_pem_file_content)?;
@@ -160,7 +160,7 @@
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
-//! # fn main() -> Result<(), Error> {
+//! # fn main() -> Result<(), jwt_simple::Error> {
 //! # let key_pair = Ed25519KeyPair::generate();
 //! /// create claims valid for 2 hours
 //! let claims = Claims::create(Duration::from_hours(2));
@@ -172,7 +172,7 @@
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
-//! # fn main() -> Result<(), Error> {
+//! # fn main() -> Result<(), jwt_simple::Error> {
 //! # let key_pair = Ed25519KeyPair::generate();
 //! # let public_key = key_pair.public_key();
 //! # let token = key_pair.sign(Claims::create(Duration::from_secs(10)))?;
@@ -198,7 +198,7 @@
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
-//! # fn main() -> Result<(), Error> {
+//! # fn main() -> Result<(), jwt_simple::Error> {
 //! #[derive(Serialize, Deserialize)]
 //! struct MyAdditionalData {
 //!    user_is_admin: bool,
@@ -230,7 +230,7 @@
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
-//! # fn main() -> Result<(), Error> {
+//! # fn main() -> Result<(), jwt_simple::Error> {
 //! # let token = Ed25519KeyPair::generate().sign(Claims::create(Duration::from_hours(2)))?;
 //! let metadata = Token::decode_metadata(&token)?;
 //! let key_id = metadata.key_id();
@@ -267,22 +267,47 @@
 pub mod algorithms;
 pub mod claims;
 pub mod common;
-pub mod error;
 pub mod token;
 
 mod jwt_header;
 mod serde_additions;
 
-pub use coarsetime;
+pub mod reexports {
+    pub use anyhow;
+    pub use coarsetime;
+    pub use rand;
+    pub use serde;
+    pub use serde_json;
+    pub use thiserror;
+    pub use zeroize;
+}
+
+mod error;
+pub use error::{Error, JWTError};
 
 pub mod prelude {
     pub use crate::algorithms::*;
     pub use crate::claims::*;
     pub use crate::common::*;
-    pub use crate::error::Error;
     pub use crate::token::*;
     pub use coarsetime::{self, Clock, Duration, UnixTimeStamp};
     pub use serde::{Deserialize, Serialize};
+    pub use std::collections::HashSet;
+
+    mod hashset_from_strings {
+        use std::collections::HashSet;
+
+        pub trait HashSetFromStringsT {
+            /// Create a set from a list of strings
+            fn from_strings(strings: &[impl ToString]) -> HashSet<String> {
+                strings.iter().map(|x| x.to_string()).collect()
+            }
+        }
+
+        impl HashSetFromStringsT for HashSet<String> {}
+    }
+
+    pub use hashset_from_strings::HashSetFromStringsT as _;
 }
 
 #[cfg(test)]
@@ -337,7 +362,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
         let claims = Claims::create(Duration::from_secs(86400)).with_issuer("test issuer");
         let token = key.authenticate(claims).unwrap();
         let options = VerificationOptions {
-            allowed_issuers: Some(vec!["test issuer".to_string()]),
+            allowed_issuers: Some(HashSet::from_strings(&["test issuer"])),
             ..Default::default()
         };
         let _claims = key

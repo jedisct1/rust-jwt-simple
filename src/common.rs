@@ -1,4 +1,5 @@
 use coarsetime::{Duration, UnixTimeStamp};
+use std::collections::HashSet;
 
 /// Additional features to enable during verification
 #[derive(Clone, Debug, Default)]
@@ -25,10 +26,10 @@ pub struct VerificationOptions {
     pub required_nonce: Option<String>,
 
     /// Require the issuer to be present in the set
-    pub allowed_issuers: Option<Vec<String>>,
+    pub allowed_issuers: Option<HashSet<String>>,
 
     /// Require the audience to be present in the set
-    pub allowed_audiences: Option<Vec<String>>,
+    pub allowed_audiences: Option<HashSet<String>>,
 
     /// Time tolerance for validating expiration dates
     pub time_tolerance: Option<Duration>,
