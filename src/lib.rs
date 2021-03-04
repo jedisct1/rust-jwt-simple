@@ -277,7 +277,6 @@ mod serde_additions;
 pub mod reexports {
     pub use anyhow;
     pub use coarsetime;
-    pub use rand;
     pub use serde;
     pub use serde_json;
     pub use thiserror;
