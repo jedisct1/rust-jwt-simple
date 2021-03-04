@@ -115,6 +115,8 @@
 //! # Ok(()) }
 //! ```
 //!
+//! Note that `allowed_issuers` and `allowed_audiences` are not strings, but sets of strings (using the `HashSet` type from the Rust standard library), as the application can allow multiple return values.
+//!
 //! ## Signatures (asymmetric, `RS*`, `PS*`, `ES*` and `EdDSA` algorithms) example
 //!
 //! A signature requires a key pair: a secret key used to create tokens, and a public key, that can only verify them.
