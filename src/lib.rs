@@ -36,7 +36,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! jwt-simple = "0.2"
+//! jwt-simple = "0.9"
 //! ```
 //!
 //! Rust:
