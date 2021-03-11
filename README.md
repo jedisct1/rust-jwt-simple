@@ -2,6 +2,28 @@
 [![Docs.rs](https://docs.rs/jwt-simple/badge.svg)](https://docs.rs/jwt-simple/)
 [![crates.io](https://img.shields.io/crates/v/jwt-simple.svg)](https://crates.io/crates/jwt-simple)
 
+
+<!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
+
+<!-- code_chunk_output -->
+
+- [JWT-Simple](#jwt-simple)
+  - [Usage](#usage)
+  - [Authentication (symmetric, `HS*` JWT algorithms) example](#authentication-symmetric-hs-jwt-algorithms-example)
+    - [Keys and tokens creation](#keys-and-tokens-creation)
+    - [Token verification](#token-verification)
+  - [Signatures (asymmetric, `RS*`, `PS*`, `ES*` and `EdDSA` algorithms) example](#signatures-asymmetric-rs-ps-es-and-eddsa-algorithms-example)
+    - [Key pairs and tokens creation](#key-pairs-and-tokens-creation)
+  - [Advanced usage](#advanced-usage)
+    - [Custom claims](#custom-claims)
+    - [Peeking at metadata before verification](#peeking-at-metadata-before-verification)
+    - [Creating and attaching key identifiers](#creating-and-attaching-key-identifiers)
+    - [Mitigations against replay attacks](#mitigations-against-replay-attacks)
+  - [Why yet another JWT crate](#why-yet-another-jwt-crate)
+
+<!-- /code_chunk_output -->
+
+
 # JWT-Simple
 
 A new JWT (JSON Web Tokens) implementation for Rust that focuses on simplicity, while avoiding common JWT security pitfalls.
