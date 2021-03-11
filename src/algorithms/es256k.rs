@@ -88,7 +88,6 @@ impl K256KeyPair {
     }
 }
 
-#[doc(hidden)]
 pub trait ECDSAP256kKeyPairLike {
     #[doc(hidden)]
     fn jwt_alg_name() -> &'static str;
@@ -119,7 +118,6 @@ pub trait ECDSAP256kKeyPairLike {
     }
 }
 
-#[doc(hidden)]
 pub trait ECDSAP256kPublicKeyLike {
     fn jwt_alg_name() -> &'static str;
     fn public_key(&self) -> &K256PublicKey;

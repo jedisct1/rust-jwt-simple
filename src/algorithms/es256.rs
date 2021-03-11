@@ -63,7 +63,6 @@ impl P256KeyPair {
     }
 }
 
-#[doc(hidden)]
 pub trait ECDSAP256KeyPairLike {
     fn jwt_alg_name() -> &'static str;
     fn key_pair(&self) -> &P256KeyPair;
@@ -89,7 +88,6 @@ pub trait ECDSAP256KeyPairLike {
     }
 }
 
-#[doc(hidden)]
 pub trait ECDSAP256PublicKeyLike {
     fn jwt_alg_name() -> &'static str;
     fn public_key(&self) -> &P256PublicKey;

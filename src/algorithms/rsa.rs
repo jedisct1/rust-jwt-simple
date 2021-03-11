@@ -98,7 +98,6 @@ impl RSAKeyPair {
     }
 }
 
-#[doc(hidden)]
 pub trait RSAKeyPairLike {
     fn jwt_alg_name() -> &'static str;
     fn key_pair(&self) -> &RSAKeyPair;
@@ -127,7 +126,6 @@ pub trait RSAKeyPairLike {
     }
 }
 
-#[doc(hidden)]
 pub trait RSAPublicKeyLike {
     fn jwt_alg_name() -> &'static str;
     fn public_key(&self) -> &RSAPublicKey;
