@@ -32,19 +32,19 @@ impl RSAPublicKey {
         Ok(RSAPublicKey(rsa_pk))
     }
 
+    pub fn from_components(n: &[u8], e: &[u8]) -> Result<Self, Error> {
+        let n = BigUint::from_bytes_be(n);
+        let e = BigUint::from_bytes_be(e);
+        let rsa_pk = rsa::RSAPublicKey::new(n, e)?;
+        Ok(RSAPublicKey(rsa_pk))
+    }
+
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
         self.0.as_pkcs8().map_err(Into::into)
     }
 
     pub fn to_pem(&self) -> Result<String, Error> {
         self.0.as_pkcs8_pem().map_err(Into::into)
-    }
-
-    pub fn from_components(n: &[u8], e: &[u8]) -> Result<Self, Error> {
-        let n = BigUint::from_bytes_be(n);
-        let e = BigUint::from_bytes_be(e);
-        let rsa_pk = rsa::RSAPublicKey::new(n, e)?;
-        Ok(RSAPublicKey(rsa_pk))
     }
 }
 
@@ -275,6 +275,13 @@ impl RS256PublicKey {
         })
     }
 
+    pub fn from_components(n: &[u8], e: &[u8]) -> Result<Self, Error> {
+        Ok(RS256PublicKey {
+            pk: RSAPublicKey::from_components(n, e)?,
+            key_id: None,
+        })
+    }
+
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
         self.pk.to_der()
     }
@@ -405,6 +412,13 @@ impl RS512PublicKey {
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
         Ok(RS512PublicKey {
             pk: RSAPublicKey::from_pem(pem)?,
+            key_id: None,
+        })
+    }
+
+    pub fn from_components(n: &[u8], e: &[u8]) -> Result<Self, Error> {
+        Ok(RS512PublicKey {
+            pk: RSAPublicKey::from_components(n, e)?,
             key_id: None,
         })
     }
@@ -543,6 +557,13 @@ impl RS384PublicKey {
         })
     }
 
+    pub fn from_components(n: &[u8], e: &[u8]) -> Result<Self, Error> {
+        Ok(RS384PublicKey {
+            pk: RSAPublicKey::from_components(n, e)?,
+            key_id: None,
+        })
+    }
+
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
         self.pk.to_der()
     }
@@ -673,6 +694,13 @@ impl PS256PublicKey {
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
         Ok(PS256PublicKey {
             pk: RSAPublicKey::from_pem(pem)?,
+            key_id: None,
+        })
+    }
+
+    pub fn from_components(n: &[u8], e: &[u8]) -> Result<Self, Error> {
+        Ok(PS256PublicKey {
+            pk: RSAPublicKey::from_components(n, e)?,
             key_id: None,
         })
     }
@@ -811,6 +839,13 @@ impl PS512PublicKey {
         })
     }
 
+    pub fn from_components(n: &[u8], e: &[u8]) -> Result<Self, Error> {
+        Ok(PS512PublicKey {
+            pk: RSAPublicKey::from_components(n, e)?,
+            key_id: None,
+        })
+    }
+
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
         self.pk.to_der()
     }
@@ -941,6 +976,13 @@ impl PS384PublicKey {
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
         Ok(PS384PublicKey {
             pk: RSAPublicKey::from_pem(pem)?,
+            key_id: None,
+        })
+    }
+
+    pub fn from_components(n: &[u8], e: &[u8]) -> Result<Self, Error> {
+        Ok(PS384PublicKey {
+            pk: RSAPublicKey::from_components(n, e)?,
             key_id: None,
         })
     }
