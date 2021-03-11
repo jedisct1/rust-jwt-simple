@@ -1,7 +1,8 @@
 use coarsetime::{Duration, UnixTimeStamp};
 use std::collections::HashSet;
 
-/// Additional features to enable during verification
+/// Additional features to enable during verification.
+/// Signatures and token expiration are already automatically verified.
 #[derive(Clone, Debug, Default)]
 pub struct VerificationOptions {
     /// Reject tokens created before the given date
