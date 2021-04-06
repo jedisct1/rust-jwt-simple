@@ -1,7 +1,7 @@
 use hmac_sha512::sha384 as hmac_sha384;
 use rsa::{
-    BigUint, PrivateKeyEncoding, PrivateKeyPemEncoding, PublicKey as _, PublicKeyEncoding,
-    PublicKeyPemEncoding,
+    BigUint, PrivateKeyEncoding as _, PrivateKeyPemEncoding as _, PublicKey as _,
+    PublicKeyEncoding as _, PublicKeyPemEncoding as _,
 };
 use serde::{de::DeserializeOwned, Serialize};
 use std::convert::TryFrom;
