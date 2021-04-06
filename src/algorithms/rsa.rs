@@ -1,6 +1,8 @@
 use hmac_sha512::sha384 as hmac_sha384;
-use rsa::{BigUint, PublicKey as _};
-use rsa_export::{Encode as _, PemEncode as _};
+use rsa::{
+    BigUint, PrivateKeyEncoding, PrivateKeyPemEncoding, PublicKey as _, PublicKeyEncoding,
+    PublicKeyPemEncoding,
+};
 use serde::{de::DeserializeOwned, Serialize};
 use std::convert::TryFrom;
 
@@ -9,6 +11,8 @@ use crate::common::*;
 use crate::error::*;
 use crate::jwt_header::*;
 use crate::token::*;
+
+use rand_08 as rand;
 
 #[doc(hidden)]
 #[derive(Debug, Clone)]
@@ -40,11 +44,11 @@ impl RSAPublicKey {
     }
 
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
-        self.0.as_pkcs8().map_err(Into::into)
+        self.0.to_pkcs8().map_err(Into::into)
     }
 
     pub fn to_pem(&self) -> Result<String, Error> {
-        self.0.as_pkcs8_pem().map_err(Into::into)
+        self.0.to_pem_pkcs8().map_err(Into::into)
     }
 }
 
@@ -75,11 +79,11 @@ impl RSAKeyPair {
     }
 
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
-        self.0.as_pkcs8().map_err(Into::into)
+        self.0.to_pkcs8().map_err(Into::into)
     }
 
     pub fn to_pem(&self) -> Result<String, Error> {
-        self.0.as_pkcs8_pem().map_err(Into::into)
+        self.0.to_pem_pkcs8().map_err(Into::into)
     }
 
     pub fn public_key(&self) -> RSAPublicKey {
