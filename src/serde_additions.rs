@@ -26,6 +26,13 @@ pub mod unix_timestamp {
             Ok(UnixTimeStamp::from_secs(value))
         }
 
+        fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
+        where
+            E: DeError,
+        {
+            Ok(UnixTimeStamp::from_secs(value as _))
+        }
+
         fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
             formatter.write_str("Unix timestamp")
         }
