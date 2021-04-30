@@ -12,7 +12,6 @@ use crate::error::*;
 use crate::jwt_header::*;
 use crate::token::*;
 
-
 #[doc(hidden)]
 #[derive(Debug, Clone)]
 pub struct RSAPublicKey(rsa::RSAPublicKey);

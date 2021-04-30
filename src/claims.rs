@@ -356,6 +356,9 @@ mod tests {
     #[test]
     fn parse_floating_point_unix_time() {
         let claims: JWTClaims<()> = serde_json::from_str(r#"{"exp":1617757825.8}"#).unwrap();
-        assert_eq!(claims.expires_at, Some(UnixTimeStamp::from_secs(1617757825)));
+        assert_eq!(
+            claims.expires_at,
+            Some(UnixTimeStamp::from_secs(1617757825))
+        );
     }
 }
