@@ -173,8 +173,8 @@ fn should_verify_token() {
 
     let options = VerificationOptions {
         required_nonce: Some(nonce),
-        allowed_issuers: Some(vec![issuer.to_string()]),
-        allowed_audiences: Some(vec![audience.to_string()]),
+        allowed_issuers: Some(HashSet::from_strings(&[issuer])),
+        allowed_audiences: Some(HashSet::from_strings(&[audience])),
         ..Default::default()
     };
     key.verify_token::<NoCustomClaims>(&token, Some(options))
@@ -196,7 +196,7 @@ fn multiple_audiences() {
     let token = key.authenticate(claims).unwrap();
 
     let options = VerificationOptions {
-        allowed_audiences: Some(vec!["audience 1".to_string()]),
+        allowed_audiences: Some(HashSet::from_strings(&["audience 1"])),
         ..Default::default()
     };
     key.verify_token::<NoCustomClaims>(&token, Some(options))

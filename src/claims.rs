@@ -35,14 +35,11 @@ impl Audiences {
     }
 
     /// Return `true` if the audiences include any of the `allowed_audiences` entries
-    pub fn contains(&self, allowed_audiences: &[impl ToString]) -> bool {
+    pub fn contains(&self, allowed_audiences: &HashSet<String>) -> bool {
         match self {
-            Audiences::AsString(audience) => {
-                allowed_audiences.iter().any(|x| &x.to_string() == audience)
-            }
+            Audiences::AsString(audience) => allowed_audiences.contains(audience),
             Audiences::AsSet(audiences) => {
-                let allowed_audiences = allowed_audiences.iter().map(|x| x.to_string()).collect();
-                audiences.intersection(&allowed_audiences).next().is_some()
+                audiences.intersection(allowed_audiences).next().is_some()
             }
         }
     }
@@ -354,5 +351,11 @@ mod tests {
         assert_eq!(claims.jwt_id, Some("jwt_id".to_owned()));
         assert_eq!(claims.nonce, Some("nonce".to_owned()));
         assert_eq!(claims.subject, Some("subject".to_owned()));
+    }
+
+    #[test]
+    fn parse_floating_point_unix_time() {
+        let claims: JWTClaims<()> = serde_json::from_str(r#"{"exp":1617757825.8}"#).unwrap();
+        assert_eq!(claims.expires_at, Some(UnixTimeStamp::from_secs(1617757825)));
     }
 }

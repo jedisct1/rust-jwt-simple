@@ -43,7 +43,6 @@ impl AsRef<[u8]> for HMACKey {
     }
 }
 
-#[doc(hidden)]
 pub trait MACLike {
     fn jwt_alg_name() -> &'static str;
     fn key(&self) -> &HMACKey;
