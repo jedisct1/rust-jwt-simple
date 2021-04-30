@@ -40,29 +40,27 @@ impl K256PublicKey {
         Ok(K256PublicKey(k256_pk))
     }
 
-    // TODO: waiting for crate update after [merged PR](https://github.com/RustCrypto/elliptic-curves/pull/315)
-    //
-    // pub fn from_jwk_str(jwk: &str) -> Result<Self, Error> {
-    //     let pk = PublicKey::from_jwk_str(jwk).map_err(|_| JWTError::InvalidPublicKey)?;
-    //     let pk = ecdsa::VerifyingKey::from(pk);
-    //     Ok(K256PublicKey(pk))
-    // }
+    pub fn from_jwk_str(jwk: &str) -> Result<Self, Error> {
+        let pk = PublicKey::from_jwk_str(jwk).map_err(|_| JWTError::InvalidPublicKey)?;
+        let pk = ecdsa::VerifyingKey::from(pk);
+        Ok(K256PublicKey(pk))
+    }
 
-    // pub fn from_jwk(jwk: &JwkEcKey) -> Result<Self, Error> {
-    //     let pk = PublicKey::from_jwk(jwk).map_err(|_| JWTError::InvalidPublicKey)?;
-    //     let pk = ecdsa::VerifyingKey::from(pk);
-    //     Ok(K256PublicKey(pk))
-    // }
+    pub fn from_jwk(jwk: &JwkEcKey) -> Result<Self, Error> {
+        let pk = PublicKey::from_jwk(jwk).map_err(|_| JWTError::InvalidPublicKey)?;
+        let pk = ecdsa::VerifyingKey::from(pk);
+        Ok(K256PublicKey(pk))
+    }
 
-    // pub fn to_jwk(&self) -> JwkEcKey {
-    //     let pk = PublicKey::from(&self.0);
-    //     pk.to_jwk()
-    // }
+    pub fn to_jwk(&self) -> JwkEcKey {
+        let pk = PublicKey::from(&self.0);
+        pk.to_jwk()
+    }
 
-    // pub fn to_jwk_str(&self) -> String {
-    //     let pk = PublicKey::from(&self.0);
-    //     pk.to_jwk_string()
-    // }
+    pub fn to_jwk_str(&self) -> String {
+        let pk = PublicKey::from(&self.0);
+        pk.to_jwk_string()
+    }
 
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.to_bytes().to_vec()
@@ -127,7 +125,7 @@ impl K256KeyPair {
     }
 
     pub fn generate() -> Self {
-        let k256_sk = ecdsa::SigningKey::random(&mut rand_core::OsRng);
+        let k256_sk = ecdsa::SigningKey::random(&mut rand::thread_rng());
         K256KeyPair(k256_sk)
     }
 }
@@ -157,7 +155,7 @@ pub trait ECDSAP256kKeyPairLike {
             let signature: ecdsa::Signature = self
                 .key_pair()
                 .as_ref()
-                .sign_digest_with_rng(&mut rand_core::OsRng, digest);
+                .sign_digest_with_rng(&mut rand::thread_rng(), digest);
             Ok(signature.as_ref().to_vec())
         })
     }

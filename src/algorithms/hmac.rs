@@ -9,7 +9,7 @@ use crate::error::*;
 use crate::jwt_header::*;
 use crate::token::*;
 
-use rand_core::{OsRng, RngCore};
+use rand::RngCore;
 
 #[doc(hidden)]
 #[derive(Debug, Clone)]
@@ -32,7 +32,7 @@ impl HMACKey {
 
     pub fn generate() -> Self {
         let mut raw_key = vec![0u8; 32];
-        OsRng.fill_bytes(&mut raw_key);
+        rand::thread_rng().fill_bytes(&mut raw_key);
         HMACKey(raw_key)
     }
 }

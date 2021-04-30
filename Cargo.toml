@@ -1,7 +1,7 @@
 [package]
 name = "jwt-simple"
-version = "0.2.8"
-description = "Easy to use, secure, unopinonated JWT (JSON Web Tokens) implementation for Rust."
+version = "0.9.4"
+description = "Easy to use, secure, non opinionated JWT (JSON Web Tokens) implementation for Rust."
 authors = ["Frank Denis <github@pureftpd.org>"]
 edition = "2018"
 license = "ISC"
@@ -16,19 +16,16 @@ anyhow = "1.0"
 coarsetime = "0.1"
 ct-codecs = "1"
 ed25519-compact = "0.1"
-hmac-sha256 = { version = "0.1", features = ["traits"] }
-hmac-sha512 = { version = "0.1", features = ["traits", "sha384"] }
-k256 = { version = "0.8.0-pre", features = ["ecdsa", "std", "pkcs8", "pem", "jwk"] }
-p256 = { version = "0.8.0-pre", features = ["ecdsa", "std", "pkcs8", "pem", "jwk"] }
-rand_core = { version = "0.6", features = ["getrandom"] }
-# TODO: rand can be removed once [RSA](https://github.com/RustCrypto/RSA/issues/81#issuecomment-781764525) get update
-rand = { version = "0.7" } 
-rsa = "0.3"
-rsa-export = "0.3"
-serde = { version = "1.0", features = ["derive"] }
+hmac-sha256 = { version = "0.1", features = ["traits"]  }
+hmac-sha512 = { version = "0.1", features = ["traits", "sha384"]  }
+k256 = { version = "0.8", features = ["ecdsa", "std", "pkcs8", "pem", "jwk"]  }
+p256 = { version = "0.8", features = ["ecdsa", "std", "pkcs8", "pem", "jwk"]  }
+rand = "0.8"
+rsa = "0.4"
+serde = { version = "1.0", features = ["derive"]  }
 serde_json = "1.0"
 thiserror = "1.0"
-zeroize = "1.2"
+zeroize = "1.3"
 
 [profile.release]
 codegen-units = 1
