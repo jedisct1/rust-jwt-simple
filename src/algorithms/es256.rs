@@ -52,7 +52,7 @@ impl P256KeyPair {
     }
 
     pub fn public_key(&self) -> P256PublicKey {
-        let p256_pk = self.0.verify_key();
+        let p256_pk = self.0.verifying_key();
         P256PublicKey(p256_pk)
     }
 
