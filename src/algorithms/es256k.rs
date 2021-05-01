@@ -153,10 +153,9 @@ pub trait ECDSAP256kKeyPairLike {
         Token::build(&jwt_header, claims, |authenticated| {
             let mut digest = hmac_sha256::Hash::new();
             digest.update(authenticated.as_bytes());
-            let signature: ecdsa::Signature = self
-                .key_pair()
-                .as_ref()
-                .sign_digest_with_rng(&mut rand::thread_rng(), digest);
+            let rng = rand::thread_rng();
+            let signature: ecdsa::Signature =
+                self.key_pair().as_ref().sign_digest_with_rng(rng, digest);
             Ok(signature.as_ref().to_vec())
         })
     }
