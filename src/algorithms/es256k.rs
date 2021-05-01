@@ -28,6 +28,10 @@ impl K256PublicKey {
         Ok(K256PublicKey(k256_pk))
     }
 
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.to_bytes().to_vec()
+    }
+
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         let k256_pk = ecdsa::VerifyingKey::from_public_key_der(der)
             .map_err(|_| JWTError::InvalidPublicKey)?;
@@ -40,30 +44,26 @@ impl K256PublicKey {
         Ok(K256PublicKey(k256_pk))
     }
 
-    pub fn from_jwk_str(jwk: &str) -> Result<Self, Error> {
+    pub fn from_jwk(jwk: &str) -> Result<Self, Error> {
         let pk = PublicKey::from_jwk_str(jwk).map_err(|_| JWTError::InvalidPublicKey)?;
         let pk = ecdsa::VerifyingKey::from(pk);
         Ok(K256PublicKey(pk))
     }
 
-    pub fn from_jwk(jwk: &JwkEcKey) -> Result<Self, Error> {
+    pub fn to_jwk(&self) -> String {
+        let pk = PublicKey::from(&self.0);
+        pk.to_jwk_string()
+    }
+
+    pub fn from_jwk_ec_key(jwk: &JwkEcKey) -> Result<Self, Error> {
         let pk = PublicKey::from_jwk(jwk).map_err(|_| JWTError::InvalidPublicKey)?;
         let pk = ecdsa::VerifyingKey::from(pk);
         Ok(K256PublicKey(pk))
     }
 
-    pub fn to_jwk(&self) -> JwkEcKey {
+    pub fn to_jwk_ec_key(&self) -> JwkEcKey {
         let pk = PublicKey::from(&self.0);
         pk.to_jwk()
-    }
-
-    pub fn to_jwk_str(&self) -> String {
-        let pk = PublicKey::from(&self.0);
-        pk.to_jwk_string()
-    }
-
-    pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_bytes().to_vec()
     }
 }
 
