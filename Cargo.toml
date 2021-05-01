@@ -1,6 +1,6 @@
 [package]
 name = "jwt-simple"
-version = "0.9.4"
+version = "0.10.0"
 description = "Easy to use, secure, non opinionated JWT (JSON Web Tokens) implementation for Rust."
 authors = ["Frank Denis <github@pureftpd.org>"]
 edition = "2018"
@@ -16,10 +16,10 @@ anyhow = "1.0"
 coarsetime = "0.1"
 ct-codecs = "1"
 ed25519-compact = "0.1"
-hmac-sha256 = { version = "0.1", features = ["traits"]  }
-hmac-sha512 = { version = "0.1", features = ["traits", "sha384"]  }
-k256 = { version = "0.8", features = ["ecdsa", "std", "pkcs8", "pem", "jwk"]  }
-p256 = { version = "0.8", features = ["ecdsa", "std", "pkcs8", "pem", "jwk"]  }
+hmac-sha256 = { version = "0.1", features = ["traits"] }
+hmac-sha512 = { version = "0.1", features = ["traits", "sha384"] }
+k256 = { version = "0.8.0", features = ["ecdsa", "std", "pkcs8", "pem", "jwk"] }
+p256 = { version = "0.8.0", features = ["ecdsa", "std", "pkcs8", "pem", "jwk"] }
 rand = "0.8"
 rsa = "0.4"
 serde = { version = "1.0", features = ["derive"] }
