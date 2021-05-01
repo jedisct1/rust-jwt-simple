@@ -70,32 +70,32 @@ impl P256KeyPair {
         Ok(P256KeyPair(p256_key_pair))
     }
 
-    pub fn from_jwk_str(jwk: &str) -> Result<Self, Error> {
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.to_bytes().to_vec()
+    }
+
+    pub fn from_jwk(jwk: &str) -> Result<Self, Error> {
         let sk = SecretKey::from_jwk_str(jwk).map_err(|_| JWTError::InvalidKeyPair)?;
         let sk = ecdsa::SigningKey::from(sk);
         Ok(P256KeyPair(sk))
     }
 
-    pub fn from_jwk(jwk: &JwkEcKey) -> Result<Self, Error> {
-        let sk = SecretKey::from_jwk(jwk).map_err(|_| JWTError::InvalidKeyPair)?;
-        let sk = ecdsa::SigningKey::from(sk);
-        Ok(P256KeyPair(sk))
-    }
-
-    pub fn to_jwk(&self) -> Result<JwkEcKey, Error> {
-        let pk = SecretKey::<p256::NistP256>::from_bytes(self.0.to_bytes())
-            .map_err(|_| JWTError::InvalidKeyPair)?;
-        Ok(pk.to_jwk())
-    }
-
-    pub fn to_jwk_str(&self) -> Result<String, Error> {
+    pub fn to_jwk(&self) -> Result<String, Error> {
         let pk = SecretKey::<p256::NistP256>::from_bytes(self.0.to_bytes())
             .map_err(|_| JWTError::InvalidKeyPair)?;
         Ok(pk.to_jwk_string())
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_bytes().to_vec()
+    pub fn from_jwk_ec_key(jwk: &JwkEcKey) -> Result<Self, Error> {
+        let sk = SecretKey::from_jwk(jwk).map_err(|_| JWTError::InvalidKeyPair)?;
+        let sk = ecdsa::SigningKey::from(sk);
+        Ok(P256KeyPair(sk))
+    }
+
+    pub fn to_jwk_ec_key(&self) -> Result<JwkEcKey, Error> {
+        let pk = SecretKey::<p256::NistP256>::from_bytes(self.0.to_bytes())
+            .map_err(|_| JWTError::InvalidKeyPair)?;
+        Ok(pk.to_jwk())
     }
 
     pub fn public_key(&self) -> P256PublicKey {
@@ -104,7 +104,8 @@ impl P256KeyPair {
     }
 
     pub fn generate() -> Self {
-        let p256_sk = ecdsa::SigningKey::random(&mut rand::thread_rng());
+        let rng = rand::thread_rng();
+        let p256_sk = ecdsa::SigningKey::random(rng);
         P256KeyPair(p256_sk)
     }
 }
@@ -126,10 +127,9 @@ pub trait ECDSAP256KeyPairLike {
         Token::build(&jwt_header, claims, |authenticated| {
             let mut digest = hmac_sha256::Hash::new();
             digest.update(authenticated.as_bytes());
-            let signature: ecdsa::Signature = self
-                .key_pair()
-                .as_ref()
-                .sign_digest_with_rng(&mut rand::thread_rng(), digest);
+            let rng = rand::thread_rng();
+            let signature: ecdsa::Signature =
+                self.key_pair().as_ref().sign_digest_with_rng(rng, digest);
             Ok(signature.as_ref().to_vec())
         })
     }
