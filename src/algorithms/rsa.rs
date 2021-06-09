@@ -62,7 +62,7 @@ impl AsRef<rsa::RSAPrivateKey> for RSAKeyPair {
 
 impl RSAKeyPair {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
-        let mut rsa_sk = rsa::RSAPrivateKey::from_pkcs8(&der)?;
+        let mut rsa_sk = rsa::RSAPrivateKey::from_pkcs8(der)?;
         rsa_sk.validate()?;
         rsa_sk.precompute()?;
         Ok(RSAKeyPair(rsa_sk))

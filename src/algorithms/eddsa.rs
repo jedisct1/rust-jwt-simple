@@ -116,7 +116,7 @@ pub trait EdDSAPublicKeyLike {
             ))
             .unwrap(),
         );
-        &self.key_id().as_ref().map(|x| x.as_str()).unwrap()
+        self.key_id().as_ref().map(|x| x.as_str()).unwrap()
     }
 }
 
