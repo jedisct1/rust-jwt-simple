@@ -1,7 +1,7 @@
 use hmac_sha512::sha384 as hmac_sha384;
 use rsa::{
     BigUint, PrivateKeyEncoding as _, PrivateKeyPemEncoding as _, PublicKey as _,
-    PublicKeyEncoding as _, PublicKeyPemEncoding as _,
+    PublicKeyEncoding as _, PublicKeyParts as _, PublicKeyPemEncoding as _,
 };
 use serde::{de::DeserializeOwned, Serialize};
 use std::convert::TryFrom;
@@ -20,6 +20,11 @@ impl AsRef<rsa::RSAPublicKey> for RSAPublicKey {
     fn as_ref(&self) -> &rsa::RSAPublicKey {
         &self.0
     }
+}
+
+pub struct RSAPublicKeyComponents {
+    pub n: Vec<u8>,
+    pub e: Vec<u8>,
 }
 
 impl RSAPublicKey {
@@ -47,6 +52,12 @@ impl RSAPublicKey {
 
     pub fn to_pem(&self) -> Result<String, Error> {
         self.0.to_pem_pkcs8().map_err(Into::into)
+    }
+
+    pub fn to_components(&self) -> RSAPublicKeyComponents {
+        let n = self.0.n().to_bytes_be();
+        let e = self.0.e().to_bytes_be();
+        RSAPublicKeyComponents { n, e }
     }
 }
 
@@ -290,6 +301,10 @@ impl RS256PublicKey {
         self.pk.to_pem()
     }
 
+    pub fn to_components(&self) -> RSAPublicKeyComponents {
+        self.pk.to_components()
+    }
+
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
@@ -429,6 +444,10 @@ impl RS512PublicKey {
 
     pub fn to_pem(&self) -> Result<String, Error> {
         self.pk.to_pem()
+    }
+
+    pub fn to_components(&self) -> RSAPublicKeyComponents {
+        self.pk.to_components()
     }
 
     pub fn with_key_id(mut self, key_id: &str) -> Self {
@@ -572,6 +591,10 @@ impl RS384PublicKey {
         self.pk.to_pem()
     }
 
+    pub fn to_components(&self) -> RSAPublicKeyComponents {
+        self.pk.to_components()
+    }
+
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
@@ -711,6 +734,10 @@ impl PS256PublicKey {
 
     pub fn to_pem(&self) -> Result<String, Error> {
         self.pk.to_pem()
+    }
+
+    pub fn to_components(&self) -> RSAPublicKeyComponents {
+        self.pk.to_components()
     }
 
     pub fn with_key_id(mut self, key_id: &str) -> Self {
@@ -854,6 +881,10 @@ impl PS512PublicKey {
         self.pk.to_pem()
     }
 
+    pub fn to_components(&self) -> RSAPublicKeyComponents {
+        self.pk.to_components()
+    }
+
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
@@ -993,6 +1024,10 @@ impl PS384PublicKey {
 
     pub fn to_pem(&self) -> Result<String, Error> {
         self.pk.to_pem()
+    }
+
+    pub fn to_components(&self) -> RSAPublicKeyComponents {
+        self.pk.to_components()
     }
 
     pub fn with_key_id(mut self, key_id: &str) -> Self {
