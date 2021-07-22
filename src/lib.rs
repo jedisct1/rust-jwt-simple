@@ -383,7 +383,9 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
         let token = key_pair.sign(claims).unwrap();
         let pk = RS256PublicKey::from_pem(RSA_PK_PEM).unwrap();
         let _claims = pk.verify_token::<NoCustomClaims>(&token, None).unwrap();
-        let _components = pk.to_components();
+        let components = pk.to_components();
+        let hex_e = Base64::encode_to_string(components.e).unwrap();
+        let _e = Base64::decode_to_vec(hex_e, None).unwrap();
     }
 
     #[test]
