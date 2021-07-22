@@ -77,7 +77,7 @@ impl K256KeyPair {
     }
 
     pub fn public_key(&self) -> K256PublicKey {
-        let k256_pk = self.0.verify_key();
+        let k256_pk = self.0.verifying_key();
         K256PublicKey(k256_pk)
     }
 
