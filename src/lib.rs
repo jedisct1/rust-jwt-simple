@@ -277,6 +277,7 @@ mod serde_additions;
 pub mod reexports {
     pub use anyhow;
     pub use coarsetime;
+    pub use ct_codecs;
     pub use rand;
     pub use serde;
     pub use serde_json;
@@ -293,6 +294,9 @@ pub mod prelude {
     pub use crate::common::*;
     pub use crate::token::*;
     pub use coarsetime::{self, Clock, Duration, UnixTimeStamp};
+    pub use ct_codecs::{
+        Base64, Base64NoPadding, Base64UrlSafe, Base64UrlSafeNoPadding, Decoder as _, Encoder as _,
+    };
     pub use serde::{Deserialize, Serialize};
     pub use std::collections::HashSet;
 
