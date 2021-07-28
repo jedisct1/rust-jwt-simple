@@ -33,6 +33,7 @@ impl RSAPublicKey {
     }
 
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
+        let pem = pem.trim();
         let rsa_pk = rsa::RsaPublicKey::from_public_key_pem(pem)
             .or_else(|_| rsa::RsaPublicKey::from_pkcs1_pem(pem))?;
         Ok(RSAPublicKey(rsa_pk))
@@ -83,6 +84,7 @@ impl RSAKeyPair {
     }
 
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
+        let pem = pem.trim();
         let mut rsa_sk = rsa::RsaPrivateKey::from_pkcs8_pem(pem)
             .or_else(|_| rsa::RsaPrivateKey::from_pkcs1_pem(pem))?;
         rsa_sk.validate()?;
