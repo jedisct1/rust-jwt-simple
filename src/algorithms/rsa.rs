@@ -1,10 +1,8 @@
 use hmac_sha512::sha384 as hmac_sha384;
-use rsa::{
-    BigUint, PrivateKeyEncoding as _, PrivateKeyPemEncoding as _, PublicKey as _,
-    PublicKeyEncoding as _, PublicKeyParts as _, PublicKeyPemEncoding as _,
-};
+use rsa::pkcs1::{FromRsaPrivateKey as _, FromRsaPublicKey as _};
+use rsa::pkcs8::{FromPrivateKey as _, FromPublicKey as _, ToPrivateKey as _, ToPublicKey as _};
+use rsa::{BigUint, PublicKey as _, PublicKeyParts as _};
 use serde::{de::DeserializeOwned, Serialize};
-use std::convert::TryFrom;
 
 use crate::claims::*;
 use crate::common::*;
@@ -14,10 +12,10 @@ use crate::token::*;
 
 #[doc(hidden)]
 #[derive(Debug, Clone)]
-pub struct RSAPublicKey(rsa::RSAPublicKey);
+pub struct RSAPublicKey(rsa::RsaPublicKey);
 
-impl AsRef<rsa::RSAPublicKey> for RSAPublicKey {
-    fn as_ref(&self) -> &rsa::RSAPublicKey {
+impl AsRef<rsa::RsaPublicKey> for RSAPublicKey {
+    fn as_ref(&self) -> &rsa::RsaPublicKey {
         &self.0
     }
 }
@@ -29,29 +27,33 @@ pub struct RSAPublicKeyComponents {
 
 impl RSAPublicKey {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
-        let rsa_pk = rsa::RSAPublicKey::from_pkcs8(der)?;
+        let rsa_pk = rsa::RsaPublicKey::from_public_key_der(der)
+            .or_else(|_| rsa::RsaPublicKey::from_pkcs1_der(der))?;
         Ok(RSAPublicKey(rsa_pk))
     }
 
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
-        let parsed_pem = rsa::pem::parse(pem)?;
-        let rsa_pk = rsa::RSAPublicKey::try_from(parsed_pem)?;
+        let rsa_pk = rsa::RsaPublicKey::from_public_key_pem(pem)
+            .or_else(|_| rsa::RsaPublicKey::from_pkcs1_pem(pem))?;
         Ok(RSAPublicKey(rsa_pk))
     }
 
     pub fn from_components(n: &[u8], e: &[u8]) -> Result<Self, Error> {
         let n = BigUint::from_bytes_be(n);
         let e = BigUint::from_bytes_be(e);
-        let rsa_pk = rsa::RSAPublicKey::new(n, e)?;
+        let rsa_pk = rsa::RsaPublicKey::new(n, e)?;
         Ok(RSAPublicKey(rsa_pk))
     }
 
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
-        self.0.to_pkcs8().map_err(Into::into)
+        self.0
+            .to_public_key_der()
+            .map_err(Into::into)
+            .map(|x| x.as_ref().to_vec())
     }
 
     pub fn to_pem(&self) -> Result<String, Error> {
-        self.0.to_pem_pkcs8().map_err(Into::into)
+        self.0.to_public_key_pem().map_err(Into::into)
     }
 
     pub fn to_components(&self) -> RSAPublicKeyComponents {
@@ -63,36 +65,43 @@ impl RSAPublicKey {
 
 #[doc(hidden)]
 #[derive(Debug, Clone)]
-pub struct RSAKeyPair(rsa::RSAPrivateKey);
+pub struct RSAKeyPair(rsa::RsaPrivateKey);
 
-impl AsRef<rsa::RSAPrivateKey> for RSAKeyPair {
-    fn as_ref(&self) -> &rsa::RSAPrivateKey {
+impl AsRef<rsa::RsaPrivateKey> for RSAKeyPair {
+    fn as_ref(&self) -> &rsa::RsaPrivateKey {
         &self.0
     }
 }
 
 impl RSAKeyPair {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
-        let mut rsa_sk = rsa::RSAPrivateKey::from_pkcs8(der)?;
+        let mut rsa_sk = rsa::RsaPrivateKey::from_pkcs8_der(der)
+            .or_else(|_| rsa::RsaPrivateKey::from_pkcs1_der(der))?;
         rsa_sk.validate()?;
         rsa_sk.precompute()?;
         Ok(RSAKeyPair(rsa_sk))
     }
 
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
-        let parsed_pem = rsa::pem::parse(pem)?;
-        let mut rsa_sk = rsa::RSAPrivateKey::try_from(parsed_pem)?;
+        let mut rsa_sk = rsa::RsaPrivateKey::from_pkcs8_pem(pem)
+            .or_else(|_| rsa::RsaPrivateKey::from_pkcs1_pem(pem))?;
         rsa_sk.validate()?;
         rsa_sk.precompute()?;
         Ok(RSAKeyPair(rsa_sk))
     }
 
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
-        self.0.to_pkcs8().map_err(Into::into)
+        self.0
+            .to_pkcs8_der()
+            .map_err(Into::into)
+            .map(|x| x.as_ref().to_vec())
     }
 
     pub fn to_pem(&self) -> Result<String, Error> {
-        self.0.to_pem_pkcs8().map_err(Into::into)
+        self.0
+            .to_pkcs8_pem()
+            .map_err(Into::into)
+            .map(|x| x.to_string())
     }
 
     pub fn public_key(&self) -> RSAPublicKey {
@@ -106,7 +115,7 @@ impl RSAKeyPair {
             _ => bail!(JWTError::UnsupportedRSAModulus),
         };
         let mut rng = rand::thread_rng();
-        let rsa_sk = rsa::RSAPrivateKey::new(&mut rng, modulus_bits)?;
+        let rsa_sk = rsa::RsaPrivateKey::new(&mut rng, modulus_bits)?;
         Ok(RSAKeyPair(rsa_sk))
     }
 }
