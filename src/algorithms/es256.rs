@@ -29,6 +29,10 @@ impl P256PublicKey {
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.to_encoded_point(true).as_bytes().to_vec()
     }
+
+    pub fn to_bytes_uncompressed(&self) -> Vec<u8> {
+        self.0.to_encoded_point(false).as_bytes().to_vec()
+    }
 }
 
 #[doc(hidden)]
