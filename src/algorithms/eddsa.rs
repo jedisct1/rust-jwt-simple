@@ -25,6 +25,13 @@ impl Edwards25519PublicKey {
         ))
     }
 
+    pub fn from_der(der: &[u8]) -> Result<Self, Error> {
+        let ed25519_pk = ed25519_compact::PublicKey::from_der(der);
+        Ok(Edwards25519PublicKey(
+            ed25519_pk.map_err(|_| JWTError::InvalidPublicKey)?,
+        ))
+    }
+
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
         let ed25519_pk = ed25519_compact::PublicKey::from_pem(pem);
         Ok(Edwards25519PublicKey(
@@ -34,6 +41,10 @@ impl Edwards25519PublicKey {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.as_ref().to_vec()
+    }
+
+    pub fn to_der(&self) -> Vec<u8> {
+        self.0.to_der()
     }
 
     pub fn to_pem(&self) -> String {
@@ -57,6 +68,16 @@ impl Edwards25519KeyPair {
         Ok(Edwards25519KeyPair(ed25519_key_pair))
     }
 
+    pub fn from_der(der: &[u8]) -> Result<Self, Error> {
+        let ed25519_key_pair = match ed25519_compact::KeyPair::from_der(der) {
+            Ok(kp) => kp,
+            Err(_) => ed25519_compact::KeyPair::from_seed(
+                ed25519_compact::SecretKey::from_der(der)?.seed(),
+            ),
+        };
+        Ok(Edwards25519KeyPair(ed25519_key_pair))
+    }
+
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
         let ed25519_key_pair = match ed25519_compact::KeyPair::from_pem(pem) {
             Ok(kp) => kp,
@@ -69,6 +90,10 @@ impl Edwards25519KeyPair {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.to_vec()
+    }
+
+    pub fn to_der(&self) -> Vec<u8> {
+        self.0.pk.to_der()
     }
 
     pub fn to_pem(&self) -> String {
@@ -179,6 +204,13 @@ impl Ed25519KeyPair {
         })
     }
 
+    pub fn from_der(der: &[u8]) -> Result<Self, Error> {
+        Ok(Ed25519KeyPair {
+            key_pair: Edwards25519KeyPair::from_der(der)?,
+            key_id: None,
+        })
+    }
+
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
         Ok(Ed25519KeyPair {
             key_pair: Edwards25519KeyPair::from_pem(pem)?,
@@ -188,6 +220,10 @@ impl Ed25519KeyPair {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         self.key_pair.to_bytes()
+    }
+
+    pub fn to_der(&self) -> Vec<u8> {
+        self.key_pair.to_der()
     }
 
     pub fn to_pem(&self) -> String {
@@ -240,6 +276,13 @@ impl Ed25519PublicKey {
         })
     }
 
+    pub fn from_der(der: &[u8]) -> Result<Self, Error> {
+        Ok(Ed25519PublicKey {
+            pk: Edwards25519PublicKey::from_der(der)?,
+            key_id: None,
+        })
+    }
+
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
         Ok(Ed25519PublicKey {
             pk: Edwards25519PublicKey::from_pem(pem)?,
@@ -249,6 +292,10 @@ impl Ed25519PublicKey {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         self.pk.to_bytes()
+    }
+
+    pub fn to_der(&self) -> Vec<u8> {
+        self.pk.to_der()
     }
 
     pub fn to_pem(&self) -> String {

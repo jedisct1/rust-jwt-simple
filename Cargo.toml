@@ -15,7 +15,7 @@ readme = "README.md"
 anyhow = "1.0"
 coarsetime = "0.1"
 ct-codecs = "1"
-ed25519-compact = { version = "0.1.10", features = ["pem"] }
+ed25519-compact = { version = "0.1.11", features = ["pem"] }
 hmac-sha256 = { version = "0.1", features = ["traits"] }
 hmac-sha512 = { version = "0.1", features = ["traits", "sha384"] }
 k256 = { version = "0.9.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
