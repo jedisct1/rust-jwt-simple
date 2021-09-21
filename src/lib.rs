@@ -460,4 +460,16 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
         key.verify_token::<NoCustomClaims>(&token, Some(options))
             .unwrap();
     }
+
+    #[test]
+    fn eddsa_pem() {
+        let sk_pem = "-----BEGIN PRIVATE KEY-----
+MC4CAQAwBQYDK2VwBCIEIMXY1NUbUe/3dW2YUoKW5evsnCJPMfj60/q0RzGne3gg
+-----END PRIVATE KEY-----\n";
+        let pk_pem = "-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
+-----END PUBLIC KEY-----\n";
+        let kp = Ed25519KeyPair::from_pem(sk_pem).unwrap();
+        assert_eq!(kp.public_key().to_pem(), pk_pem);
+    }
 }
