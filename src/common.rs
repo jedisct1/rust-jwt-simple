@@ -39,6 +39,48 @@ pub struct VerificationOptions {
     pub max_validity: Option<Duration>,
 }
 
+impl VerificationOptions {
+    pub fn reject_before(mut self, reject_before: UnixTimeStamp) -> Self {
+        self.reject_before = Some(reject_before);
+        self
+    }
+
+    pub fn required_subject(mut self, required_subject: String) -> Self {
+        self.required_subject = Some(required_subject);
+        self
+    }
+
+    pub fn required_nonce(mut self, required_nonce: String) -> Self {
+        self.required_nonce = Some(required_nonce);
+        self
+    }
+
+    pub fn required_key_id(mut self, required_key_id: String) -> Self {
+        self.required_key_id = Some(required_key_id);
+        self
+    }
+
+    pub fn required_public_key(mut self, required_public_key: String) -> Self {
+        self.required_public_key = Some(required_public_key);
+        self
+    }
+
+    pub fn allowed_issuers(mut self, allowed_issuers: HashSet<String>) -> Self {
+        self.allowed_issuers = Some(allowed_issuers);
+        self
+    }
+
+    pub fn allowed_audiences(mut self, allowed_audiences: HashSet<String>) -> Self {
+        self.allowed_audiences = Some(allowed_audiences);
+        self
+    }
+
+    pub fn time_tolerance(mut self, time_tolerance: Duration) -> Self {
+        self.time_tolerance = Some(time_tolerance);
+        self
+    }
+}
+
 #[inline(never)]
 pub(crate) fn timingsafe_eq(a: &[u8], b: &[u8]) -> bool {
     assert_eq!(a.len(), b.len());
