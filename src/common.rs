@@ -1,5 +1,6 @@
-use coarsetime::{Duration, UnixTimeStamp};
 use std::collections::HashSet;
+
+use coarsetime::{Duration, UnixTimeStamp};
 
 /// Additional features to enable during verification.
 /// Signatures and token expiration are already automatically verified.
@@ -45,33 +46,33 @@ impl VerificationOptions {
         self
     }
 
-    pub fn with_required_subject(mut self, required_subject: String) -> Self {
-        self.required_subject = Some(required_subject);
+    pub fn with_required_subject(mut self, required_subject: impl ToString) -> Self {
+        self.required_subject = Some(required_subject.to_string());
         self
     }
 
-    pub fn with_required_nonce(mut self, required_nonce: String) -> Self {
-        self.required_nonce = Some(required_nonce);
+    pub fn with_required_nonce(mut self, required_nonce: impl ToString) -> Self {
+        self.required_nonce = Some(required_nonce.to_string());
         self
     }
 
-    pub fn with_required_key_id(mut self, required_key_id: String) -> Self {
-        self.required_key_id = Some(required_key_id);
+    pub fn with_required_key_id(mut self, required_key_id: impl ToString) -> Self {
+        self.required_key_id = Some(required_key_id.to_string());
         self
     }
 
-    pub fn with_required_public_key(mut self, required_public_key: String) -> Self {
-        self.required_public_key = Some(required_public_key);
+    pub fn with_required_public_key(mut self, required_public_key: impl ToString) -> Self {
+        self.required_public_key = Some(required_public_key.to_string());
         self
     }
 
-    pub fn with_allowed_issuers(mut self, allowed_issuers: HashSet<String>) -> Self {
-        self.allowed_issuers = Some(allowed_issuers);
+    pub fn with_allowed_issuers(mut self, allowed_issuers: HashSet<impl ToString>) -> Self {
+        self.allowed_issuers = Some(allowed_issuers.iter().map(|x| x.to_string()).collect());
         self
     }
 
-    pub fn with_allowed_audiences(mut self, allowed_audiences: HashSet<String>) -> Self {
-        self.allowed_audiences = Some(allowed_audiences);
+    pub fn with_allowed_audiences(mut self, allowed_audiences: HashSet<impl ToString>) -> Self {
+        self.allowed_audiences = Some(allowed_audiences.iter().map(|x| x.to_string()).collect());
         self
     }
 
