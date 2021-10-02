@@ -41,6 +41,16 @@ pub struct VerificationOptions {
 }
 
 impl VerificationOptions {
+    pub fn with_accept_future(mut self, accept_future: bool) -> Self {
+        self.accept_future = accept_future;
+        self
+    }
+
+    pub fn with_max_validity(mut self, max_validity: Duration) -> Self {
+        self.max_validity = Some(max_validity);
+        self
+    }
+
     pub fn with_reject_before(mut self, reject_before: UnixTimeStamp) -> Self {
         self.reject_before = Some(reject_before);
         self
