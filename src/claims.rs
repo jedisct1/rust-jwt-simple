@@ -353,6 +353,24 @@ mod tests {
         assert_eq!(claims.subject, Some("subject".to_owned()));
     }
 
+    /// As stated in RFC-7519:
+    ///
+    /// > "The "aud" (audience) claim identifies the recipients that the JWT is
+    /// > intended for.  Each principal intended to process the JWT MUST
+    /// > identify itself with a value in the audience claim.  If the principal
+    /// > processing the claim does not identify itself with a value in the
+    /// > "aud" claim when this claim is present, then the JWT MUST be
+    /// > rejected."
+    #[test]
+    fn should_reject_claims_with_unexpected_audiences() {
+        let exp = Duration::from_mins(10);
+        let mut audiences = HashSet::new();
+        audiences.insert("audience1".to_string());
+        let claims = Claims::create(exp)
+            .with_audiences(audiences.clone());
+        let _ = claims.validate(&VerificationOptions::default()).unwrap_err();
+    }
+
     #[test]
     fn parse_floating_point_unix_time() {
         let claims: JWTClaims<()> = serde_json::from_str(r#"{"exp":1617757825.8}"#).unwrap();
