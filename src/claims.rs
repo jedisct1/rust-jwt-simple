@@ -1,9 +1,10 @@
+use std::collections::HashSet;
+use std::convert::TryInto;
+
 use coarsetime::{Clock, Duration, UnixTimeStamp};
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use rand::RngCore;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::collections::HashSet;
-use std::convert::TryInto;
 
 use crate::common::VerificationOptions;
 use crate::error::*;
@@ -42,6 +43,19 @@ impl Audiences {
                 audiences.intersection(allowed_audiences).next().is_some()
             }
         }
+    }
+
+    /// Get the count of audiences specified in the claim.
+    pub fn len(&self) -> usize {
+        match self {
+            Audiences::AsString(..) => 1,
+            Audiences::AsSet(audiences) => audiences.len(),
+        }
+    }
+
+    /// Return `true` if there are no audiences specified in the claim.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     /// Get the audiences as a set
@@ -231,7 +245,10 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
             } else {
                 bail!(JWTError::RequiredAudienceMissing);
             }
+        } else if let Some(audiences) = &self.audiences {
+            ensure!(audiences.is_empty(), JWTError::RequiredAudienceMismatch);
         }
+
         Ok(())
     }
 
@@ -366,9 +383,10 @@ mod tests {
         let exp = Duration::from_mins(10);
         let mut audiences = HashSet::new();
         audiences.insert("audience1".to_string());
-        let claims = Claims::create(exp)
-            .with_audiences(audiences.clone());
-        let _ = claims.validate(&VerificationOptions::default()).unwrap_err();
+        let claims = Claims::create(exp).with_audiences(audiences);
+        let _ = claims
+            .validate(&VerificationOptions::default())
+            .unwrap_err();
     }
 
     #[test]
