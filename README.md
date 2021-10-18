@@ -262,11 +262,7 @@ If an identifier has been attached to a shared key or a key pair, tokens created
 
 ## Why yet another JWT crate
 
-This crate is not an endorsement of JWT. JWT is [an awful design](https://tools.ietf.org/html/rfc8725), and one of the many examples that "but this is a standard" doesn't necessarily mean that it is good.
-
-I would highly recommend [PASETO](https://github.com/paragonie/paseto) instead if you control both token creation and verification.
-
-However, JWT is still widely used in the industry, and remains absolutely mandatory to communicate with popular APIs.
+JWT is widely used in the industry, and remains absolutely mandatory to communicate with popular APIs.
 
 This crate was designed to:
 
