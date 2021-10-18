@@ -19,6 +19,8 @@ pub struct TokenMetadata {
 
 impl TokenMetadata {
     /// The JWT algorithm for this token
+    /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
+    /// Clients should ignore it and use the correct type of key directly.
     pub fn algorithm(&self) -> &str {
         &self.jwt_header.algorithm
     }
@@ -28,39 +30,9 @@ impl TokenMetadata {
         self.jwt_header.content_type.as_deref()
     }
 
-    /// The key set URL for this token
-    pub fn key_set_url(&self) -> Option<&str> {
-        self.jwt_header.key_set_url.as_deref()
-    }
-
-    /// The public key for this token
-    pub fn public_key(&self) -> Option<&str> {
-        self.jwt_header.public_key.as_deref()
-    }
-
     /// The key, or public key identifier for this token
     pub fn key_id(&self) -> Option<&str> {
         self.jwt_header.key_id.as_deref()
-    }
-
-    /// The certificate URL for this token
-    pub fn certificate_url(&self) -> Option<&str> {
-        self.jwt_header.certificate_url.as_deref()
-    }
-
-    /// The certificate chain for this token
-    pub fn certificate_chain(&self) -> Option<&[String]> {
-        self.jwt_header.certificate_chain.as_deref()
-    }
-
-    /// The SHA-1 certificate fingerprint
-    pub fn certificate_sha1_thumbprint(&self) -> Option<&str> {
-        self.jwt_header.certificate_sha1_thumbprint.as_deref()
-    }
-
-    /// The SHA-256 certificate fingerprint
-    pub fn certificate_sha256_thumbprint(&self) -> Option<&str> {
-        self.jwt_header.certificate_sha256_thumbprint.as_deref()
     }
 
     /// The signature type for this token
@@ -68,9 +40,50 @@ impl TokenMetadata {
         self.jwt_header.signature_type.as_deref()
     }
 
-    /// The set of critical properties for this token
+    /// The set of raw critical properties for this token
     pub fn critical(&self) -> Option<&[String]> {
         self.jwt_header.critical.as_deref()
+    }
+
+    /// The certificate chain for this token
+    /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
+    pub fn certificate_chain(&self) -> Option<&[String]> {
+        self.jwt_header.certificate_chain.as_deref()
+    }
+
+    /// The key set URL for this token
+    /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
+    /// At the bare minimum, you should check that the URL belongs to the domain you expect.
+    pub fn key_set_url(&self) -> Option<&str> {
+        self.jwt_header.key_set_url.as_deref()
+    }
+
+    /// The public key for this token
+    /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
+    /// At the bare minimum, you should check that it's in a set of public keys you already trust.
+    pub fn public_key(&self) -> Option<&str> {
+        self.jwt_header.public_key.as_deref()
+    }
+
+    /// The certificate URL for this token.
+    /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
+    /// At the bare minimum, you should check that the URL belongs to the domain you expect.
+    pub fn certificate_url(&self) -> Option<&str> {
+        self.jwt_header.certificate_url.as_deref()
+    }
+
+    /// 22 base64-encoded bytes repesenting the public key to use for verification.
+    /// Defined to be a SHA1 hash of the secret key; can be anything of the same length in practice.
+    /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
+    pub fn certificate_sha1_thumbprint(&self) -> Option<&str> {
+        self.jwt_header.certificate_sha1_thumbprint.as_deref()
+    }
+
+    /// 32 base64-encoded bytes repesenting the public key to use for verification.
+    /// Defined to be a SHA256 hash of the secret key; can be anything of the same length in practice.
+    /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
+    pub fn certificate_sha256_thumbprint(&self) -> Option<&str> {
+        self.jwt_header.certificate_sha256_thumbprint.as_deref()
     }
 }
 
