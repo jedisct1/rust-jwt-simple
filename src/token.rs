@@ -175,23 +175,27 @@ impl Token {
 
 /// Unsigned metadata to be attached to a new token
 #[derive(Debug, Clone, Default)]
-pub(crate) struct KeyPairMetadata {
-    pub(crate) jwt_header: JWTHeader,
+pub struct KeyPairMetadata {
+    pub key_set_url: Option<String>,
+    pub public_key: Option<String>,
+    pub certificate_url: Option<String>,
+    pub certificate_sha1_thumbprint: Option<String>,
+    pub certificate_sha256_thumbprint: Option<String>,
 }
 
 impl KeyPairMetadata {
     pub fn with_key_set_url(mut self, key_set_url: impl ToString) -> Self {
-        self.jwt_header.key_set_url = Some(key_set_url.to_string());
+        self.key_set_url = Some(key_set_url.to_string());
         self
     }
 
     pub fn with_public_key(mut self, public_key: impl ToString) -> Self {
-        self.jwt_header.public_key = Some(public_key.to_string());
+        self.public_key = Some(public_key.to_string());
         self
     }
 
     pub fn with_certificate_url(mut self, certificate_url: impl ToString) -> Self {
-        self.jwt_header.certificate_url = Some(certificate_url.to_string());
+        self.certificate_url = Some(certificate_url.to_string());
         self
     }
 
@@ -207,14 +211,14 @@ impl KeyPairMetadata {
                 JWTError::InvalidCertThumprint
             );
             let thumbprint = Base64UrlSafeNoPadding::encode_to_string(&bin)?;
-            self.jwt_header.certificate_sha1_thumbprint = Some(thumbprint);
+            self.certificate_sha1_thumbprint = Some(thumbprint);
             return Ok(self);
         }
         ensure!(
             Base64UrlSafeNoPadding::decode(&mut bin, &thumbprint, None)?.len() == bin.len(),
             JWTError::InvalidCertThumprint
         );
-        self.jwt_header.certificate_sha1_thumbprint = Some(thumbprint);
+        self.certificate_sha1_thumbprint = Some(thumbprint);
         Ok(self)
     }
 
@@ -230,14 +234,14 @@ impl KeyPairMetadata {
                 JWTError::InvalidCertThumprint
             );
             let thumbprint = Base64UrlSafeNoPadding::encode_to_string(&bin)?;
-            self.jwt_header.certificate_sha1_thumbprint = Some(thumbprint);
+            self.certificate_sha1_thumbprint = Some(thumbprint);
             return Ok(self);
         }
         ensure!(
             Base64UrlSafeNoPadding::decode(&mut bin, &thumbprint, None)?.len() == bin.len(),
             JWTError::InvalidCertThumprint
         );
-        self.jwt_header.certificate_sha1_thumbprint = Some(thumbprint);
+        self.certificate_sha1_thumbprint = Some(thumbprint);
         Ok(self)
     }
 }
