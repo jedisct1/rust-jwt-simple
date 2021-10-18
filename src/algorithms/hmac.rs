@@ -12,33 +12,37 @@ use crate::token::*;
 
 #[doc(hidden)]
 #[derive(Debug, Clone)]
-pub struct HMACKey(Vec<u8>);
+pub struct HMACKey {
+    raw_key: Vec<u8>,
+}
 
 impl Drop for HMACKey {
     fn drop(&mut self) {
-        self.0.zeroize();
+        self.raw_key.zeroize();
     }
 }
 
 impl HMACKey {
     pub fn from_bytes(raw_key: &[u8]) -> Self {
-        HMACKey(raw_key.to_vec())
+        HMACKey {
+            raw_key: raw_key.to_vec(),
+        }
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.clone()
+        self.raw_key.clone()
     }
 
     pub fn generate() -> Self {
         let mut raw_key = vec![0u8; 32];
         rand::thread_rng().fill_bytes(&mut raw_key);
-        HMACKey(raw_key)
+        HMACKey { raw_key }
     }
 }
 
 impl AsRef<[u8]> for HMACKey {
     fn as_ref(&self) -> &[u8] {
-        &self.0
+        &self.raw_key
     }
 }
 

@@ -56,60 +56,62 @@ impl Edwards25519PublicKey {
 
 #[doc(hidden)]
 #[derive(Clone)]
-pub struct Edwards25519KeyPair(ed25519_compact::KeyPair);
+pub struct Edwards25519KeyPair {
+    ed25519_kp: ed25519_compact::KeyPair,
+}
 
 impl AsRef<ed25519_compact::KeyPair> for Edwards25519KeyPair {
     fn as_ref(&self) -> &ed25519_compact::KeyPair {
-        &self.0
+        &self.ed25519_kp
     }
 }
 
 impl Edwards25519KeyPair {
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
-        let ed25519_key_pair = ed25519_compact::KeyPair::from_slice(raw)?;
-        Ok(Edwards25519KeyPair(ed25519_key_pair))
+        let ed25519_kp = ed25519_compact::KeyPair::from_slice(raw)?;
+        Ok(Edwards25519KeyPair { ed25519_kp })
     }
 
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
-        let ed25519_key_pair = match ed25519_compact::KeyPair::from_der(der) {
+        let ed25519_kp = match ed25519_compact::KeyPair::from_der(der) {
             Ok(kp) => kp,
             Err(_) => ed25519_compact::KeyPair::from_seed(
                 ed25519_compact::SecretKey::from_der(der)?.seed(),
             ),
         };
-        Ok(Edwards25519KeyPair(ed25519_key_pair))
+        Ok(Edwards25519KeyPair { ed25519_kp })
     }
 
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
-        let ed25519_key_pair = match ed25519_compact::KeyPair::from_pem(pem) {
+        let ed25519_kp = match ed25519_compact::KeyPair::from_pem(pem) {
             Ok(kp) => kp,
             Err(_) => ed25519_compact::KeyPair::from_seed(
                 ed25519_compact::SecretKey::from_pem(pem)?.seed(),
             ),
         };
-        Ok(Edwards25519KeyPair(ed25519_key_pair))
+        Ok(Edwards25519KeyPair { ed25519_kp })
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_vec()
+        self.ed25519_kp.to_vec()
     }
 
     pub fn to_der(&self) -> Vec<u8> {
-        self.0.pk.to_der()
+        self.ed25519_kp.pk.to_der()
     }
 
     pub fn to_pem(&self) -> String {
-        self.0.to_pem()
+        self.ed25519_kp.to_pem()
     }
 
     pub fn public_key(&self) -> Edwards25519PublicKey {
-        let ed25519_pk = self.0.pk;
+        let ed25519_pk = self.ed25519_kp.pk;
         Edwards25519PublicKey(ed25519_pk)
     }
 
     pub fn generate() -> Self {
-        let ed25519_sk = ed25519_compact::KeyPair::from_seed(ed25519_compact::Seed::generate());
-        Edwards25519KeyPair(ed25519_sk)
+        let ed25519_kp = ed25519_compact::KeyPair::from_seed(ed25519_compact::Seed::generate());
+        Edwards25519KeyPair { ed25519_kp }
     }
 }
 

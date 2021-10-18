@@ -36,34 +36,35 @@ impl P256PublicKey {
 }
 
 #[doc(hidden)]
-pub struct P256KeyPair(ecdsa::SigningKey);
+pub struct P256KeyPair {
+    p256_sk: ecdsa::SigningKey,
+}
 
 impl AsRef<ecdsa::SigningKey> for P256KeyPair {
     fn as_ref(&self) -> &ecdsa::SigningKey {
-        &self.0
+        &self.p256_sk
     }
 }
 
 impl P256KeyPair {
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
-        let p256_key_pair =
-            ecdsa::SigningKey::from_bytes(raw).map_err(|_| JWTError::InvalidKeyPair)?;
-        Ok(P256KeyPair(p256_key_pair))
+        let p256_sk = ecdsa::SigningKey::from_bytes(raw).map_err(|_| JWTError::InvalidKeyPair)?;
+        Ok(P256KeyPair { p256_sk })
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_bytes().to_vec()
+        self.p256_sk.to_bytes().to_vec()
     }
 
     pub fn public_key(&self) -> P256PublicKey {
-        let p256_pk = self.0.verifying_key();
+        let p256_pk = self.p256_sk.verifying_key();
         P256PublicKey(p256_pk)
     }
 
     pub fn generate() -> Self {
         let rng = rand::thread_rng();
         let p256_sk = ecdsa::SigningKey::random(rng);
-        P256KeyPair(p256_sk)
+        P256KeyPair { p256_sk }
     }
 }
 

@@ -45,46 +45,47 @@ impl K256PublicKey {
 }
 
 #[doc(hidden)]
-pub struct K256KeyPair(ecdsa::SigningKey);
+pub struct K256KeyPair {
+    k256_sk: ecdsa::SigningKey,
+}
 
 impl AsRef<ecdsa::SigningKey> for K256KeyPair {
     fn as_ref(&self) -> &ecdsa::SigningKey {
-        &self.0
+        &self.k256_sk
     }
 }
 
 impl K256KeyPair {
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
-        let k256_key_pair =
-            ecdsa::SigningKey::from_bytes(raw).map_err(|_| JWTError::InvalidKeyPair)?;
-        Ok(K256KeyPair(k256_key_pair))
+        let k256_sk = ecdsa::SigningKey::from_bytes(raw).map_err(|_| JWTError::InvalidKeyPair)?;
+        Ok(K256KeyPair { k256_sk })
     }
 
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
-        let k256_key_pair =
+        let k256_sk =
             ecdsa::SigningKey::from_pkcs8_der(der).map_err(|_| JWTError::InvalidKeyPair)?;
-        Ok(K256KeyPair(k256_key_pair))
+        Ok(K256KeyPair { k256_sk })
     }
 
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
-        let k256_key_pair =
+        let k256_sk =
             ecdsa::SigningKey::from_pkcs8_pem(pem).map_err(|_| JWTError::InvalidKeyPair)?;
-        Ok(K256KeyPair(k256_key_pair))
+        Ok(K256KeyPair { k256_sk })
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_bytes().to_vec()
+        self.k256_sk.to_bytes().to_vec()
     }
 
     pub fn public_key(&self) -> K256PublicKey {
-        let k256_pk = self.0.verifying_key();
+        let k256_pk = self.k256_sk.verifying_key();
         K256PublicKey(k256_pk)
     }
 
     pub fn generate() -> Self {
         let rng = rand::thread_rng();
         let k256_sk = ecdsa::SigningKey::random(rng);
-        K256KeyPair(k256_sk)
+        K256KeyPair { k256_sk }
     }
 }
 
