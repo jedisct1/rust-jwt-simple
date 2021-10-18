@@ -20,7 +20,7 @@ pub struct VerificationOptions {
     /// Require a specific subject to be present
     pub required_subject: Option<String>,
 
-    /// Require a specific key identifierto be present
+    /// Require a specific key identifier to be present
     pub required_key_id: Option<String>,
 
     /// Require a specific public key to be present
@@ -55,25 +55,25 @@ pub struct KeyMetadata {
 }
 
 impl KeyMetadata {
-    /// Add a key set URL to the metadata
+    /// Add a key set URL to the metadata ("jku")
     pub fn with_key_set_url(mut self, key_set_url: impl ToString) -> Self {
         self.key_set_url = Some(key_set_url.to_string());
         self
     }
 
-    /// Add a public key to the metadata
+    /// Add a public key to the metadata ("jwk")
     pub fn with_public_key(mut self, public_key: impl ToString) -> Self {
         self.public_key = Some(public_key.to_string());
         self
     }
 
-    /// Add a certificate URL to the metadata
+    /// Add a certificate URL to the metadata ("x5u")
     pub fn with_certificate_url(mut self, certificate_url: impl ToString) -> Self {
         self.certificate_url = Some(certificate_url.to_string());
         self
     }
 
-    /// Add a certificate SHA-1 thumbprint to the metadata
+    /// Add a certificate SHA-1 thumbprint to the metadata ("x5t")
     pub fn with_certificate_sha1_thumbprint(
         mut self,
         certificate_sha1_thumbprint: impl ToString,
@@ -97,7 +97,7 @@ impl KeyMetadata {
         Ok(self)
     }
 
-    /// Add a certificate SHA-256 thumbprint to the metadata
+    /// Add a certificate SHA-256 thumbprint to the metadata ("x5t#256")
     pub fn with_certificate_sha256_thumbprint(
         mut self,
         certificate_sha256_thumbprint: impl ToString,
