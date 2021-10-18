@@ -72,15 +72,15 @@ impl TokenMetadata {
         self.jwt_header.certificate_url.as_deref()
     }
 
-    /// 22 base64-encoded bytes repesenting the public key to use for verification.
-    /// Defined to be a SHA1 hash of the secret key; can be anything of the same length in practice.
+    /// Base64-encoded SHA1 hash of the X.509 certificate for this token.
+    /// In practice, it can also be any base64-encoded 22 byte string representing the public key.
     /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
     pub fn certificate_sha1_thumbprint(&self) -> Option<&str> {
         self.jwt_header.certificate_sha1_thumbprint.as_deref()
     }
 
-    /// 32 base64-encoded bytes repesenting the public key to use for verification.
-    /// Defined to be a SHA256 hash of the secret key; can be anything of the same length in practice.
+    /// Base64-encoded SHA256 hash of the X.509 certificate for this token.
+    /// In practice, it can also be any base64-encoded 32 byte string representing the public key.
     /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
     pub fn certificate_sha256_thumbprint(&self) -> Option<&str> {
         self.jwt_header.certificate_sha256_thumbprint.as_deref()
