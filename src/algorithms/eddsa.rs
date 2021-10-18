@@ -122,7 +122,7 @@ pub trait EdDSAKeyPairLike {
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
         let metadata =
-            NewTokenMetadata::new(Self::jwt_alg_name().to_string(), self.key_id().clone());
+            KeyPairMetadata::new(Self::jwt_alg_name().to_string(), self.key_id().clone());
         Token::build(&metadata.jwt_header, claims, |authenticated| {
             let noise = ed25519_compact::Noise::generate();
             let signature = self.key_pair().as_ref().sk.sign(authenticated, Some(noise));

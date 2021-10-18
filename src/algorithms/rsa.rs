@@ -136,7 +136,7 @@ pub trait RSAKeyPairLike {
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
         let metadata =
-            NewTokenMetadata::new(Self::jwt_alg_name().to_string(), self.key_id().clone());
+            KeyPairMetadata::new(Self::jwt_alg_name().to_string(), self.key_id().clone());
         Token::build(&metadata.jwt_header, claims, |authenticated| {
             let digest = Self::hash(authenticated.as_bytes());
             let mut rng = rand::thread_rng();

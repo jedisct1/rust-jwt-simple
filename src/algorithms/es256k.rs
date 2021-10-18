@@ -102,7 +102,7 @@ pub trait ECDSAP256kKeyPairLike {
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
         let metadata =
-            NewTokenMetadata::new(Self::jwt_alg_name().to_string(), self.key_id().clone());
+            KeyPairMetadata::new(Self::jwt_alg_name().to_string(), self.key_id().clone());
         Token::build(&metadata.jwt_header, claims, |authenticated| {
             let mut digest = hmac_sha256::Hash::new();
             digest.update(authenticated.as_bytes());

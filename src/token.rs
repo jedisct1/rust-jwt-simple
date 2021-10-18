@@ -175,11 +175,11 @@ impl Token {
 
 /// Unsigned metadata to be attached to a new token
 #[derive(Debug, Clone, Default)]
-pub struct NewTokenMetadata {
+pub(crate) struct KeyPairMetadata {
     pub(crate) jwt_header: JWTHeader,
 }
 
-impl NewTokenMetadata {
+impl KeyPairMetadata {
     pub(crate) fn new(algorithm: String, key_id: Option<String>) -> Self {
         let jwt_header = JWTHeader {
             algorithm,
