@@ -6,50 +6,53 @@ use serde::{de::DeserializeOwned, Serialize};
 use crate::claims::*;
 use crate::common::*;
 use crate::error::*;
+use crate::jwt_header::*;
 use crate::token::*;
 
 #[doc(hidden)]
 #[derive(Debug, Clone)]
-pub struct Edwards25519PublicKey(ed25519_compact::PublicKey);
+pub struct Edwards25519PublicKey {
+    ed25519_pk: ed25519_compact::PublicKey,
+}
 
 impl AsRef<ed25519_compact::PublicKey> for Edwards25519PublicKey {
     fn as_ref(&self) -> &ed25519_compact::PublicKey {
-        &self.0
+        &self.ed25519_pk
     }
 }
 
 impl Edwards25519PublicKey {
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
         let ed25519_pk = ed25519_compact::PublicKey::from_slice(raw);
-        Ok(Edwards25519PublicKey(
-            ed25519_pk.map_err(|_| JWTError::InvalidPublicKey)?,
-        ))
+        Ok(Edwards25519PublicKey {
+            ed25519_pk: ed25519_pk.map_err(|_| JWTError::InvalidPublicKey)?,
+        })
     }
 
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         let ed25519_pk = ed25519_compact::PublicKey::from_der(der);
-        Ok(Edwards25519PublicKey(
-            ed25519_pk.map_err(|_| JWTError::InvalidPublicKey)?,
-        ))
+        Ok(Edwards25519PublicKey {
+            ed25519_pk: ed25519_pk.map_err(|_| JWTError::InvalidPublicKey)?,
+        })
     }
 
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
         let ed25519_pk = ed25519_compact::PublicKey::from_pem(pem);
-        Ok(Edwards25519PublicKey(
-            ed25519_pk.map_err(|_| JWTError::InvalidPublicKey)?,
-        ))
+        Ok(Edwards25519PublicKey {
+            ed25519_pk: ed25519_pk.map_err(|_| JWTError::InvalidPublicKey)?,
+        })
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.as_ref().to_vec()
+        self.ed25519_pk.as_ref().to_vec()
     }
 
     pub fn to_der(&self) -> Vec<u8> {
-        self.0.to_der()
+        self.ed25519_pk.to_der()
     }
 
     pub fn to_pem(&self) -> String {
-        self.0.to_pem()
+        self.ed25519_pk.to_pem()
     }
 }
 
@@ -103,7 +106,7 @@ impl Edwards25519KeyPair {
 
     pub fn public_key(&self) -> Edwards25519PublicKey {
         let ed25519_pk = self.0.pk;
-        Edwards25519PublicKey(ed25519_pk)
+        Edwards25519PublicKey { ed25519_pk }
     }
 
     pub fn generate() -> Self {
@@ -121,9 +124,8 @@ pub trait EdDSAKeyPairLike {
         &self,
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
-        let metadata =
-            KeyPairMetadata::new(Self::jwt_alg_name().to_string(), self.key_id().clone());
-        Token::build(&metadata.jwt_header, claims, |authenticated| {
+        let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone());
+        Token::build(&jwt_header, claims, |authenticated| {
             let noise = ed25519_compact::Noise::generate();
             let signature = self.key_pair().as_ref().sk.sign(authenticated, Some(noise));
             Ok(signature.to_vec())

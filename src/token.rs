@@ -180,15 +180,6 @@ pub(crate) struct KeyPairMetadata {
 }
 
 impl KeyPairMetadata {
-    pub(crate) fn new(algorithm: String, key_id: Option<String>) -> Self {
-        let jwt_header = JWTHeader {
-            algorithm,
-            key_id,
-            ..Default::default()
-        };
-        Self { jwt_header }
-    }
-
     pub fn with_key_set_url(mut self, key_set_url: impl ToString) -> Self {
         self.jwt_header.key_set_url = Some(key_set_url.to_string());
         self

@@ -53,3 +53,13 @@ impl Default for JWTHeader {
         }
     }
 }
+
+impl JWTHeader {
+    pub(crate) fn new(algorithm: String, key_id: Option<String>) -> Self {
+        JWTHeader {
+            algorithm,
+            key_id,
+            ..Default::default()
+        }
+    }
+}
