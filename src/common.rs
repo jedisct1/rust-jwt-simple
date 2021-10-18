@@ -42,7 +42,9 @@ pub struct VerificationOptions {
     pub max_validity: Option<Duration>,
 }
 
-/// Unsigned metadata about a key to be attached to tokens
+/// Unsigned metadata about a key to be attached to tokens.
+/// This information can be freely tampered with by an intermediate party.
+/// Most applications should not need to use this.
 #[derive(Debug, Clone, Default)]
 pub struct KeyMetadata {
     pub(crate) key_set_url: Option<String>,
@@ -53,21 +55,25 @@ pub struct KeyMetadata {
 }
 
 impl KeyMetadata {
+    /// Add a key set URL to the metadata
     pub fn with_key_set_url(mut self, key_set_url: impl ToString) -> Self {
         self.key_set_url = Some(key_set_url.to_string());
         self
     }
 
+    /// Add a public key to the metadata
     pub fn with_public_key(mut self, public_key: impl ToString) -> Self {
         self.public_key = Some(public_key.to_string());
         self
     }
 
+    /// Add a certificate URL to the metadata
     pub fn with_certificate_url(mut self, certificate_url: impl ToString) -> Self {
         self.certificate_url = Some(certificate_url.to_string());
         self
     }
 
+    /// Add a certificate SHA-1 thumbprint to the metadata
     pub fn with_certificate_sha1_thumbprint(
         mut self,
         certificate_sha1_thumbprint: impl ToString,
@@ -91,6 +97,7 @@ impl KeyMetadata {
         Ok(self)
     }
 
+    /// Add a certificate SHA-256 thumbprint to the metadata
     pub fn with_certificate_sha256_thumbprint(
         mut self,
         certificate_sha256_thumbprint: impl ToString,
