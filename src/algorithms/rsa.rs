@@ -1,3 +1,6 @@
+use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
+use hmac_sha1_compact::Hash as SHA1;
+use hmac_sha256::Hash as SHA256;
 use hmac_sha512::sha384 as hmac_sha384;
 use rsa::pkcs1::{FromRsaPrivateKey as _, FromRsaPublicKey as _};
 use rsa::pkcs8::{FromPrivateKey as _, FromPublicKey as _, ToPrivateKey as _, ToPublicKey as _};
@@ -316,6 +319,14 @@ impl RS256PublicKey {
         self.key_id = Some(key_id.to_string());
         self
     }
+
+    pub fn sha1_thumbprint(&self) -> String {
+        Base64UrlSafeNoPadding::encode_to_string(SHA1::hash(&self.pk.to_der().unwrap())).unwrap()
+    }
+
+    pub fn sha256_thumbprint(&self) -> String {
+        Base64UrlSafeNoPadding::encode_to_string(SHA256::hash(&self.pk.to_der().unwrap())).unwrap()
+    }
 }
 
 //
@@ -461,6 +472,14 @@ impl RS512PublicKey {
         self.key_id = Some(key_id.to_string());
         self
     }
+
+    pub fn sha1_thumbprint(&self) -> String {
+        Base64UrlSafeNoPadding::encode_to_string(SHA1::hash(&self.pk.to_der().unwrap())).unwrap()
+    }
+
+    pub fn sha256_thumbprint(&self) -> String {
+        Base64UrlSafeNoPadding::encode_to_string(SHA256::hash(&self.pk.to_der().unwrap())).unwrap()
+    }
 }
 
 //
@@ -605,6 +624,14 @@ impl RS384PublicKey {
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
+    }
+
+    pub fn sha1_thumbprint(&self) -> String {
+        Base64UrlSafeNoPadding::encode_to_string(SHA1::hash(&self.pk.to_der().unwrap())).unwrap()
+    }
+
+    pub fn sha256_thumbprint(&self) -> String {
+        Base64UrlSafeNoPadding::encode_to_string(SHA256::hash(&self.pk.to_der().unwrap())).unwrap()
     }
 }
 
@@ -896,6 +923,14 @@ impl PS512PublicKey {
         self.key_id = Some(key_id.to_string());
         self
     }
+
+    pub fn sha1_thumbprint(&self) -> String {
+        Base64UrlSafeNoPadding::encode_to_string(SHA1::hash(&self.pk.to_der().unwrap())).unwrap()
+    }
+
+    pub fn sha256_thumbprint(&self) -> String {
+        Base64UrlSafeNoPadding::encode_to_string(SHA256::hash(&self.pk.to_der().unwrap())).unwrap()
+    }
 }
 
 //
@@ -1040,5 +1075,13 @@ impl PS384PublicKey {
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
+    }
+
+    pub fn sha1_thumbprint(&self) -> String {
+        Base64UrlSafeNoPadding::encode_to_string(SHA1::hash(&self.pk.to_der().unwrap())).unwrap()
+    }
+
+    pub fn sha256_thumbprint(&self) -> String {
+        Base64UrlSafeNoPadding::encode_to_string(SHA256::hash(&self.pk.to_der().unwrap())).unwrap()
     }
 }

@@ -1,4 +1,6 @@
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
+use hmac_sha1_compact::Hash as SHA1;
+use hmac_sha256::Hash as SHA256;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::claims::*;
@@ -301,5 +303,13 @@ impl Ed25519PublicKey {
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
+    }
+
+    pub fn sha1_thumbprint(&self) -> String {
+        Base64UrlSafeNoPadding::encode_to_string(SHA1::hash(&self.pk.to_der())).unwrap()
+    }
+
+    pub fn sha256_thumbprint(&self) -> String {
+        Base64UrlSafeNoPadding::encode_to_string(SHA256::hash(&self.pk.to_der())).unwrap()
     }
 }
