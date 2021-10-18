@@ -1,4 +1,4 @@
-use ct_codecs::{Base64UrlSafeNoPadding, Decoder, Encoder};
+use ct_codecs::{Base64UrlSafeNoPadding, Decoder, Encoder, Hex};
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::claims::*;
@@ -12,7 +12,7 @@ pub const MAX_HEADER_LENGTH: usize = 8192;
 pub struct Token;
 
 /// JWT token information useful before signature/tag verification
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct TokenMetadata {
     jwt_header: JWTHeader,
 }
@@ -72,15 +72,15 @@ impl TokenMetadata {
         self.jwt_header.certificate_url.as_deref()
     }
 
-    /// Base64-encoded SHA1 hash of the X.509 certificate for this token.
-    /// In practice, it can also be any base64-encoded 22 byte string representing the public key.
+    /// URLsafe-base64-encoded SHA1 hash of the X.509 certificate for this token.
+    /// In practice, it can also be any string representing the public key.
     /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
     pub fn certificate_sha1_thumbprint(&self) -> Option<&str> {
         self.jwt_header.certificate_sha1_thumbprint.as_deref()
     }
 
-    /// Base64-encoded SHA256 hash of the X.509 certificate for this token.
-    /// In practice, it can also be any base64-encoded 32 byte string representing the public key.
+    /// URLsafe-base64-encoded SHA256 hash of the X.509 certificate for this token.
+    /// In practice, it can also be any string representing the public key.
     /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
     pub fn certificate_sha256_thumbprint(&self) -> Option<&str> {
         self.jwt_header.certificate_sha256_thumbprint.as_deref()
@@ -134,6 +134,9 @@ impl Token {
         let jwt_header: JWTHeader = serde_json::from_slice(
             &Base64UrlSafeNoPadding::decode_to_vec(jwt_header_b64, None)?,
         )?;
+        if let Some(signature_type) = &jwt_header.signature_type {
+            ensure!(signature_type == "JWT", JWTError::NotJWT);
+        }
         ensure!(
             jwt_header.algorithm == jwt_alg_name,
             JWTError::AlgorithmMismatch
@@ -167,6 +170,84 @@ impl Token {
             &Base64UrlSafeNoPadding::decode_to_vec(jwt_header_b64, None)?,
         )?;
         Ok(TokenMetadata { jwt_header })
+    }
+}
+
+/// Unsigned metadata to be attached to a new token
+#[derive(Debug, Clone, Default)]
+pub struct NewTokenMetadata {
+    pub(crate) jwt_header: JWTHeader,
+}
+
+impl NewTokenMetadata {
+    pub(crate) fn new(algorithm: String, key_id: Option<String>) -> Self {
+        let jwt_header = JWTHeader {
+            algorithm,
+            key_id,
+            ..Default::default()
+        };
+        Self { jwt_header }
+    }
+
+    pub fn with_key_set_url(mut self, key_set_url: impl ToString) -> Self {
+        self.jwt_header.key_set_url = Some(key_set_url.to_string());
+        self
+    }
+
+    pub fn with_public_key(mut self, public_key: impl ToString) -> Self {
+        self.jwt_header.public_key = Some(public_key.to_string());
+        self
+    }
+
+    pub fn with_certificate_url(mut self, certificate_url: impl ToString) -> Self {
+        self.jwt_header.certificate_url = Some(certificate_url.to_string());
+        self
+    }
+
+    pub fn with_certificate_sha1_thumbprint(
+        mut self,
+        certificate_sha1_thumbprint: impl ToString,
+    ) -> Result<Self, Error> {
+        let thumbprint = certificate_sha1_thumbprint.to_string();
+        let mut bin = [0u8; 20];
+        if thumbprint.len() == 40 {
+            ensure!(
+                Hex::decode(&mut bin, &thumbprint, None)?.len() == bin.len(),
+                JWTError::InvalidCertThumprint
+            );
+            let thumbprint = Base64UrlSafeNoPadding::encode_to_string(&bin)?;
+            self.jwt_header.certificate_sha1_thumbprint = Some(thumbprint);
+            return Ok(self);
+        }
+        ensure!(
+            Base64UrlSafeNoPadding::decode(&mut bin, &thumbprint, None)?.len() == bin.len(),
+            JWTError::InvalidCertThumprint
+        );
+        self.jwt_header.certificate_sha1_thumbprint = Some(thumbprint);
+        Ok(self)
+    }
+
+    pub fn with_certificate_sha256_thumbprint(
+        mut self,
+        certificate_sha256_thumbprint: impl ToString,
+    ) -> Result<Self, Error> {
+        let thumbprint = certificate_sha256_thumbprint.to_string();
+        let mut bin = [0u8; 32];
+        if thumbprint.len() == 64 {
+            ensure!(
+                Hex::decode(&mut bin, &thumbprint, None)?.len() == bin.len(),
+                JWTError::InvalidCertThumprint
+            );
+            let thumbprint = Base64UrlSafeNoPadding::encode_to_string(&bin)?;
+            self.jwt_header.certificate_sha1_thumbprint = Some(thumbprint);
+            return Ok(self);
+        }
+        ensure!(
+            Base64UrlSafeNoPadding::decode(&mut bin, &thumbprint, None)?.len() == bin.len(),
+            JWTError::InvalidCertThumprint
+        );
+        self.jwt_header.certificate_sha1_thumbprint = Some(thumbprint);
+        Ok(self)
     }
 }
 

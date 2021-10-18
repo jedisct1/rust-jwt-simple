@@ -7,7 +7,6 @@ use zeroize::Zeroize;
 use crate::claims::*;
 use crate::common::*;
 use crate::error::*;
-use crate::jwt_header::*;
 use crate::token::*;
 
 #[doc(hidden)]
@@ -53,12 +52,9 @@ pub trait MACLike {
         &self,
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
-        let jwt_header = JWTHeader {
-            algorithm: Self::jwt_alg_name().to_string(),
-            key_id: self.key_id().clone(),
-            ..Default::default()
-        };
-        Token::build(&jwt_header, claims, |authenticated| {
+        let metadata =
+            NewTokenMetadata::new(Self::jwt_alg_name().to_string(), self.key_id().clone());
+        Token::build(&metadata.jwt_header, claims, |authenticated| {
             Ok(self.authentication_tag(authenticated))
         })
     }

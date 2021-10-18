@@ -54,6 +54,10 @@ pub enum JWTError {
     TooManyAudiences,
     #[error("Too many issuers to be represented as a string")]
     TooManyIssuers,
+    #[error("Invalid certificate thumbprint")]
+    InvalidCertThumprint,
+    #[error("Not a JWT token")]
+    NotJWT,
 }
 
 impl From<&str> for JWTError {
