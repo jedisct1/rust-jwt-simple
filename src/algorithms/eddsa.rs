@@ -133,7 +133,7 @@ pub trait EdDSAKeyPairLike {
     fn key_pair(&self) -> &Edwards25519KeyPair;
     fn key_id(&self) -> &Option<String>;
     fn metadata(&self) -> &Option<KeyMetadata>;
-    fn attach_metadata(&mut self, metadata: KeyMetadata);
+    fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error>;
 
     fn sign<CustomClaims: Serialize + DeserializeOwned>(
         &self,
@@ -215,8 +215,9 @@ impl EdDSAKeyPairLike for Ed25519KeyPair {
         &self.key_pair.metadata
     }
 
-    fn attach_metadata(&mut self, metadata: KeyMetadata) {
+    fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error> {
         self.key_pair.metadata = Some(metadata);
+        Ok(())
     }
 }
 

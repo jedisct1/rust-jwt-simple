@@ -472,4 +472,27 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         let kp = Ed25519KeyPair::from_pem(sk_pem).unwrap();
         assert_eq!(kp.public_key().to_pem(), pk_pem);
     }
+
+    #[test]
+    fn key_metadata() {
+        let mut key_pair = Ed25519KeyPair::generate();
+        let thumbprint = key_pair.public_key().sha1_thumbprint();
+        let key_metadata = KeyMetadata::default()
+            .with_certificate_sha1_thumbprint(&thumbprint)
+            .unwrap();
+        key_pair.attach_metadata(key_metadata).unwrap();
+
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key_pair.sign(claims).unwrap();
+
+        let decoded_metadata = Token::decode_metadata(&token).unwrap();
+        assert_eq!(
+            decoded_metadata.certificate_sha1_thumbprint(),
+            Some(thumbprint.as_ref())
+        );
+        let _ = key_pair
+            .public_key()
+            .verify_token::<NoCustomClaims>(&token, None)
+            .unwrap();
+    }
 }

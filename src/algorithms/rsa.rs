@@ -142,7 +142,7 @@ pub trait RSAKeyPairLike {
     fn key_pair(&self) -> &RSAKeyPair;
     fn key_id(&self) -> &Option<String>;
     fn metadata(&self) -> &Option<KeyMetadata>;
-    fn attach_metadata(&mut self, metadata: KeyMetadata);
+    fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error>;
     fn hash(message: &[u8]) -> Vec<u8>;
     fn padding_scheme(&self) -> rsa::PaddingScheme;
 
@@ -222,8 +222,9 @@ impl RSAKeyPairLike for RS256KeyPair {
         &self.key_pair.metadata
     }
 
-    fn attach_metadata(&mut self, metadata: KeyMetadata) {
+    fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error> {
         self.key_pair.metadata = Some(metadata);
+        Ok(())
     }
 
     fn hash(message: &[u8]) -> Vec<u8> {
@@ -383,8 +384,9 @@ impl RSAKeyPairLike for RS512KeyPair {
         &self.key_pair.metadata
     }
 
-    fn attach_metadata(&mut self, metadata: KeyMetadata) {
+    fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error> {
         self.key_pair.metadata = Some(metadata);
+        Ok(())
     }
 
     fn hash(message: &[u8]) -> Vec<u8> {
@@ -544,8 +546,9 @@ impl RSAKeyPairLike for RS384KeyPair {
         &self.key_pair.metadata
     }
 
-    fn attach_metadata(&mut self, metadata: KeyMetadata) {
+    fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error> {
         self.key_pair.metadata = Some(metadata);
+        Ok(())
     }
 
     fn hash(message: &[u8]) -> Vec<u8> {
@@ -705,8 +708,9 @@ impl RSAKeyPairLike for PS256KeyPair {
         &self.key_pair.metadata
     }
 
-    fn attach_metadata(&mut self, metadata: KeyMetadata) {
+    fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error> {
         self.key_pair.metadata = Some(metadata);
+        Ok(())
     }
 
     fn hash(message: &[u8]) -> Vec<u8> {
@@ -858,8 +862,9 @@ impl RSAKeyPairLike for PS512KeyPair {
         &self.key_pair.metadata
     }
 
-    fn attach_metadata(&mut self, metadata: KeyMetadata) {
+    fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error> {
         self.key_pair.metadata = Some(metadata);
+        Ok(())
     }
 
     fn hash(message: &[u8]) -> Vec<u8> {
@@ -1019,8 +1024,9 @@ impl RSAKeyPairLike for PS384KeyPair {
         &self.key_pair.metadata
     }
 
-    fn attach_metadata(&mut self, metadata: KeyMetadata) {
+    fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error> {
         self.key_pair.metadata = Some(metadata);
+        Ok(())
     }
 
     fn hash(message: &[u8]) -> Vec<u8> {
