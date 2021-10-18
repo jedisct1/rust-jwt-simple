@@ -176,11 +176,11 @@ impl Token {
 /// Unsigned metadata to be attached to a new token
 #[derive(Debug, Clone, Default)]
 pub struct KeyPairMetadata {
-    pub key_set_url: Option<String>,
-    pub public_key: Option<String>,
-    pub certificate_url: Option<String>,
-    pub certificate_sha1_thumbprint: Option<String>,
-    pub certificate_sha256_thumbprint: Option<String>,
+    key_set_url: Option<String>,
+    public_key: Option<String>,
+    certificate_url: Option<String>,
+    certificate_sha1_thumbprint: Option<String>,
+    certificate_sha256_thumbprint: Option<String>,
 }
 
 impl KeyPairMetadata {
@@ -234,14 +234,14 @@ impl KeyPairMetadata {
                 JWTError::InvalidCertThumprint
             );
             let thumbprint = Base64UrlSafeNoPadding::encode_to_string(&bin)?;
-            self.certificate_sha1_thumbprint = Some(thumbprint);
+            self.certificate_sha256_thumbprint = Some(thumbprint);
             return Ok(self);
         }
         ensure!(
             Base64UrlSafeNoPadding::decode(&mut bin, &thumbprint, None)?.len() == bin.len(),
             JWTError::InvalidCertThumprint
         );
-        self.certificate_sha1_thumbprint = Some(thumbprint);
+        self.certificate_sha256_thumbprint = Some(thumbprint);
         Ok(self)
     }
 }
