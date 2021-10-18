@@ -58,6 +58,7 @@ impl Edwards25519PublicKey {
 #[derive(Clone)]
 pub struct Edwards25519KeyPair {
     ed25519_kp: ed25519_compact::KeyPair,
+    metadata: Option<KeyMetadata>,
 }
 
 impl AsRef<ed25519_compact::KeyPair> for Edwards25519KeyPair {
@@ -69,7 +70,10 @@ impl AsRef<ed25519_compact::KeyPair> for Edwards25519KeyPair {
 impl Edwards25519KeyPair {
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
         let ed25519_kp = ed25519_compact::KeyPair::from_slice(raw)?;
-        Ok(Edwards25519KeyPair { ed25519_kp })
+        Ok(Edwards25519KeyPair {
+            ed25519_kp,
+            metadata: None,
+        })
     }
 
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
@@ -79,7 +83,10 @@ impl Edwards25519KeyPair {
                 ed25519_compact::SecretKey::from_der(der)?.seed(),
             ),
         };
-        Ok(Edwards25519KeyPair { ed25519_kp })
+        Ok(Edwards25519KeyPair {
+            ed25519_kp,
+            metadata: None,
+        })
     }
 
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
@@ -89,7 +96,10 @@ impl Edwards25519KeyPair {
                 ed25519_compact::SecretKey::from_pem(pem)?.seed(),
             ),
         };
-        Ok(Edwards25519KeyPair { ed25519_kp })
+        Ok(Edwards25519KeyPair {
+            ed25519_kp,
+            metadata: None,
+        })
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -111,7 +121,10 @@ impl Edwards25519KeyPair {
 
     pub fn generate() -> Self {
         let ed25519_kp = ed25519_compact::KeyPair::from_seed(ed25519_compact::Seed::generate());
-        Edwards25519KeyPair { ed25519_kp }
+        Edwards25519KeyPair {
+            ed25519_kp,
+            metadata: None,
+        }
     }
 }
 

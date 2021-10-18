@@ -173,9 +173,9 @@ impl Token {
     }
 }
 
-/// Unsigned metadata to be attached to a new token
+/// Unsigned metadata about a key to be attached to tokens
 #[derive(Debug, Clone, Default)]
-pub struct KeyPairMetadata {
+pub struct KeyMetadata {
     key_set_url: Option<String>,
     public_key: Option<String>,
     certificate_url: Option<String>,
@@ -183,7 +183,7 @@ pub struct KeyPairMetadata {
     certificate_sha256_thumbprint: Option<String>,
 }
 
-impl KeyPairMetadata {
+impl KeyMetadata {
     pub fn with_key_set_url(mut self, key_set_url: impl ToString) -> Self {
         self.key_set_url = Some(key_set_url.to_string());
         self

@@ -71,6 +71,7 @@ impl RSAPublicKey {
 #[derive(Debug, Clone)]
 pub struct RSAKeyPair {
     rsa_sk: rsa::RsaPrivateKey,
+    metadata: Option<KeyMetadata>,
 }
 
 impl AsRef<rsa::RsaPrivateKey> for RSAKeyPair {
@@ -85,7 +86,10 @@ impl RSAKeyPair {
             .or_else(|_| rsa::RsaPrivateKey::from_pkcs1_der(der))?;
         rsa_sk.validate()?;
         rsa_sk.precompute()?;
-        Ok(RSAKeyPair { rsa_sk })
+        Ok(RSAKeyPair {
+            rsa_sk,
+            metadata: None,
+        })
     }
 
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
@@ -94,7 +98,10 @@ impl RSAKeyPair {
             .or_else(|_| rsa::RsaPrivateKey::from_pkcs1_pem(pem))?;
         rsa_sk.validate()?;
         rsa_sk.precompute()?;
-        Ok(RSAKeyPair { rsa_sk })
+        Ok(RSAKeyPair {
+            rsa_sk,
+            metadata: None,
+        })
     }
 
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
@@ -123,7 +130,10 @@ impl RSAKeyPair {
         };
         let mut rng = rand::thread_rng();
         let rsa_sk = rsa::RsaPrivateKey::new(&mut rng, modulus_bits)?;
-        Ok(RSAKeyPair { rsa_sk })
+        Ok(RSAKeyPair {
+            rsa_sk,
+            metadata: None,
+        })
     }
 }
 
