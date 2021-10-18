@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::common::*;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct JWTHeader {
     #[serde(rename = "alg")]
@@ -61,5 +63,28 @@ impl JWTHeader {
             key_id,
             ..Default::default()
         }
+    }
+
+    pub(crate) fn with_metadata(mut self, metadata: &Option<KeyMetadata>) -> Self {
+        let metadata = match metadata {
+            None => return self,
+            Some(metadata) => metadata,
+        };
+        if self.key_set_url.is_none() {
+            self.key_set_url = metadata.key_set_url.clone();
+        }
+        if self.public_key.is_none() {
+            self.public_key = metadata.public_key.clone();
+        }
+        if self.certificate_url.is_none() {
+            self.certificate_url = metadata.certificate_url.clone();
+        }
+        if self.certificate_sha1_thumbprint.is_none() {
+            self.certificate_sha1_thumbprint = metadata.certificate_sha1_thumbprint.clone();
+        }
+        if self.certificate_sha256_thumbprint.is_none() {
+            self.certificate_sha256_thumbprint = metadata.certificate_sha256_thumbprint.clone();
+        }
+        self
     }
 }

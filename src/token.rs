@@ -1,4 +1,4 @@
-use ct_codecs::{Base64UrlSafeNoPadding, Decoder, Encoder, Hex};
+use ct_codecs::{Base64UrlSafeNoPadding, Decoder, Encoder};
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::claims::*;
@@ -170,79 +170,6 @@ impl Token {
             &Base64UrlSafeNoPadding::decode_to_vec(jwt_header_b64, None)?,
         )?;
         Ok(TokenMetadata { jwt_header })
-    }
-}
-
-/// Unsigned metadata about a key to be attached to tokens
-#[derive(Debug, Clone, Default)]
-pub struct KeyMetadata {
-    key_set_url: Option<String>,
-    public_key: Option<String>,
-    certificate_url: Option<String>,
-    certificate_sha1_thumbprint: Option<String>,
-    certificate_sha256_thumbprint: Option<String>,
-}
-
-impl KeyMetadata {
-    pub fn with_key_set_url(mut self, key_set_url: impl ToString) -> Self {
-        self.key_set_url = Some(key_set_url.to_string());
-        self
-    }
-
-    pub fn with_public_key(mut self, public_key: impl ToString) -> Self {
-        self.public_key = Some(public_key.to_string());
-        self
-    }
-
-    pub fn with_certificate_url(mut self, certificate_url: impl ToString) -> Self {
-        self.certificate_url = Some(certificate_url.to_string());
-        self
-    }
-
-    pub fn with_certificate_sha1_thumbprint(
-        mut self,
-        certificate_sha1_thumbprint: impl ToString,
-    ) -> Result<Self, Error> {
-        let thumbprint = certificate_sha1_thumbprint.to_string();
-        let mut bin = [0u8; 20];
-        if thumbprint.len() == 40 {
-            ensure!(
-                Hex::decode(&mut bin, &thumbprint, None)?.len() == bin.len(),
-                JWTError::InvalidCertThumprint
-            );
-            let thumbprint = Base64UrlSafeNoPadding::encode_to_string(&bin)?;
-            self.certificate_sha1_thumbprint = Some(thumbprint);
-            return Ok(self);
-        }
-        ensure!(
-            Base64UrlSafeNoPadding::decode(&mut bin, &thumbprint, None)?.len() == bin.len(),
-            JWTError::InvalidCertThumprint
-        );
-        self.certificate_sha1_thumbprint = Some(thumbprint);
-        Ok(self)
-    }
-
-    pub fn with_certificate_sha256_thumbprint(
-        mut self,
-        certificate_sha256_thumbprint: impl ToString,
-    ) -> Result<Self, Error> {
-        let thumbprint = certificate_sha256_thumbprint.to_string();
-        let mut bin = [0u8; 32];
-        if thumbprint.len() == 64 {
-            ensure!(
-                Hex::decode(&mut bin, &thumbprint, None)?.len() == bin.len(),
-                JWTError::InvalidCertThumprint
-            );
-            let thumbprint = Base64UrlSafeNoPadding::encode_to_string(&bin)?;
-            self.certificate_sha256_thumbprint = Some(thumbprint);
-            return Ok(self);
-        }
-        ensure!(
-            Base64UrlSafeNoPadding::decode(&mut bin, &thumbprint, None)?.len() == bin.len(),
-            JWTError::InvalidCertThumprint
-        );
-        self.certificate_sha256_thumbprint = Some(thumbprint);
-        Ok(self)
     }
 }
 

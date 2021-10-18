@@ -141,6 +141,7 @@ pub trait RSAKeyPairLike {
     fn jwt_alg_name() -> &'static str;
     fn key_pair(&self) -> &RSAKeyPair;
     fn key_id(&self) -> &Option<String>;
+    fn metadata(&self) -> &Option<KeyMetadata>;
     fn attach_metadata(&mut self, metadata: KeyMetadata);
     fn hash(message: &[u8]) -> Vec<u8>;
     fn padding_scheme(&self) -> rsa::PaddingScheme;
@@ -149,7 +150,8 @@ pub trait RSAKeyPairLike {
         &self,
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
-        let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone());
+        let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
+            .with_metadata(self.metadata());
         Token::build(&jwt_header, claims, |authenticated| {
             let digest = Self::hash(authenticated.as_bytes());
             let mut rng = rand::thread_rng();
@@ -214,6 +216,10 @@ impl RSAKeyPairLike for RS256KeyPair {
 
     fn key_id(&self) -> &Option<String> {
         &self.key_id
+    }
+
+    fn metadata(&self) -> &Option<KeyMetadata> {
+        &self.key_pair.metadata
     }
 
     fn attach_metadata(&mut self, metadata: KeyMetadata) {
@@ -373,6 +379,10 @@ impl RSAKeyPairLike for RS512KeyPair {
         &self.key_id
     }
 
+    fn metadata(&self) -> &Option<KeyMetadata> {
+        &self.key_pair.metadata
+    }
+
     fn attach_metadata(&mut self, metadata: KeyMetadata) {
         self.key_pair.metadata = Some(metadata);
     }
@@ -528,6 +538,10 @@ impl RSAKeyPairLike for RS384KeyPair {
 
     fn key_id(&self) -> &Option<String> {
         &self.key_id
+    }
+
+    fn metadata(&self) -> &Option<KeyMetadata> {
+        &self.key_pair.metadata
     }
 
     fn attach_metadata(&mut self, metadata: KeyMetadata) {
@@ -687,6 +701,10 @@ impl RSAKeyPairLike for PS256KeyPair {
         &self.key_id
     }
 
+    fn metadata(&self) -> &Option<KeyMetadata> {
+        &self.key_pair.metadata
+    }
+
     fn attach_metadata(&mut self, metadata: KeyMetadata) {
         self.key_pair.metadata = Some(metadata);
     }
@@ -834,6 +852,10 @@ impl RSAKeyPairLike for PS512KeyPair {
 
     fn key_id(&self) -> &Option<String> {
         &self.key_id
+    }
+
+    fn metadata(&self) -> &Option<KeyMetadata> {
+        &self.key_pair.metadata
     }
 
     fn attach_metadata(&mut self, metadata: KeyMetadata) {
@@ -991,6 +1013,10 @@ impl RSAKeyPairLike for PS384KeyPair {
 
     fn key_id(&self) -> &Option<String> {
         &self.key_id
+    }
+
+    fn metadata(&self) -> &Option<KeyMetadata> {
+        &self.key_pair.metadata
     }
 
     fn attach_metadata(&mut self, metadata: KeyMetadata) {

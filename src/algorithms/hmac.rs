@@ -56,6 +56,7 @@ pub trait MACLike {
     fn key(&self) -> &HMACKey;
     fn key_id(&self) -> &Option<String>;
     fn set_key_id(&mut self, key_id: String);
+    fn metadata(&self) -> &Option<KeyMetadata>;
     fn attach_metadata(&mut self, metadata: KeyMetadata);
     fn authentication_tag(&self, authenticated: &str) -> Vec<u8>;
 
@@ -63,7 +64,8 @@ pub trait MACLike {
         &self,
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
-        let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone());
+        let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
+            .with_metadata(self.metadata());
         Token::build(&jwt_header, claims, |authenticated| {
             Ok(self.authentication_tag(authenticated))
         })
@@ -120,6 +122,10 @@ impl MACLike for HS256Key {
 
     fn set_key_id(&mut self, key_id: String) {
         self.key_id = Some(key_id);
+    }
+
+    fn metadata(&self) -> &Option<KeyMetadata> {
+        &self.key.metadata
     }
 
     fn attach_metadata(&mut self, metadata: KeyMetadata) {
@@ -179,6 +185,10 @@ impl MACLike for HS512Key {
         self.key_id = Some(key_id);
     }
 
+    fn metadata(&self) -> &Option<KeyMetadata> {
+        &self.key.metadata
+    }
+
     fn attach_metadata(&mut self, metadata: KeyMetadata) {
         self.key.metadata = Some(metadata);
     }
@@ -234,6 +244,10 @@ impl MACLike for HS384Key {
 
     fn set_key_id(&mut self, key_id: String) {
         self.key_id = Some(key_id);
+    }
+
+    fn metadata(&self) -> &Option<KeyMetadata> {
+        &self.key.metadata
     }
 
     fn attach_metadata(&mut self, metadata: KeyMetadata) {
