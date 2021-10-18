@@ -56,6 +56,7 @@ pub trait MACLike {
     fn key(&self) -> &HMACKey;
     fn key_id(&self) -> &Option<String>;
     fn set_key_id(&mut self, key_id: String);
+    fn attach_metadata(&mut self, metadata: KeyMetadata);
     fn authentication_tag(&self, authenticated: &str) -> Vec<u8>;
 
     fn authenticate<CustomClaims: Serialize + DeserializeOwned>(
@@ -121,6 +122,10 @@ impl MACLike for HS256Key {
         self.key_id = Some(key_id);
     }
 
+    fn attach_metadata(&mut self, metadata: KeyMetadata) {
+        self.key.metadata = Some(metadata);
+    }
+
     fn authentication_tag(&self, authenticated: &str) -> Vec<u8> {
         hmac_sha256::HMAC::mac(authenticated.as_bytes(), self.key().as_ref()).to_vec()
     }
@@ -174,6 +179,10 @@ impl MACLike for HS512Key {
         self.key_id = Some(key_id);
     }
 
+    fn attach_metadata(&mut self, metadata: KeyMetadata) {
+        self.key.metadata = Some(metadata);
+    }
+
     fn authentication_tag(&self, authenticated: &str) -> Vec<u8> {
         hmac_sha512::HMAC::mac(authenticated.as_bytes(), self.key().as_ref()).to_vec()
     }
@@ -225,6 +234,10 @@ impl MACLike for HS384Key {
 
     fn set_key_id(&mut self, key_id: String) {
         self.key_id = Some(key_id);
+    }
+
+    fn attach_metadata(&mut self, metadata: KeyMetadata) {
+        self.key.metadata = Some(metadata);
     }
 
     fn authentication_tag(&self, authenticated: &str) -> Vec<u8> {

@@ -79,6 +79,7 @@ pub trait ECDSAP256KeyPairLike {
     fn jwt_alg_name() -> &'static str;
     fn key_pair(&self) -> &P256KeyPair;
     fn key_id(&self) -> &Option<String>;
+    fn attach_metadata(&mut self, metadata: KeyMetadata);
 
     fn sign<CustomClaims: Serialize + DeserializeOwned>(
         &self,
@@ -158,6 +159,10 @@ impl ECDSAP256KeyPairLike for ES256KeyPair {
 
     fn key_id(&self) -> &Option<String> {
         &self.key_id
+    }
+
+    fn attach_metadata(&mut self, metadata: KeyMetadata) {
+        self.key_pair.metadata = Some(metadata);
     }
 }
 
