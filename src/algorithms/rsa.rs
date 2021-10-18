@@ -69,11 +69,13 @@ impl RSAPublicKey {
 
 #[doc(hidden)]
 #[derive(Debug, Clone)]
-pub struct RSAKeyPair(rsa::RsaPrivateKey);
+pub struct RSAKeyPair {
+    rsa_sk: rsa::RsaPrivateKey,
+}
 
 impl AsRef<rsa::RsaPrivateKey> for RSAKeyPair {
     fn as_ref(&self) -> &rsa::RsaPrivateKey {
-        &self.0
+        &self.rsa_sk
     }
 }
 
@@ -83,7 +85,7 @@ impl RSAKeyPair {
             .or_else(|_| rsa::RsaPrivateKey::from_pkcs1_der(der))?;
         rsa_sk.validate()?;
         rsa_sk.precompute()?;
-        Ok(RSAKeyPair(rsa_sk))
+        Ok(RSAKeyPair { rsa_sk })
     }
 
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
@@ -92,25 +94,25 @@ impl RSAKeyPair {
             .or_else(|_| rsa::RsaPrivateKey::from_pkcs1_pem(pem))?;
         rsa_sk.validate()?;
         rsa_sk.precompute()?;
-        Ok(RSAKeyPair(rsa_sk))
+        Ok(RSAKeyPair { rsa_sk })
     }
 
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
-        self.0
+        self.rsa_sk
             .to_pkcs8_der()
             .map_err(Into::into)
             .map(|x| x.as_ref().to_vec())
     }
 
     pub fn to_pem(&self) -> Result<String, Error> {
-        self.0
+        self.rsa_sk
             .to_pkcs8_pem()
             .map_err(Into::into)
             .map(|x| x.to_string())
     }
 
     pub fn public_key(&self) -> RSAPublicKey {
-        let rsa_pk = self.0.to_public_key();
+        let rsa_pk = self.rsa_sk.to_public_key();
         RSAPublicKey(rsa_pk)
     }
 
@@ -121,7 +123,7 @@ impl RSAKeyPair {
         };
         let mut rng = rand::thread_rng();
         let rsa_sk = rsa::RsaPrivateKey::new(&mut rng, modulus_bits)?;
-        Ok(RSAKeyPair(rsa_sk))
+        Ok(RSAKeyPair { rsa_sk })
     }
 }
 
