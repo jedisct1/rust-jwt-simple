@@ -1,6 +1,6 @@
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use k256::ecdsa::{self, signature::DigestVerifier as _, signature::RandomizedDigestSigner as _};
-use p256::pkcs8::{FromPrivateKey as _, FromPublicKey as _};
+use k256::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 use serde::{de::DeserializeOwned, Serialize};
 use std::convert::TryFrom;
 
@@ -41,6 +41,22 @@ impl K256PublicKey {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         self.0.to_bytes().to_vec()
+    }
+
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        let k256_pk = k256::PublicKey::from(self.0);
+        Ok(k256_pk
+            .to_public_key_der()
+            .map_err(|_| JWTError::InvalidPublicKey)?
+            .as_ref()
+            .to_vec())
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        let k256_pk = k256::PublicKey::from(self.0);
+        Ok(k256_pk
+            .to_public_key_pem(Default::default())
+            .map_err(|_| JWTError::InvalidPublicKey)?)
     }
 }
 
@@ -85,6 +101,23 @@ impl K256KeyPair {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         self.k256_sk.to_bytes().to_vec()
+    }
+
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        let k256_sk = k256::SecretKey::from(&self.k256_sk);
+        Ok(k256_sk
+            .to_pkcs8_der()
+            .map_err(|_| JWTError::InvalidKeyPair)?
+            .as_ref()
+            .to_vec())
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        let k256_sk = k256::SecretKey::from(&self.k256_sk);
+        Ok(k256_sk
+            .to_pkcs8_pem(Default::default())
+            .map_err(|_| JWTError::InvalidKeyPair)?
+            .to_string())
     }
 
     pub fn public_key(&self) -> K256PublicKey {
@@ -226,6 +259,14 @@ impl ES256kKeyPair {
         self.key_pair.to_bytes()
     }
 
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.key_pair.to_der()
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.key_pair.to_pem()
+    }
+
     pub fn public_key(&self) -> ES256kPublicKey {
         ES256kPublicKey {
             pk: self.key_pair.public_key(),
@@ -272,8 +313,30 @@ impl ES256kPublicKey {
         })
     }
 
+    pub fn from_der(der: &[u8]) -> Result<Self, Error> {
+        Ok(ES256kPublicKey {
+            pk: K256PublicKey::from_der(der)?,
+            key_id: None,
+        })
+    }
+
+    pub fn from_pem(pem: &str) -> Result<Self, Error> {
+        Ok(ES256kPublicKey {
+            pk: K256PublicKey::from_pem(pem)?,
+            key_id: None,
+        })
+    }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         self.pk.to_bytes()
+    }
+
+    pub fn to_der(&self) -> Result<Vec<u8>, Error> {
+        self.pk.to_der()
+    }
+
+    pub fn to_pem(&self) -> Result<String, Error> {
+        self.pk.to_pem()
     }
 
     pub fn with_key_id(mut self, key_id: &str) -> Self {
