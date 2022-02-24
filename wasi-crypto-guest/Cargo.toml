@@ -1,0 +1,11 @@
+[package]
+name = "wasi-crypto-guest"
+version = "0.1.0"
+authors = ["Frank Denis <github@pureftpd.org>"]
+edition = "2018"
+publish = false
+
+[dependencies]
+num_enum = "0.5"
+
+[workspace]

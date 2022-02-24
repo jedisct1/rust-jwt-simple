@@ -28,6 +28,8 @@ serde_json = "1.0"
 thiserror = "1.0"
 zeroize = "1.4"
 
+wasi-crypto-guest = { version = "0.1", path = "wasi-crypto-guest" }
+
 [profile.release]
 codegen-units = 1
 incremental = false
