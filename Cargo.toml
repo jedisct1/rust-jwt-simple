@@ -22,13 +22,19 @@ hmac-sha512 = { version = "1.1.1", features = ["traits09", "sha384"] }
 k256 = { version = "0.10.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
 p256 = { version = "0.10.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
 rand = "0.8"
-rsa = "0.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "1.0"
 zeroize = "1.4"
 
 wasi-crypto-guest = { version = "0.1", path = "wasi-crypto-guest" }
+
+[dev-dependencies]
+benchmark-simple = "0.1.7"
+
+[[bench]]
+name = "benchmark"
+harness = false
 
 [profile.release]
 codegen-units = 1
