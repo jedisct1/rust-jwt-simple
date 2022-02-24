@@ -28,6 +28,13 @@ serde_json = "1.0"
 thiserror = "1.0"
 zeroize = "1.4"
 
+[dev-dependencies]
+benchmark-simple = "0.1.7"
+
+[[bench]]
+name = "benchmark"
+harness = false
+
 [profile.release]
 codegen-units = 1
 incremental = false
