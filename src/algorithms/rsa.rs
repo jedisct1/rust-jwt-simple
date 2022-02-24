@@ -127,7 +127,6 @@ pub trait RSAKeyPairLike {
     fn metadata(&self) -> &Option<KeyMetadata>;
     fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error>;
     fn hash(message: &[u8]) -> Vec<u8>;
-    fn padding_scheme(&self) -> rsa::PaddingScheme;
 
     fn sign<CustomClaims: Serialize + DeserializeOwned>(
         &self,
@@ -154,7 +153,6 @@ pub trait RSAPublicKeyLike {
     fn key_id(&self) -> &Option<String>;
     fn set_key_id(&mut self, key_id: String);
     fn hash(message: &[u8]) -> Vec<u8>;
-    fn padding_scheme(&self) -> rsa::PaddingScheme;
 
     fn verify_token<CustomClaims: Serialize + DeserializeOwned>(
         &self,
@@ -237,10 +235,6 @@ impl RSAKeyPairLike for RS256KeyPair {
     fn hash(message: &[u8]) -> Vec<u8> {
         SHA256::hash(message).to_vec()
     }
-
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA256>()
-    }
 }
 
 impl RS256KeyPair {
@@ -293,10 +287,6 @@ impl RSAPublicKeyLike for RS256PublicKey {
 
     fn hash(message: &[u8]) -> Vec<u8> {
         SHA256::hash(message).to_vec()
-    }
-
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA256>()
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -399,10 +389,6 @@ impl RSAKeyPairLike for RS512KeyPair {
     fn hash(message: &[u8]) -> Vec<u8> {
         SHA512::hash(message).to_vec()
     }
-
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA512>()
-    }
 }
 
 impl RS512KeyPair {
@@ -455,10 +441,6 @@ impl RSAPublicKeyLike for RS512PublicKey {
 
     fn hash(message: &[u8]) -> Vec<u8> {
         SHA512::hash(message).to_vec()
-    }
-
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA512>()
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -561,10 +543,6 @@ impl RSAKeyPairLike for RS384KeyPair {
     fn hash(message: &[u8]) -> Vec<u8> {
         SHA384::hash(message).to_vec()
     }
-
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA384>()
-    }
 }
 
 impl RS384KeyPair {
@@ -617,10 +595,6 @@ impl RSAPublicKeyLike for RS384PublicKey {
 
     fn hash(message: &[u8]) -> Vec<u8> {
         SHA384::hash(message).to_vec()
-    }
-
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA384>()
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -723,10 +697,6 @@ impl RSAKeyPairLike for PS256KeyPair {
     fn hash(message: &[u8]) -> Vec<u8> {
         SHA256::hash(message).to_vec()
     }
-
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss::<SHA256>()
-    }
 }
 
 impl PS256KeyPair {
@@ -779,10 +749,6 @@ impl RSAPublicKeyLike for PS256PublicKey {
 
     fn hash(message: &[u8]) -> Vec<u8> {
         SHA256::hash(message).to_vec()
-    }
-
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss::<SHA256>()
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -877,10 +843,6 @@ impl RSAKeyPairLike for PS512KeyPair {
     fn hash(message: &[u8]) -> Vec<u8> {
         SHA512::hash(message).to_vec()
     }
-
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss::<SHA512>()
-    }
 }
 
 impl PS512KeyPair {
@@ -933,10 +895,6 @@ impl RSAPublicKeyLike for PS512PublicKey {
 
     fn hash(message: &[u8]) -> Vec<u8> {
         SHA512::hash(message).to_vec()
-    }
-
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss::<SHA512>()
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -1039,10 +997,6 @@ impl RSAKeyPairLike for PS384KeyPair {
     fn hash(message: &[u8]) -> Vec<u8> {
         SHA384::hash(message).to_vec()
     }
-
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss::<SHA384>()
-    }
 }
 
 impl PS384KeyPair {
@@ -1095,10 +1049,6 @@ impl RSAPublicKeyLike for PS384PublicKey {
 
     fn hash(message: &[u8]) -> Vec<u8> {
         SHA384::hash(message).to_vec()
-    }
-
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss::<SHA384>()
     }
 
     fn public_key(&self) -> &RSAPublicKey {
