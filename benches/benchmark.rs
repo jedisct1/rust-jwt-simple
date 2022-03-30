@@ -19,10 +19,7 @@ fn main() {
     let claims = Claims::create(Duration::from_hours(2));
 
     let token = kp.sign(claims.clone()).unwrap();
-    let res = bench.run(options, move || {
-        let token = kp.sign(claims.clone()).unwrap();
-        token
-    });
+    let res = bench.run(options, move || kp.sign(claims.clone()).unwrap());
     println!("rsa-2048 - sign: {}", res.throughput(1));
 
     let res = bench.run(options, move || {
