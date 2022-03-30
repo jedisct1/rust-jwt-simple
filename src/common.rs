@@ -124,6 +124,8 @@ impl KeyMetadata {
 
 #[inline(never)]
 pub(crate) fn timingsafe_eq(a: &[u8], b: &[u8]) -> bool {
-    assert_eq!(a.len(), b.len());
+    if a.len() != b.len() {
+        return false;
+    }
     a.iter().zip(b.iter()).fold(0, |c, (x, y)| c | (x ^ y)) == 0
 }
