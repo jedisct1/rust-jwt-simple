@@ -135,7 +135,7 @@ impl Token {
             &Base64UrlSafeNoPadding::decode_to_vec(jwt_header_b64, None)?,
         )?;
         if let Some(signature_type) = &jwt_header.signature_type {
-            ensure!(signature_type == "JWT", JWTError::NotJWT);
+            ensure!(signature_type.to_uppercase() == "JWT", JWTError::NotJWT);
         }
         ensure!(
             jwt_header.algorithm == jwt_alg_name,
