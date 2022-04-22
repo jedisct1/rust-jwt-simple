@@ -495,4 +495,21 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
             .verify_token::<NoCustomClaims>(&token, None)
             .unwrap();
     }
+
+    #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
+    #[test]
+    fn expired_token() {
+        let key = HS256Key::generate();
+        let claims = Claims::create(Duration::from_secs(1));
+        let token = key.authenticate(claims).unwrap();
+        std::thread::sleep(std::time::Duration::from_secs(2));
+        let options = VerificationOptions {
+            time_tolerance: None,
+            ..Default::default()
+        };
+        let claims = key.verify_token::<NoCustomClaims>(&token, None);
+        assert!(claims.is_ok());
+        let claims = key.verify_token::<NoCustomClaims>(&token, Some(options));
+        assert!(claims.is_err());
+    }
 }

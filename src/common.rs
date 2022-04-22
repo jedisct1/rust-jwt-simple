@@ -2,11 +2,11 @@ use coarsetime::{Duration, UnixTimeStamp};
 use ct_codecs::{Base64UrlSafeNoPadding, Decoder, Encoder, Hex};
 use std::collections::HashSet;
 
-use crate::error::*;
+use crate::{claims::DEFAULT_TIME_TOLERANCE_SECS, error::*};
 
 /// Additional features to enable during verification.
 /// Signatures and token expiration are already automatically verified.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VerificationOptions {
     /// Reject tokens created before the given date
     ///
@@ -40,6 +40,23 @@ pub struct VerificationOptions {
 
     /// Reject tokens created more than `max_validity` ago
     pub max_validity: Option<Duration>,
+}
+
+impl Default for VerificationOptions {
+    fn default() -> Self {
+        Self {
+            reject_before: None,
+            accept_future: false,
+            required_subject: None,
+            required_key_id: None,
+            required_public_key: None,
+            required_nonce: None,
+            allowed_issuers: None,
+            allowed_audiences: None,
+            time_tolerance: Some(Duration::from_secs(DEFAULT_TIME_TOLERANCE_SECS)),
+            max_validity: None,
+        }
+    }
 }
 
 /// Unsigned metadata about a key to be attached to tokens.

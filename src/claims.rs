@@ -168,9 +168,7 @@ pub struct JWTClaims<CustomClaims> {
 impl<CustomClaims> JWTClaims<CustomClaims> {
     pub(crate) fn validate(&self, options: &VerificationOptions) -> Result<(), Error> {
         let now = Clock::now_since_epoch();
-        let time_tolerance = options
-            .time_tolerance
-            .unwrap_or_else(|| Duration::from_secs(DEFAULT_TIME_TOLERANCE_SECS));
+        let time_tolerance = options.time_tolerance.unwrap_or_default();
 
         if let Some(reject_before) = options.reject_before {
             ensure!(now <= reject_before, JWTError::OldTokenReused);
