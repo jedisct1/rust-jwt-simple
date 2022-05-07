@@ -79,6 +79,7 @@ impl Audiences {
 
 impl TryInto<String> for Audiences {
     type Error = Error;
+
     fn try_into(self) -> Result<String, Error> {
         self.into_string()
     }
