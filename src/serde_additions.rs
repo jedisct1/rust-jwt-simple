@@ -1,11 +1,11 @@
 pub mod unix_timestamp {
+    use std::fmt;
+
+    use coarsetime::UnixTimeStamp;
     use serde::{
         de::{Error as DeError, Visitor},
         Deserializer, Serializer,
     };
-
-    use coarsetime::UnixTimeStamp;
-    use std::fmt;
 
     struct TimestampVisitor;
 
@@ -53,15 +53,16 @@ pub mod unix_timestamp {
 }
 
 pub mod audiences {
-    use super::super::claims::Audiences;
+    use std::collections::HashSet;
+    use std::fmt;
+
     use serde::{
         de::{Error as DeError, SeqAccess, Visitor},
         ser::SerializeSeq,
         Deserializer, Serialize, Serializer,
     };
 
-    use std::collections::HashSet;
-    use std::fmt;
+    use super::super::claims::Audiences;
 
     struct AudiencesVisitor;
 

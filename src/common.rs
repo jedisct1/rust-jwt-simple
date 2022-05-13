@@ -1,6 +1,7 @@
+use std::collections::HashSet;
+
 use coarsetime::{Duration, UnixTimeStamp};
 use ct_codecs::{Base64UrlSafeNoPadding, Decoder, Encoder, Hex};
-use std::collections::HashSet;
 
 use crate::{claims::DEFAULT_TIME_TOLERANCE_SECS, error::*};
 
@@ -10,8 +11,9 @@ use crate::{claims::DEFAULT_TIME_TOLERANCE_SECS, error::*};
 pub struct VerificationOptions {
     /// Reject tokens created before the given date
     ///
-    /// For a given user, the time of the last successful authentication can be kept in a database,
-    /// and `reject_before` can then be used to reject older (replayed) tokens.
+    /// For a given user, the time of the last successful authentication can be
+    /// kept in a database, and `reject_before` can then be used to reject
+    /// older (replayed) tokens.
     pub reject_before: Option<UnixTimeStamp>,
 
     /// Accept tokens created with a date in the future

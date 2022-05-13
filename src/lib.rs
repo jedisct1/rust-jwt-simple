@@ -4,9 +4,11 @@
 //!
 //! # JWT-Simple
 //!
-//! A new JWT implementation for Rust that focuses on simplicity, while avoiding common JWT security pitfalls.
+//! A new JWT implementation for Rust that focuses on simplicity, while avoiding
+//! common JWT security pitfalls.
 //!
-//! `jwt-simple` is unopinionated and supports all commonly deployed authentication and signature algorithms:
+//! `jwt-simple` is unopinionated and supports all commonly deployed
+//! authentication and signature algorithms:
 //!
 //! * HMAC-SHA2:
 //!   * `HS256`
@@ -26,9 +28,13 @@
 //! * Ed25519
 //!   * `EdDSA`
 //!
-//! `jwt-simple` uses only pure Rust implementations, and can be compiled out of the box to WebAssembly/WASI. It is fully compatible with Fastly's _Compute@Edge_ service.
+//! `jwt-simple` uses only pure Rust implementations, and can be compiled out of
+//! the box to WebAssembly/WASI. It is fully compatible with Fastly's
+//! _Compute@Edge_ service.
 //!
-//! Important: JWT's purpose is to verify that data has been created by a party knowing a secret key. It does not provide any kind of confidentiality: JWT data is simply encoded as BASE64, and is not encrypted.
+//! Important: JWT's purpose is to verify that data has been created by a party
+//! knowing a secret key. It does not provide any kind of confidentiality: JWT
+//! data is simply encoded as BASE64, and is not encrypted.
 //!
 //! ## Usage
 //!
@@ -47,7 +53,9 @@
 //!
 //! ## Authentication (symmetric, `HS*` JWT algorithms) example
 //!
-//! Authentication schemes use the same key for creating and verifying tokens. In other words, both parties need to ultimately trust each other, or else the verifier could also create arbitrary tokens.
+//! Authentication schemes use the same key for creating and verifying tokens.
+//! In other words, both parties need to ultimately trust each other, or else
+//! the verifier could also create arbitrary tokens.
 //!
 //! ### Keys and tokens creation
 //!
@@ -60,7 +68,8 @@
 //! let key = HS256Key::generate();
 //! ```
 //!
-//! A key can be exported as bytes with `key.to_bytes()`, and restored with `HS256Key::from_bytes()`.
+//! A key can be exported as bytes with `key.to_bytes()`, and restored with
+//! `HS256Key::from_bytes()`.
 //!
 //! Token creation:
 //!
@@ -89,11 +98,16 @@
 //!
 //! -> Done! No additional steps required.
 //!
-//! Key expiration, start time, authentication tags, etc. are automatically verified. The function fails with `JWTError::InvalidAuthenticationTag` if the authentication tag is invalid for the given key.
+//! Key expiration, start time, authentication tags, etc. are automatically
+//! verified. The function fails with `JWTError::InvalidAuthenticationTag` if
+//! the authentication tag is invalid for the given key.
 //!
-//! The full set of claims can be inspected in the `claims` object if necessary. `NoCustomClaims` means that only the standard set of claims is used by the application, but application-defined claims can also be supported.
+//! The full set of claims can be inspected in the `claims` object if necessary.
+//! `NoCustomClaims` means that only the standard set of claims is used by the
+//! application, but application-defined claims can also be supported.
 //!
-//! Extra verification steps can optionally be enabled via the `ValidationOptions` structure:
+//! Extra verification steps can optionally be enabled via the
+//! `ValidationOptions` structure:
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
@@ -115,13 +129,17 @@
 //! # Ok(()) }
 //! ```
 //!
-//! Note that `allowed_issuers` and `allowed_audiences` are not strings, but sets of strings (using the `HashSet` type from the Rust standard library), as the application can allow multiple return values.
+//! Note that `allowed_issuers` and `allowed_audiences` are not strings, but
+//! sets of strings (using the `HashSet` type from the Rust standard library),
+//! as the application can allow multiple return values.
 //!
 //! ## Signatures (asymmetric, `RS*`, `PS*`, `ES*` and `EdDSA` algorithms) example
 //!
-//! A signature requires a key pair: a secret key used to create tokens, and a public key, that can only verify them.
+//! A signature requires a key pair: a secret key used to create tokens, and a
+//! public key, that can only verify them.
 //!
-//! Always use a signature scheme if both parties do not ultimately trust each other, such as tokens exchanged between clients and API providers.
+//! Always use a signature scheme if both parties do not ultimately trust each
+//! other, such as tokens exchanged between clients and API providers.
 //!
 //! ### Key pairs and tokens creation
 //!
@@ -137,7 +155,8 @@
 //! let public_key = key_pair.public_key();
 //! ```
 //!
-//! Keys can be exported as bytes for later reuse, and imported from bytes or, for RSA, from individual parameters, DER-encoded data or PEM-encoded data.
+//! Keys can be exported as bytes for later reuse, and imported from bytes or,
+//! for RSA, from individual parameters, DER-encoded data or PEM-encoded data.
 //!
 //! RSA key pair creation, using OpenSSL and PEM importation of the secret key:
 //!
@@ -156,7 +175,9 @@
 //! # Ok(()) }
 //! ```
 //!
-//! Token creation and verification work the same way as with `HS*` algorithms, except that tokens are created with a key pair, and verified using the corresponding public key.
+//! Token creation and verification work the same way as with `HS*` algorithms,
+//! except that tokens are created with a key pair, and verified using the
+//! corresponding public key.
 //!
 //! Token creation:
 //!
@@ -182,33 +203,37 @@
 //! # Ok(()) }
 //! ```
 //!
-//! Available verification options are identical to the ones used with symmetric algorithms.
+//! Available verification options are identical to the ones used with symmetric
+//! algorithms.
 //!
 //! ## Advanced usage
 //!
 //! ### Custom claims
 //!
-//! Claim objects support all the standard claims by default, and they can be set directly or via convenient helpers:
+//! Claim objects support all the standard claims by default, and they can be
+//! set directly or via convenient helpers:
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
-//! let claims = Claims::create(Duration::from_hours(2)).
-//!     with_issuer("Example issuer").with_subject("Example subject");
+//! let claims = Claims::create(Duration::from_hours(2))
+//!     .with_issuer("Example issuer")
+//!     .with_subject("Example subject");
 //! ```
 //!
-//! But application-defined claims can also be defined. These simply have to be present in a serializable type (this requires the `serde` crate):
+//! But application-defined claims can also be defined. These simply have to be
+//! present in a serializable type (this requires the `serde` crate):
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
 //! # fn main() -> Result<(), jwt_simple::Error> {
 //! #[derive(Serialize, Deserialize)]
 //! struct MyAdditionalData {
-//!    user_is_admin: bool,
-//!    user_country: String,
+//!     user_is_admin: bool,
+//!     user_country: String,
 //! }
 //! let my_additional_data = MyAdditionalData {
-//!    user_is_admin: false,
-//!    user_country: "FR".to_string(),
+//!     user_is_admin: false,
+//!     user_country: "FR".to_string(),
 //! };
 //!
 //! // Claim creation with custom data:
@@ -228,7 +253,8 @@
 //!
 //! ### Peeking at metadata before verification
 //!
-//! Properties such as the key identifier can be useful prior to tag or signature verification in order to pick the right key out of a set.
+//! Properties such as the key identifier can be useful prior to tag or
+//! signature verification in order to pick the right key out of a set.
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
@@ -243,8 +269,9 @@
 //!
 //! ### Creating and attaching key identifiers
 //!
-//! Key identifiers indicate to verifiers what public key (or shared key) should be used for verification.
-//! They can be attached at any time to existing shared keys, key pairs and public keys:
+//! Key identifiers indicate to verifiers what public key (or shared key) should
+//! be used for verification. They can be attached at any time to existing
+//! shared keys, key pairs and public keys:
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
@@ -252,7 +279,8 @@
 //! let public_key_with_id = public_key.with_key_id(&"unique key identifier");
 //! ```
 //!
-//! Instead of delegating this to applications, `jwt-simple` can also create such an identifier for an existing key:
+//! Instead of delegating this to applications, `jwt-simple` can also create
+//! such an identifier for an existing key:
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
@@ -260,9 +288,11 @@
 //! let key_id = public_key.create_key_id();
 //! ```
 //!
-//! This creates an text-encoded identifier for the key, attaches it, and returns it.
+//! This creates an text-encoded identifier for the key, attaches it, and
+//! returns it.
 //!
-//! If an identifier has been attached to a shared key or a key pair, tokens created with them will include it.
+//! If an identifier has been attached to a shared key or a key pair, tokens
+//! created with them will include it.
 
 #![forbid(unsafe_code)]
 
@@ -289,16 +319,18 @@ mod error;
 pub use error::{Error, JWTError};
 
 pub mod prelude {
-    pub use crate::algorithms::*;
-    pub use crate::claims::*;
-    pub use crate::common::*;
-    pub use crate::token::*;
+    pub use std::collections::HashSet;
+
     pub use coarsetime::{self, Clock, Duration, UnixTimeStamp};
     pub use ct_codecs::{
         Base64, Base64NoPadding, Base64UrlSafe, Base64UrlSafeNoPadding, Decoder as _, Encoder as _,
     };
     pub use serde::{Deserialize, Serialize};
-    pub use std::collections::HashSet;
+
+    pub use crate::algorithms::*;
+    pub use crate::claims::*;
+    pub use crate::common::*;
+    pub use crate::token::*;
 
     mod hashset_from_strings {
         use std::collections::HashSet;

@@ -1,9 +1,10 @@
+use std::collections::HashSet;
+use std::convert::TryInto;
+
 use coarsetime::{Clock, Duration, UnixTimeStamp};
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use rand::RngCore;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::collections::HashSet;
-use std::convert::TryInto;
 
 use crate::common::VerificationOptions;
 use crate::error::*;
@@ -15,8 +16,8 @@ pub const DEFAULT_TIME_TOLERANCE_SECS: u64 = 900;
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct NoCustomClaims {}
 
-/// Depending on applications, the `audiences` property may be either a set or a string.
-/// We support both.
+/// Depending on applications, the `audiences` property may be either a set or a
+/// string. We support both.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Audiences {
     AsSet(HashSet<String>),
@@ -34,7 +35,8 @@ impl Audiences {
         matches!(self, Audiences::AsString(_))
     }
 
-    /// Return `true` if the audiences include any of the `allowed_audiences` entries
+    /// Return `true` if the audiences include any of the `allowed_audiences`
+    /// entries
     pub fn contains(&self, allowed_audiences: &HashSet<String>) -> bool {
         match self {
             Audiences::AsString(audience) => allowed_audiences.contains(audience),
@@ -59,7 +61,8 @@ impl Audiences {
     }
 
     /// Get the audiences as a string.
-    /// If it was originally serialized as a set, it can be only converted to a string if it contains at most one element.
+    /// If it was originally serialized as a set, it can be only converted to a
+    /// string if it contains at most one element.
     pub fn into_string(self) -> Result<String, Error> {
         match self {
             Audiences::AsString(audiences_str) => Ok(audiences_str),
@@ -99,8 +102,9 @@ impl<T: ToString> From<T> for Audiences {
 
 /// A set of JWT claims.
 ///
-/// The `CustomClaims` parameter can be set to `NoCustomClaims` if only standard claims are used,
-/// or to a user-defined type that must be `serde`-serializable if custom claims are required.
+/// The `CustomClaims` parameter can be set to `NoCustomClaims` if only standard
+/// claims are used, or to a user-defined type that must be `serde`-serializable
+/// if custom claims are required.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JWTClaims<CustomClaims> {
     /// Time the claims were created at
@@ -149,11 +153,12 @@ pub struct JWTClaims<CustomClaims> {
 
     /// JWT identifier
     ///
-    /// That property was originally designed to avoid replay attacks, but keeping
-    /// all previously sent JWT token IDs is unrealistic.
+    /// That property was originally designed to avoid replay attacks, but
+    /// keeping all previously sent JWT token IDs is unrealistic.
     ///
-    /// Replay attacks are better addressed by keeping only the timestamp of the last
-    /// valid token for a user, and rejecting anything older in future tokens.
+    /// Replay attacks are better addressed by keeping only the timestamp of the
+    /// last valid token for a user, and rejecting anything older in future
+    /// tokens.
     #[serde(rename = "jti", default, skip_serializing_if = "Option::is_none")]
     pub jwt_id: Option<String>,
 
@@ -252,7 +257,8 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         self
     }
 
-    /// Register one or more audiences (optional recipient identifiers), as a set
+    /// Register one or more audiences (optional recipient identifiers), as a
+    /// set
     pub fn with_audiences(mut self, audiences: HashSet<impl ToString>) -> Self {
         self.audiences = Some(Audiences::AsSet(
             audiences.iter().map(|x| x.to_string()).collect(),
@@ -292,7 +298,8 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
 pub struct Claims;
 
 impl Claims {
-    /// Create a new set of claims, without custom data, expiring in `valid_for`.
+    /// Create a new set of claims, without custom data, expiring in
+    /// `valid_for`.
     pub fn create(valid_for: Duration) -> JWTClaims<NoCustomClaims> {
         let now = Some(Clock::now_since_epoch());
         JWTClaims {

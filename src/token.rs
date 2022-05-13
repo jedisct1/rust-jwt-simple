@@ -19,8 +19,9 @@ pub struct TokenMetadata {
 
 impl TokenMetadata {
     /// The JWT algorithm for this token ("alg")
-    /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
-    /// Clients should ignore it and use the correct type of key directly.
+    /// This information should not be trusted: it is unprotected and can be
+    /// freely modified by a third party. Clients should ignore it and use
+    /// the correct type of key directly.
     pub fn algorithm(&self) -> &str {
         &self.jwt_header.algorithm
     }
@@ -46,42 +47,48 @@ impl TokenMetadata {
     }
 
     /// The certificate chain for this token ("x5c")
-    /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
+    /// This information should not be trusted: it is unprotected and can be
+    /// freely modified by a third party.
     pub fn certificate_chain(&self) -> Option<&[String]> {
         self.jwt_header.certificate_chain.as_deref()
     }
 
     /// The key set URL for this token ("jku")
-    /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
-    /// At the bare minimum, you should check that the URL belongs to the domain you expect.
+    /// This information should not be trusted: it is unprotected and can be
+    /// freely modified by a third party. At the bare minimum, you should
+    /// check that the URL belongs to the domain you expect.
     pub fn key_set_url(&self) -> Option<&str> {
         self.jwt_header.key_set_url.as_deref()
     }
 
     /// The public key for this token ("jwk")
-    /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
-    /// At the bare minimum, you should check that it's in a set of public keys you already trust.
+    /// This information should not be trusted: it is unprotected and can be
+    /// freely modified by a third party. At the bare minimum, you should
+    /// check that it's in a set of public keys you already trust.
     pub fn public_key(&self) -> Option<&str> {
         self.jwt_header.public_key.as_deref()
     }
 
     /// The certificate URL for this token ("x5u")
-    /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
-    /// At the bare minimum, you should check that the URL belongs to the domain you expect.
+    /// This information should not be trusted: it is unprotected and can be
+    /// freely modified by a third party. At the bare minimum, you should
+    /// check that the URL belongs to the domain you expect.
     pub fn certificate_url(&self) -> Option<&str> {
         self.jwt_header.certificate_url.as_deref()
     }
 
-    /// URLsafe-base64-encoded SHA1 hash of the X.509 certificate for this token ("x5t")
-    /// In practice, it can also be any string representing the public key.
-    /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
+    /// URLsafe-base64-encoded SHA1 hash of the X.509 certificate for this token
+    /// ("x5t") In practice, it can also be any string representing the
+    /// public key. This information should not be trusted: it is
+    /// unprotected and can be freely modified by a third party.
     pub fn certificate_sha1_thumbprint(&self) -> Option<&str> {
         self.jwt_header.certificate_sha1_thumbprint.as_deref()
     }
 
-    /// URLsafe-base64-encoded SHA256 hash of the X.509 certificate for this token ("x5t#256")
-    /// In practice, it can also be any string representing the public key.
-    /// This information should not be trusted: it is unprotected and can be freely modified by a third party.
+    /// URLsafe-base64-encoded SHA256 hash of the X.509 certificate for this
+    /// token ("x5t#256") In practice, it can also be any string
+    /// representing the public key. This information should not be trusted:
+    /// it is unprotected and can be freely modified by a third party.
     pub fn certificate_sha256_thumbprint(&self) -> Option<&str> {
         self.jwt_header.certificate_sha256_thumbprint.as_deref()
     }
@@ -158,7 +165,8 @@ impl Token {
         Ok(claims)
     }
 
-    /// Decode token information that can be usedful prior to signature/tag verification
+    /// Decode token information that can be usedful prior to signature/tag
+    /// verification
     pub fn decode_metadata(token: &str) -> Result<TokenMetadata, Error> {
         let mut parts = token.split('.');
         let jwt_header_b64 = parts.next().ok_or(JWTError::CompactEncodingError)?;
@@ -199,8 +207,9 @@ fn should_verify_token() {
 
 #[test]
 fn multiple_audiences() {
-    use crate::prelude::*;
     use std::collections::HashSet;
+
+    use crate::prelude::*;
 
     let key = HS256Key::generate();
 
@@ -221,8 +230,9 @@ fn multiple_audiences() {
 
 #[test]
 fn explicitly_empty_audiences() {
-    use crate::prelude::*;
     use std::collections::HashSet;
+
+    use crate::prelude::*;
 
     let key = HS256Key::generate();
 
