@@ -6,6 +6,8 @@ use zeroize::Zeroize;
 
 use crate::claims::*;
 use crate::common::*;
+#[cfg(feature = "cwt")]
+use crate::cwt_token::*;
 use crate::error::*;
 use crate::jwt_header::*;
 use crate::token::*;
@@ -77,6 +79,26 @@ pub trait MACLike {
         options: Option<VerificationOptions>,
     ) -> Result<JWTClaims<CustomClaims>, Error> {
         Token::verify(
+            Self::jwt_alg_name(),
+            token,
+            options,
+            |authenticated, authentication_tag| {
+                ensure!(
+                    timingsafe_eq(&self.authentication_tag(authenticated), authentication_tag),
+                    JWTError::InvalidAuthenticationTag
+                );
+                Ok(())
+            },
+        )
+    }
+
+    #[cfg(feature = "cwt")]
+    fn verify_cwt_token(
+        &self,
+        token: impl AsRef<[u8]>,
+        options: Option<VerificationOptions>,
+    ) -> Result<JWTClaims<NoCustomClaims>, Error> {
+        CWTToken::verify(
             Self::jwt_alg_name(),
             token,
             options,

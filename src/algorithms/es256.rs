@@ -8,6 +8,8 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use crate::claims::*;
 use crate::common::*;
+#[cfg(feature = "cwt")]
+use crate::cwt_token::*;
 use crate::error::*;
 use crate::jwt_header::*;
 use crate::token::*;
@@ -187,6 +189,30 @@ pub trait ECDSAP256PublicKeyLike {
         options: Option<VerificationOptions>,
     ) -> Result<JWTClaims<CustomClaims>, Error> {
         Token::verify(
+            Self::jwt_alg_name(),
+            token,
+            options,
+            |authenticated, signature| {
+                let ecdsa_signature = ecdsa::Signature::try_from(signature)
+                    .map_err(|_| JWTError::InvalidSignature)?;
+                let mut digest = hmac_sha256::Hash::new();
+                digest.update(authenticated.as_bytes());
+                self.public_key()
+                    .as_ref()
+                    .verify_digest(digest, &ecdsa_signature)
+                    .map_err(|_| JWTError::InvalidSignature)?;
+                Ok(())
+            },
+        )
+    }
+
+    #[cfg(feature = "cwt")]
+    fn verify_cwt_token<CustomClaims: Serialize + DeserializeOwned>(
+        &self,
+        token: &str,
+        options: Option<VerificationOptions>,
+    ) -> Result<JWTClaims<NoCustomClaims>, Error> {
+        CWTToken::verify(
             Self::jwt_alg_name(),
             token,
             options,

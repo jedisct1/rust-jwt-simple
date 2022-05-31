@@ -14,7 +14,7 @@ pub struct Token;
 /// JWT token information useful before signature/tag verification
 #[derive(Debug, Clone, Default)]
 pub struct TokenMetadata {
-    jwt_header: JWTHeader,
+    pub(crate) jwt_header: JWTHeader,
 }
 
 impl TokenMetadata {

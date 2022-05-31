@@ -6,6 +6,8 @@ pub enum JWTError {
     InternalError(String),
     #[error("JWT compact encoding error")]
     CompactEncodingError,
+    #[error("CWT decoding error")]
+    CWTDecodingError,
     #[error("JWT header too large")]
     HeaderTooLarge,
     #[error("JWT algorithm mismatch")]

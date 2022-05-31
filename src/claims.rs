@@ -13,7 +13,7 @@ use crate::serde_additions;
 pub const DEFAULT_TIME_TOLERANCE_SECS: u64 = 900;
 
 /// Type representing the fact that no application-defined claims is necessary.
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, Debug, Serialize, Deserialize)]
 pub struct NoCustomClaims {}
 
 /// Depending on applications, the `audiences` property may be either a set or a
