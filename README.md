@@ -265,7 +265,9 @@ If an identifier has been attached to a shared key or a key pair, tokens created
 
 The development code includes a `cwt` cargo feature that enables experimental parsing and validation of CWT tokens.
 
-Please note that CWT doesn't support custom claims. Also, the existing Rust crates for JSON and CBOR deserialization are not safe. An untrusted party can send a serialized object that requires a lot of memory and CPU to deserialize. Band-aids have been added for JSON, but with the current Rust tooling, it would be tricky to do for CBOR.
+Please note that CWT doesn't support custom claims. The required identifiers [haven't been standardized yet](https://www.iana.org/assignments/cwt/cwt.xhtml).
+
+Also, the existing Rust crates for JSON and CBOR deserialization are not safe. An untrusted party can send a serialized object that requires a lot of memory and CPU to deserialize. Band-aids have been added for JSON, but with the current Rust tooling, it would be tricky to do for CBOR.
 
 As a mitigation, we highly recommend rejecting tokens that would be too large in the context of your application. That can be done by with the `max_token_length` verification option.
 
