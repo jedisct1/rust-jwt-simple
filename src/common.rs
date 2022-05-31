@@ -5,6 +5,8 @@ use ct_codecs::{Base64UrlSafeNoPadding, Decoder, Encoder, Hex};
 
 use crate::{claims::DEFAULT_TIME_TOLERANCE_SECS, error::*};
 
+pub const DEFAULT_MAX_TOKEN_LENGTH: usize = 1_000_000;
+
 /// Additional features to enable during verification.
 /// Signatures and token expiration are already automatically verified.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -42,6 +44,9 @@ pub struct VerificationOptions {
 
     /// Reject tokens created more than `max_validity` ago
     pub max_validity: Option<Duration>,
+
+    /// Maximum token length to accept
+    pub max_token_length: Option<usize>,
 }
 
 impl Default for VerificationOptions {
@@ -57,6 +62,7 @@ impl Default for VerificationOptions {
             allowed_audiences: None,
             time_tolerance: Some(Duration::from_secs(DEFAULT_TIME_TOLERANCE_SECS)),
             max_validity: None,
+            max_token_length: Some(DEFAULT_MAX_TOKEN_LENGTH),
         }
     }
 }

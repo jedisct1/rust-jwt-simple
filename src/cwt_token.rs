@@ -30,6 +30,9 @@ impl CWTToken {
         let options = options.unwrap_or_default();
         let token = token.as_ref();
         let token_len = token.len();
+        if let Some(max_token_length) = options.max_token_length {
+            ensure!(token_len <= max_token_length, JWTError::TokenTooLong);
+        }
 
         let mut parts_reader = Cursor::new(token);
         let parts_cbor_tagged = from_cbor(&mut parts_reader)?;

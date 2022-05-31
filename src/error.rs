@@ -60,6 +60,8 @@ pub enum JWTError {
     InvalidCertThumprint,
     #[error("Not a JWT token")]
     NotJWT,
+    #[error("Token is too long")]
+    TokenTooLong,
 }
 
 impl From<&str> for JWTError {

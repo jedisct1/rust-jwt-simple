@@ -129,6 +129,11 @@ impl Token {
         AuthenticationOrSignatureFn: FnOnce(&str, &[u8]) -> Result<(), Error>,
     {
         let options = options.unwrap_or_default();
+
+        if let Some(max_token_length) = options.max_token_length {
+            ensure!(token.len() <= max_token_length, JWTError::TokenTooLong);
+        }
+
         let mut parts = token.split('.');
         let jwt_header_b64 = parts.next().ok_or(JWTError::CompactEncodingError)?;
         ensure!(
