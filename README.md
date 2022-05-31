@@ -19,6 +19,7 @@
     - [Peeking at metadata before verification](#peeking-at-metadata-before-verification)
     - [Creating and attaching key identifiers](#creating-and-attaching-key-identifiers)
     - [Mitigations against replay attacks](#mitigations-against-replay-attacks)
+    - [CWT (CBOR) support](#cwt-cbor-support)
   - [Why yet another JWT crate](#why-yet-another-jwt-crate)
 
 <!-- /code_chunk_output -->
@@ -259,6 +260,14 @@ If an identifier has been attached to a shared key or a key pair, tokens created
 * Nonces can be created and attached to new tokens using the `create_nonce()` claim function. The verification procedure can later reject any token that doesn't include the expected nonce (`required_nonce` verification option).
 * The verification procedure can reject tokens created too long ago, no matter what their expiration date is. This prevents tokens from malicious (or compromised) signers from being used for too long.
 * The verification procedure can reject tokens created before a date. For a given user, the date of the last successful authentication can be stored in a database, and used later along with this option to reject older (replayed) tokens.
+
+### CWT (CBOR) support
+
+The development code includes a `cwt` cargo feature that enables experimental parsing and validation of CWT tokens.
+
+Please note that CWT doesn't support custom claims. Also, the existing Rust crates for JSON and CBOR deserialization are not safe. An untrusted party can send a serialized object that requires a lot of memory and CPU to deserialize. Band-aids have been added for JSON, but with the current Rust tooling, it would be tricky to do for CBOR.
+
+As a mitigation, we highly recommend rejecting tokens that would be too large in the context of your application. That can be done by with the `max_token_length` verification option.
 
 ## Why yet another JWT crate
 
