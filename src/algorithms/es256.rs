@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
-use p256::ecdsa::{self, signature::DigestVerifier as _, signature::RandomizedDigestSigner as _};
+use p256::ecdsa::{self, signature::DigestVerifier as _, signature::Signer as _};
 use p256::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 use p256::NonZeroScalar;
 use serde::{de::DeserializeOwned, Serialize};
@@ -167,11 +167,8 @@ pub trait ECDSAP256KeyPairLike {
         let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
             .with_metadata(self.metadata());
         Token::build(&jwt_header, claims, |authenticated| {
-            let mut digest = hmac_sha256::Hash::new();
-            digest.update(authenticated.as_bytes());
-            let rng = rand::thread_rng();
             let signature: ecdsa::Signature =
-                self.key_pair().as_ref().sign_digest_with_rng(rng, digest);
+                self.key_pair().as_ref().sign(authenticated.as_bytes());
             Ok(signature.as_ref().to_vec())
         })
     }
