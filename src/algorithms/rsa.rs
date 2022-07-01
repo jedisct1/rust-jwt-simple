@@ -2,10 +2,11 @@ use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use hmac_sha1_compact::Hash as SHA1;
 use hmac_sha256::Hash as SHA256;
 use hmac_sha512::sha384 as hmac_sha384;
-use rsa::pkcs1::{FromRsaPrivateKey as _, FromRsaPublicKey as _};
-use rsa::pkcs8::{FromPrivateKey as _, FromPublicKey as _, ToPrivateKey as _, ToPublicKey as _};
+use rsa::pkcs1::{DecodeRsaPrivateKey as _, DecodeRsaPublicKey};
+use rsa::pkcs8::{DecodePrivateKey as _, DecodePublicKey as _, EncodePrivateKey as _};
 use rsa::{BigUint, PublicKey as _, PublicKeyParts as _};
 use serde::{de::DeserializeOwned, Serialize};
+use spki::EncodePublicKey as _;
 
 use crate::claims::*;
 use crate::common::*;
@@ -59,7 +60,9 @@ impl RSAPublicKey {
     }
 
     pub fn to_pem(&self) -> Result<String, Error> {
-        self.0.to_public_key_pem().map_err(Into::into)
+        self.0
+            .to_public_key_pem(Default::default())
+            .map_err(Into::into)
     }
 
     pub fn to_components(&self) -> RSAPublicKeyComponents {
@@ -115,7 +118,7 @@ impl RSAKeyPair {
 
     pub fn to_pem(&self) -> Result<String, Error> {
         self.rsa_sk
-            .to_pkcs8_pem()
+            .to_pkcs8_pem(Default::default())
             .map_err(Into::into)
             .map(|x| x.to_string())
     }

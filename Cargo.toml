@@ -12,23 +12,24 @@ keywords = ["jwt", "jws", "authentication", "tokens", "json"]
 readme = "README.md"
 
 [dependencies]
-anyhow = "1.0"
-binstring = "0.1"
-ciborium = { version = "0.2", optional = true }
-coarsetime = "0.1"
-ct-codecs = "1"
-ed25519-compact = { version = "1.0.0", features = ["pem"] }
-hmac-sha1-compact = "1.0.0"
-hmac-sha256 = { version = "1.1.1", features = ["traits09"] }
-hmac-sha512 = { version = "1.1.1", features = ["traits09", "sha384"] }
-k256 = { version = "0.10.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
-p256 = { version = "0.10.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
-rand = "0.8"
-rsa = "0.5"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-thiserror = "1.0"
-zeroize = "1.4"
+anyhow = "1.0.58"
+binstring = "0.1.1"
+ciborium = { version = "0.2.0", optional = true }
+coarsetime = "0.1.22"
+ct-codecs = "1.1.1"
+ed25519-compact = { version = "1.0.11", features = ["pem"] }
+hmac-sha1-compact = "1.1.1"
+hmac-sha256 = { version = "1.1.4", features = ["traits010"] }
+hmac-sha512 = { version = "1.1.2", features = ["traits010", "sha384"] }
+k256 = { version = "0.11.2", features = ["ecdsa", "std", "pkcs8", "pem"] }
+p256 = { version = "0.11.1", features = ["ecdsa", "std", "pkcs8", "pem"] }
+rand = "0.8.5"
+rsa = "0.6.1"
+serde = { version = "1.0.137", features = ["derive"] }
+serde_json = "1.0.82"
+spki = "0.5.4"                                                             # Use an old version, required by the rsa crate, but that crate doesn't reexport it
+thiserror = "1.0.31"
+zeroize = "1.5.6"
 
 [dev-dependencies]
 benchmark-simple = "0.1.7"

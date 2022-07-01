@@ -121,7 +121,7 @@ impl P256KeyPair {
         Ok(p256_sk
             .to_pkcs8_der()
             .map_err(|_| JWTError::InvalidKeyPair)?
-            .as_ref()
+            .as_bytes()
             .to_vec())
     }
 

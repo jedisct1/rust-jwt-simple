@@ -148,7 +148,10 @@ impl Token {
         )?;
         if let Some(signature_type) = &jwt_header.signature_type {
             let signature_type_uc = signature_type.to_uppercase();
-            ensure!(signature_type_uc == "JWT" || signature_type_uc.ends_with("+JWT"), JWTError::NotJWT);
+            ensure!(
+                signature_type_uc == "JWT" || signature_type_uc.ends_with("+JWT"),
+                JWTError::NotJWT
+            );
         }
         ensure!(
             jwt_header.algorithm == jwt_alg_name,
