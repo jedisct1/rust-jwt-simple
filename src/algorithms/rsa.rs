@@ -6,7 +6,8 @@ use rsa::pkcs1::{DecodeRsaPrivateKey as _, DecodeRsaPublicKey};
 use rsa::pkcs8::{DecodePrivateKey as _, DecodePublicKey as _, EncodePrivateKey as _};
 use rsa::{BigUint, PublicKey as _, PublicKeyParts as _};
 use serde::{de::DeserializeOwned, Serialize};
-use spki::EncodePublicKey as _;
+#[allow(unused_imports)]
+use spki05::{DecodePublicKey as _, EncodePublicKey as _};
 
 use crate::claims::*;
 use crate::common::*;

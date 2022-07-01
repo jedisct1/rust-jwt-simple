@@ -27,7 +27,7 @@ rand = "0.8.5"
 rsa = "0.6.1"
 serde = { version = "1.0.137", features = ["derive"] }
 serde_json = "1.0.82"
-spki = "0.5.4"                                                             # Use an old version, required by the rsa crate, but that crate doesn't reexport it
+spki05 = { package = "spki", version = "0.5.4" }                           # Use an old version, required by the rsa crate, but that crate doesn't reexport it
 thiserror = "1.0.31"
 zeroize = "1.5.6"
 
