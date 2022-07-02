@@ -21,7 +21,7 @@ ed25519-compact = { version = "1.0.11", features = ["pem"] }
 hmac-sha1-compact = "1.1.1"
 hmac-sha256 = { version = "1.1.4", features = ["traits010"] }
 hmac-sha512 = { version = "1.1.2", features = ["traits010", "sha384"] }
-k256 = { version = "0.11.2", features = ["ecdsa", "std", "pkcs8", "pem"] }
+k256 = { version = "0.11.3", features = ["ecdsa", "std", "pkcs8", "pem"] }
 p256 = { version = "0.11.1", features = ["ecdsa", "std", "pkcs8", "pem"] }
 rand = "0.8.5"
 rsa = "0.6.1"
