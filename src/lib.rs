@@ -23,6 +23,8 @@
 //!   * `PS512`
 //! * p256
 //!   * `ES256`
+//! * p384
+//!   * `ES384`
 //! * secp256k1
 //!   * `ES256K`
 //! * Ed25519
@@ -438,6 +440,17 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
     #[test]
     fn es256() {
         let key_pair = ES256KeyPair::generate();
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key_pair.sign(claims).unwrap();
+        let _claims = key_pair
+            .public_key()
+            .verify_token::<NoCustomClaims>(&token, None)
+            .unwrap();
+    }
+
+    #[test]
+    fn es384() {
+        let key_pair = ES384KeyPair::generate();
         let claims = Claims::create(Duration::from_secs(86400));
         let token = key_pair.sign(claims).unwrap();
         let _claims = key_pair
