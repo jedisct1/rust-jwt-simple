@@ -153,7 +153,7 @@
 //! // create a new key pair for the `ES256` JWT algorithm
 //! let key_pair = ES256KeyPair::generate();
 //!
-//! // Or `ES384` JWT algorithm
+//! // Or the `ES384` JWT algorithm
 //! let key_pair = ES384KeyPair::generate();
 //!
 //! // a public key can be extracted from a key pair:
