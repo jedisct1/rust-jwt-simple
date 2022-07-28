@@ -32,7 +32,7 @@ A new JWT (JSON Web Tokens) implementation for Rust that focuses on simplicity, 
 `jwt-simple` is unopinionated and supports all commonly deployed authentication and signature algorithms:
 
 | JWT algorithm name | Description                           |
-| ------------------ | ------------------------------------- |
+|--------------------|---------------------------------------|
 | `HS256`            | HMAC-SHA-256                          |
 | `HS384`            | HMAC-SHA-384                          |
 | `HS512`            | HMAC-SHA-512                          |
@@ -43,6 +43,7 @@ A new JWT (JSON Web Tokens) implementation for Rust that focuses on simplicity, 
 | `PS384`            | RSA with PSS padding / SHA-384        |
 | `PS512`            | RSA with PSS padding / SHA-512        |
 | `ES256`            | ECDSA over p256 / SHA-256             |
+| `ES384`            | ECDSA over p384 / SHA-384             |
 | `ES256K`           | ECDSA over secp256k1 / SHA-256        |
 | `EdDSA`            | Ed25519                               |
 
@@ -56,7 +57,7 @@ Important: JWT's purpose is to verify that data has been created by a party know
 
 ```toml
 [dependencies]
-jwt-simple = "0.10"
+jwt-simple = "0.11"
 ```
 
 Rust:
@@ -136,11 +137,25 @@ Always use a signature scheme if both parties do not ultimately trust each other
 
 Key creation:
 
+#### ES256
+
 ```rust
 use jwt_simple::prelude::*;
 
 // create a new key pair for the `ES256` JWT algorithm
 let key_pair = ES256KeyPair::generate();
+
+// a public key can be extracted from a key pair:
+let public_key = key_pair.public_key();
+```
+
+#### ES384
+
+```rust
+use jwt_simple::prelude::*;
+
+// create a new key pair for the `ES384` JWT algorithm
+let key_pair = ES384KeyPair::generate();
 
 // a public key can be extracted from a key pair:
 let public_key = key_pair.public_key();

@@ -44,7 +44,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! jwt-simple = "0.10"
+//! jwt-simple = "0.11"
 //! ```
 //!
 //! Rust:
@@ -152,6 +152,9 @@
 //!
 //! // create a new key pair for the `ES256` JWT algorithm
 //! let key_pair = ES256KeyPair::generate();
+//!
+//! // Or `ES384` JWT algorithm
+//! let key_pair = ES384KeyPair::generate();
 //!
 //! // a public key can be extracted from a key pair:
 //! let public_key = key_pair.public_key();
