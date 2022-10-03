@@ -110,7 +110,7 @@ impl KeyMetadata {
                 Hex::decode(&mut bin, &thumbprint, None)?.len() == bin.len(),
                 JWTError::InvalidCertThumprint
             );
-            let thumbprint = Base64UrlSafeNoPadding::encode_to_string(&bin)?;
+            let thumbprint = Base64UrlSafeNoPadding::encode_to_string(bin)?;
             self.certificate_sha1_thumbprint = Some(thumbprint);
             return Ok(self);
         }
@@ -134,7 +134,7 @@ impl KeyMetadata {
                 Hex::decode(&mut bin, &thumbprint, None)?.len() == bin.len(),
                 JWTError::InvalidCertThumprint
             );
-            let thumbprint = Base64UrlSafeNoPadding::encode_to_string(&bin)?;
+            let thumbprint = Base64UrlSafeNoPadding::encode_to_string(bin)?;
             self.certificate_sha256_thumbprint = Some(thumbprint);
             return Ok(self);
         }

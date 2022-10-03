@@ -165,11 +165,11 @@ impl Token {
             }
         }
         let authentication_tag =
-            Base64UrlSafeNoPadding::decode_to_vec(&authentication_tag_b64, None)?;
+            Base64UrlSafeNoPadding::decode_to_vec(authentication_tag_b64, None)?;
         let authenticated = &token[..jwt_header_b64.len() + 1 + claims_b64.len()];
         authentication_or_signature_fn(authenticated, &authentication_tag)?;
         let claims: JWTClaims<CustomClaims> =
-            serde_json::from_slice(&Base64UrlSafeNoPadding::decode_to_vec(&claims_b64, None)?)?;
+            serde_json::from_slice(&Base64UrlSafeNoPadding::decode_to_vec(claims_b64, None)?)?;
         claims.validate(&options)?;
         Ok(claims)
     }
