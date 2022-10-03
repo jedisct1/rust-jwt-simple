@@ -499,6 +499,14 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
     }
 
     #[test]
+    fn ed25519_der() {
+        let key_pair = Ed25519KeyPair::generate();
+        let der = key_pair.to_der();
+        let key_pair2 = Ed25519KeyPair::from_der(&der).unwrap();
+        assert_eq!(key_pair.to_bytes(), key_pair2.to_bytes());
+    }
+
+    #[test]
     fn require_nonce() {
         let key = HS256Key::generate();
         let mut claims = Claims::create(Duration::from_hours(1));

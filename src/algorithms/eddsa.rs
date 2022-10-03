@@ -109,7 +109,7 @@ impl Edwards25519KeyPair {
     }
 
     pub fn to_der(&self) -> Vec<u8> {
-        self.ed25519_kp.pk.to_der()
+        self.ed25519_kp.sk.to_der()
     }
 
     pub fn to_pem(&self) -> String {
