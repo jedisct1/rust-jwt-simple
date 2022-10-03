@@ -95,6 +95,7 @@ impl TokenMetadata {
 }
 
 impl Token {
+    #[allow(dead_code)]
     pub(crate) fn build<AuthenticationOrSignatureFn, CustomClaims: Serialize + DeserializeOwned>(
         jwt_header: &JWTHeader,
         claims: JWTClaims<CustomClaims>,
@@ -119,6 +120,7 @@ impl Token {
         Ok(token)
     }
 
+    #[allow(dead_code)]
     pub(crate) fn verify<AuthenticationOrSignatureFn, CustomClaims: Serialize + DeserializeOwned>(
         jwt_alg_name: &'static str,
         token: &str,

@@ -13,22 +13,22 @@ readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.58"
-binstring = "0.1.1"
+binstring = { version = "0.1.1", optional = true }
 ciborium = { version = "0.2.0", optional = true }
 coarsetime = "0.1.22"
 ct-codecs = "1.1.1"
-ed25519-compact = { version = "1.0.11", features = ["pem"] }
-hmac-sha1-compact = "1.1.1"
-hmac-sha256 = { version = "1.1.4", features = ["traits010"] }
-hmac-sha512 = { version = "1.1.2", features = ["traits010", "sha384"] }
-k256 = { version = "0.11.3", features = ["ecdsa", "std", "pkcs8", "pem"] }
-p256 = { version = "0.11.1", features = ["ecdsa", "std", "pkcs8", "pem"] }
-p384 = { version = "0.11.1", features = ["ecdsa", "std", "pkcs8", "pem"] }
+ed25519-compact = { version = "1.0.11", features = ["pem"], optional = true }
+hmac-sha1-compact = { version = "1.1.1", optional = true }
+hmac-sha256 = { version = "1.1.4", features = ["traits010"], optional = true }
+hmac-sha512 = { version = "1.1.2", features = ["traits010"], optional = true }
+k256 = { version = "0.11.3", features = ["ecdsa", "std", "pkcs8", "pem"], optional = true }
+p256 = { version = "0.11.1", features = ["ecdsa", "std", "pkcs8", "pem"], optional = true }
+p384 = { version = "0.11.1", features = ["ecdsa", "std", "pkcs8", "pem"], optional = true }
 rand = "0.8.5"
-rsa = "0.6.1"
+rsa = { version = "0.6.1", optional = true }
 serde = { version = "1.0.137", features = ["derive"] }
 serde_json = "1.0.82"
-spki05 = { package = "spki", version = "0.5.4" }                           # Use an old version, required by the rsa crate, but that crate doesn't reexport it
+spki05 = { package = "spki", version = "0.5.4", optional = true }          # Use an old version, required by the rsa crate, but that crate doesn't reexport it
 thiserror = "1.0.31"
 zeroize = "1.5.6"
 
@@ -36,7 +36,21 @@ zeroize = "1.5.6"
 benchmark-simple = "0.1.7"
 
 [features]
-cwt = ["ciborium"]
+default = ["hs256", "hs384", "hs512", "rs256", "rs384", "rs512", "ps256", "ps384", "ps512", "es256", "es384", "es256k", "eddsa"]
+cwt = ["ciborium", "binstring"]
+hs256 = ["hmac-sha256"]
+hs384 = ["hmac-sha256", "hmac-sha512", "hmac-sha512/sha384"]
+hs512 = ["hmac-sha256", "hmac-sha512"]
+rs256 = ["hmac-sha1-compact", "hmac-sha256", "rsa", "spki05"]
+rs384 = ["hmac-sha1-compact", "hmac-sha256", "hmac-sha512", "hmac-sha512/sha384", "rsa", "spki05"]
+rs512 = ["hmac-sha1-compact", "hmac-sha256", "hmac-sha512", "rsa", "spki05"]
+ps256 = ["hmac-sha1-compact", "hmac-sha256", "rsa", "spki05"]
+ps384 = ["hmac-sha1-compact", "hmac-sha256", "hmac-sha512", "hmac-sha512/sha384", "rsa", "spki05"]
+ps512 = ["hmac-sha1-compact", "hmac-sha256", "hmac-sha512", "rsa", "spki05"]
+es256 = ["hmac-sha256", "p256"]
+es384 = ["hmac-sha256", "hmac-sha512", "hmac-sha512/sha384", "p384"]
+es256k = ["hmac-sha256", "k256"]
+eddsa = ["ed25519-compact", "hmac-sha1-compact", "hmac-sha256"]
 
 [[bench]]
 name = "benchmark"

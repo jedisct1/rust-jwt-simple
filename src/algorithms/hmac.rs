@@ -123,12 +123,14 @@ pub trait MACLike {
     }
 }
 
+#[cfg(feature = "hs256")]
 #[derive(Debug, Clone)]
 pub struct HS256Key {
     key: HMACKey,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "hs256")]
 impl MACLike for HS256Key {
     fn jwt_alg_name() -> &'static str {
         "HS256"
@@ -160,6 +162,7 @@ impl MACLike for HS256Key {
     }
 }
 
+#[cfg(feature = "hs256")]
 impl HS256Key {
     pub fn from_bytes(raw_key: &[u8]) -> Self {
         HS256Key {
@@ -185,12 +188,14 @@ impl HS256Key {
     }
 }
 
+#[cfg(feature = "hs512")]
 #[derive(Debug, Clone)]
 pub struct HS512Key {
     key: HMACKey,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "hs512")]
 impl MACLike for HS512Key {
     fn jwt_alg_name() -> &'static str {
         "HS512"
@@ -222,6 +227,7 @@ impl MACLike for HS512Key {
     }
 }
 
+#[cfg(feature = "hs512")]
 impl HS512Key {
     pub fn from_bytes(raw_key: &[u8]) -> Self {
         HS512Key {
@@ -247,12 +253,14 @@ impl HS512Key {
     }
 }
 
+#[cfg(feature = "hs384")]
 #[derive(Debug, Clone)]
 pub struct HS384Key {
     key: HMACKey,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "hs384")]
 impl MACLike for HS384Key {
     fn jwt_alg_name() -> &'static str {
         "HS384"
@@ -284,6 +292,7 @@ impl MACLike for HS384Key {
     }
 }
 
+#[cfg(feature = "hs384")]
 impl HS384Key {
     pub fn from_bytes(raw_key: &[u8]) -> Self {
         HS384Key {

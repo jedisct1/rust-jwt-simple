@@ -1,6 +1,28 @@
+#[cfg(any(
+    feature = "rs256",
+    feature = "rs384",
+    feature = "rs512",
+    feature = "ps384",
+    feature = "ps512"
+))]
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
+#[cfg(any(
+    feature = "rs256",
+    feature = "rs384",
+    feature = "rs512",
+    feature = "ps384",
+    feature = "ps512"
+))]
 use hmac_sha1_compact::Hash as SHA1;
+#[cfg(any(
+    feature = "rs256",
+    feature = "rs384",
+    feature = "rs512",
+    feature = "ps384",
+    feature = "ps512"
+))]
 use hmac_sha256::Hash as SHA256;
+#[cfg(any(feature = "rs384", feature = "ps384"))]
 use hmac_sha512::sha384 as hmac_sha384;
 use rsa::pkcs1::{DecodeRsaPrivateKey as _, DecodeRsaPublicKey};
 use rsa::pkcs8::{DecodePrivateKey as _, DecodePublicKey as _, EncodePrivateKey as _};
@@ -220,18 +242,21 @@ pub trait RSAPublicKeyLike {
     }
 }
 
+#[cfg(feature = "rs256")]
 #[derive(Debug, Clone)]
 pub struct RS256KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "rs256")]
 #[derive(Debug, Clone)]
 pub struct RS256PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "rs256")]
 impl RSAKeyPairLike for RS256KeyPair {
     fn jwt_alg_name() -> &'static str {
         "RS256"
@@ -263,6 +288,7 @@ impl RSAKeyPairLike for RS256KeyPair {
     }
 }
 
+#[cfg(feature = "rs256")]
 impl RS256KeyPair {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         Ok(RS256KeyPair {
@@ -306,6 +332,7 @@ impl RS256KeyPair {
     }
 }
 
+#[cfg(feature = "rs256")]
 impl RSAPublicKeyLike for RS256PublicKey {
     fn jwt_alg_name() -> &'static str {
         "RS256"
@@ -332,6 +359,7 @@ impl RSAPublicKeyLike for RS256PublicKey {
     }
 }
 
+#[cfg(feature = "rs256")]
 impl RS256PublicKey {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         Ok(RS256PublicKey {
@@ -382,18 +410,21 @@ impl RS256PublicKey {
 
 //
 
+#[cfg(feature = "rs512")]
 #[derive(Debug, Clone)]
 pub struct RS512KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "rs512")]
 #[derive(Debug, Clone)]
 pub struct RS512PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "rs512")]
 impl RSAKeyPairLike for RS512KeyPair {
     fn jwt_alg_name() -> &'static str {
         "RS512"
@@ -425,6 +456,7 @@ impl RSAKeyPairLike for RS512KeyPair {
     }
 }
 
+#[cfg(feature = "rs512")]
 impl RS512KeyPair {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         Ok(RS512KeyPair {
@@ -468,6 +500,7 @@ impl RS512KeyPair {
     }
 }
 
+#[cfg(feature = "rs512")]
 impl RSAPublicKeyLike for RS512PublicKey {
     fn jwt_alg_name() -> &'static str {
         "RS512"
@@ -494,6 +527,7 @@ impl RSAPublicKeyLike for RS512PublicKey {
     }
 }
 
+#[cfg(feature = "rs512")]
 impl RS512PublicKey {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         Ok(RS512PublicKey {
@@ -544,18 +578,21 @@ impl RS512PublicKey {
 
 //
 
+#[cfg(feature = "rs384")]
 #[derive(Debug, Clone)]
 pub struct RS384KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "rs384")]
 #[derive(Debug, Clone)]
 pub struct RS384PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "rs384")]
 impl RSAKeyPairLike for RS384KeyPair {
     fn jwt_alg_name() -> &'static str {
         "RS384"
@@ -587,6 +624,7 @@ impl RSAKeyPairLike for RS384KeyPair {
     }
 }
 
+#[cfg(feature = "rs384")]
 impl RS384KeyPair {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         Ok(RS384KeyPair {
@@ -630,6 +668,7 @@ impl RS384KeyPair {
     }
 }
 
+#[cfg(feature = "rs384")]
 impl RSAPublicKeyLike for RS384PublicKey {
     fn jwt_alg_name() -> &'static str {
         "RS384"
@@ -656,6 +695,7 @@ impl RSAPublicKeyLike for RS384PublicKey {
     }
 }
 
+#[cfg(feature = "rs384")]
 impl RS384PublicKey {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         Ok(RS384PublicKey {
@@ -706,18 +746,21 @@ impl RS384PublicKey {
 
 //
 
+#[cfg(feature = "ps256")]
 #[derive(Debug, Clone)]
 pub struct PS256KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "ps256")]
 #[derive(Debug, Clone)]
 pub struct PS256PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "ps256")]
 impl RSAKeyPairLike for PS256KeyPair {
     fn jwt_alg_name() -> &'static str {
         "PS256"
@@ -749,6 +792,7 @@ impl RSAKeyPairLike for PS256KeyPair {
     }
 }
 
+#[cfg(feature = "ps256")]
 impl PS256KeyPair {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         Ok(PS256KeyPair {
@@ -792,6 +836,7 @@ impl PS256KeyPair {
     }
 }
 
+#[cfg(feature = "ps256")]
 impl RSAPublicKeyLike for PS256PublicKey {
     fn jwt_alg_name() -> &'static str {
         "PS256"
@@ -818,6 +863,7 @@ impl RSAPublicKeyLike for PS256PublicKey {
     }
 }
 
+#[cfg(feature = "ps256")]
 impl PS256PublicKey {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         Ok(PS256PublicKey {
@@ -860,18 +906,21 @@ impl PS256PublicKey {
 
 //
 
+#[cfg(feature = "ps512")]
 #[derive(Debug, Clone)]
 pub struct PS512KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "ps512")]
 #[derive(Debug, Clone)]
 pub struct PS512PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "ps512")]
 impl RSAKeyPairLike for PS512KeyPair {
     fn jwt_alg_name() -> &'static str {
         "PS512"
@@ -903,6 +952,7 @@ impl RSAKeyPairLike for PS512KeyPair {
     }
 }
 
+#[cfg(feature = "ps512")]
 impl PS512KeyPair {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         Ok(PS512KeyPair {
@@ -946,6 +996,7 @@ impl PS512KeyPair {
     }
 }
 
+#[cfg(feature = "ps512")]
 impl RSAPublicKeyLike for PS512PublicKey {
     fn jwt_alg_name() -> &'static str {
         "PS512"
@@ -972,6 +1023,7 @@ impl RSAPublicKeyLike for PS512PublicKey {
     }
 }
 
+#[cfg(feature = "ps512")]
 impl PS512PublicKey {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         Ok(PS512PublicKey {
@@ -1022,18 +1074,21 @@ impl PS512PublicKey {
 
 //
 
+#[cfg(feature = "ps384")]
 #[derive(Debug, Clone)]
 pub struct PS384KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "ps384")]
 #[derive(Debug, Clone)]
 pub struct PS384PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
 }
 
+#[cfg(feature = "ps384")]
 impl RSAKeyPairLike for PS384KeyPair {
     fn jwt_alg_name() -> &'static str {
         "PS384"
@@ -1065,6 +1120,7 @@ impl RSAKeyPairLike for PS384KeyPair {
     }
 }
 
+#[cfg(feature = "ps384")]
 impl PS384KeyPair {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         Ok(PS384KeyPair {
@@ -1108,6 +1164,7 @@ impl PS384KeyPair {
     }
 }
 
+#[cfg(feature = "ps384")]
 impl RSAPublicKeyLike for PS384PublicKey {
     fn jwt_alg_name() -> &'static str {
         "PS384"
@@ -1134,6 +1191,7 @@ impl RSAPublicKeyLike for PS384PublicKey {
     }
 }
 
+#[cfg(feature = "ps384")]
 impl PS384PublicKey {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         Ok(PS384PublicKey {

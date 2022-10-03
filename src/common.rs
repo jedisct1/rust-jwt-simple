@@ -147,6 +147,7 @@ impl KeyMetadata {
     }
 }
 
+#[allow(dead_code)]
 #[inline(never)]
 pub(crate) fn timingsafe_eq(a: &[u8], b: &[u8]) -> bool {
     if a.len() != b.len() {

@@ -57,6 +57,7 @@ impl Default for JWTHeader {
 }
 
 impl JWTHeader {
+    #[allow(dead_code)]
     pub(crate) fn new(algorithm: String, key_id: Option<String>) -> Self {
         JWTHeader {
             algorithm,
@@ -65,6 +66,7 @@ impl JWTHeader {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn with_metadata(mut self, metadata: &Option<KeyMetadata>) -> Self {
         let metadata = match metadata {
             None => return self,
