@@ -17,7 +17,7 @@ binstring = "0.1.1"
 ciborium = { version = "0.2.0", optional = true }
 coarsetime = "0.1.22"
 ct-codecs = "1.1.1"
-ed25519-compact = { version = "1.0.15", features = ["pem"] }
+ed25519-compact = { version = "2.0.1", features = ["pem"] }
 hmac-sha1-compact = "1.1.1"
 hmac-sha256 = { version = "1.1.4", features = ["traits010"] }
 hmac-sha512 = { version = "1.1.2", features = ["traits010", "sha384"] }
@@ -27,7 +27,7 @@ p384 = { version = "0.11.2", features = ["ecdsa", "std", "pkcs8", "pem"] }
 rand = "0.8.5"
 rsa = "0.6.1"
 serde = { version = "1.0.145", features = ["derive"] }
-serde_json = "1.0.85"
+serde_json = "1.0.86"
 spki05 = { package = "spki", version = "0.5.4" }                           # Use an old version, required by the rsa crate, but that crate doesn't reexport it
 thiserror = "1.0.37"
 zeroize = "1.5.7"
