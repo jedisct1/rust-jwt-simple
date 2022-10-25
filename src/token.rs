@@ -114,7 +114,7 @@ impl Token {
         let mut token = authenticated;
         token.push('.');
         token.push_str(&Base64UrlSafeNoPadding::encode_to_string(
-            &authentication_tag_or_signature,
+            authentication_tag_or_signature,
         )?);
         Ok(token)
     }
