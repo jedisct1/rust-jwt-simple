@@ -43,7 +43,11 @@ impl K256PublicKey {
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_bytes().to_vec()
+        self.0.to_encoded_point(false).as_bytes().to_vec()
+    }
+
+    pub fn to_bytes_uncompressed(&self) -> Vec<u8> {
+        self.0.to_encoded_point(false).as_bytes().to_vec()
     }
 
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
@@ -125,12 +129,12 @@ impl K256KeyPair {
 
     pub fn public_key(&self) -> K256PublicKey {
         let k256_pk = self.k256_sk.verifying_key();
-        K256PublicKey(k256_pk)
+        K256PublicKey(*k256_pk)
     }
 
     pub fn generate() -> Self {
-        let rng = rand::thread_rng();
-        let k256_sk = ecdsa::SigningKey::random(rng);
+        let mut rng = rand::thread_rng();
+        let k256_sk = ecdsa::SigningKey::random(&mut rng);
         K256KeyPair {
             k256_sk,
             metadata: None,
@@ -154,10 +158,12 @@ pub trait ECDSAP256kKeyPairLike {
         Token::build(&jwt_header, claims, |authenticated| {
             let mut digest = hmac_sha256::Hash::new();
             digest.update(authenticated.as_bytes());
-            let rng = rand::thread_rng();
-            let signature: ecdsa::Signature =
-                self.key_pair().as_ref().sign_digest_with_rng(rng, digest);
-            Ok(signature.as_ref().to_vec())
+            let mut rng = rand::thread_rng();
+            let signature: ecdsa::Signature = self
+                .key_pair()
+                .as_ref()
+                .sign_digest_with_rng(&mut rng, digest);
+            Ok(signature.to_vec())
         })
     }
 }

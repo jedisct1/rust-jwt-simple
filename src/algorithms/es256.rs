@@ -140,12 +140,12 @@ impl P256KeyPair {
 
     pub fn public_key(&self) -> P256PublicKey {
         let p256_pk = self.p256_sk.verifying_key();
-        P256PublicKey(p256_pk)
+        P256PublicKey(*p256_pk)
     }
 
     pub fn generate() -> Self {
-        let rng = rand::thread_rng();
-        let p256_sk = ecdsa::SigningKey::random(rng);
+        let mut rng = rand::thread_rng();
+        let p256_sk = ecdsa::SigningKey::random(&mut rng);
         P256KeyPair {
             p256_sk,
             metadata: None,
@@ -169,10 +169,12 @@ pub trait ECDSAP256KeyPairLike {
         Token::build(&jwt_header, claims, |authenticated| {
             let mut digest = hmac_sha256::Hash::new();
             digest.update(authenticated.as_bytes());
-            let rng = rand::thread_rng();
-            let signature: ecdsa::Signature =
-                self.key_pair().as_ref().sign_digest_with_rng(rng, digest);
-            Ok(signature.as_ref().to_vec())
+            let mut rng = rand::thread_rng();
+            let signature: ecdsa::Signature = self
+                .key_pair()
+                .as_ref()
+                .sign_digest_with_rng(&mut rng, digest);
+            Ok(signature.to_vec())
         })
     }
 }

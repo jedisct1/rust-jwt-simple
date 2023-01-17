@@ -140,12 +140,12 @@ impl P384KeyPair {
 
     pub fn public_key(&self) -> P384PublicKey {
         let p384_sk = self.p384_sk.verifying_key();
-        P384PublicKey(p384_sk)
+        P384PublicKey(*p384_sk)
     }
 
     pub fn generate() -> Self {
-        let rng = rand::thread_rng();
-        let p384_sk = ecdsa::SigningKey::random(rng);
+        let mut rng = rand::thread_rng();
+        let p384_sk = ecdsa::SigningKey::random(&mut rng);
         P384KeyPair {
             p384_sk,
             metadata: None,
@@ -169,10 +169,12 @@ pub trait ECDSAP384KeyPairLike {
         Token::build(&jwt_header, claims, |authenticated| {
             let mut digest = hmac_sha512::sha384::Hash::new();
             digest.update(authenticated.as_bytes());
-            let rng = rand::thread_rng();
-            let signature: ecdsa::Signature =
-                self.key_pair().as_ref().sign_digest_with_rng(rng, digest);
-            Ok(signature.as_ref().to_vec())
+            let mut rng = rand::thread_rng();
+            let signature: ecdsa::Signature = self
+                .key_pair()
+                .as_ref()
+                .sign_digest_with_rng(&mut rng, digest);
+            Ok(signature.to_vec())
         })
     }
 }
