@@ -137,7 +137,7 @@ impl Token {
         let mut parts = token.split('.');
         let jwt_header_b64 = parts.next().ok_or(JWTError::CompactEncodingError)?;
         ensure!(
-            jwt_header_b64.len() <= MAX_HEADER_LENGTH,
+            jwt_header_b64.len() <= options.max_header_length.unwrap_or(MAX_HEADER_LENGTH),
             JWTError::HeaderTooLarge
         );
         let claims_b64 = parts.next().ok_or(JWTError::CompactEncodingError)?;
