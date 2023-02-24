@@ -12,7 +12,7 @@ keywords = ["jwt", "jws", "authentication", "tokens", "json"]
 readme = "README.md"
 
 [dependencies]
-anyhow = "1.0.68"
+anyhow = "1.0.69"
 binstring = "0.1.1"
 ciborium = { version = "0.2.0", optional = true }
 coarsetime = "0.1.22"
@@ -27,7 +27,7 @@ p384 = { version = "0.12.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
 rand = "0.8.5"
 rsa = "0.7.2"
 serde = { version = "1.0.152", features = ["derive"] }
-serde_json = "1.0.91"
+serde_json = "1.0.93"
 spki = "0.6.0"
 thiserror = "1.0.38"
 zeroize = "1.5.7"
