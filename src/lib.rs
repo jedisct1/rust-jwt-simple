@@ -119,13 +119,14 @@
 //! let mut options = VerificationOptions::default();
 //! // Accept tokens that will only be valid in the future
 //! options.accept_future = true;
-//! // accept tokens even if they have expired up to 15 minutes after the deadline
+//! // Accept tokens even if they have expired up to 15 minutes after the deadline
+//! // and/or they will be valid within 15 minutes.
 //! options.time_tolerance = Some(Duration::from_mins(15));
-//! // reject tokens if they were issued more than 1 hour ago
+//! // Reject tokens if they were issued more than 1 hour ago
 //! options.max_validity = Some(Duration::from_hours(1));
-//! // reject tokens if they don't include an issuer from that list
+//! // Reject tokens if they don't include an issuer from that list
 //! options.allowed_issuers = Some(HashSet::from_strings(&["example app"]));
-//! // see the documentation for the full list of available options
+//! // See the documentation for the full list of available options
 //!
 //! let claims = key.verify_token::<NoCustomClaims>(&token, Some(options))?;
 //! # Ok(()) }

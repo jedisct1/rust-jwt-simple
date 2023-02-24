@@ -190,7 +190,7 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         }
         if !options.accept_future {
             if let Some(invalid_before) = self.invalid_before {
-                ensure!(now >= invalid_before, JWTError::TokenNotValidYet);
+                ensure!(now + time_tolerance >= invalid_before, JWTError::TokenNotValidYet);
             }
         }
         if let Some(expires_at) = self.expires_at {
