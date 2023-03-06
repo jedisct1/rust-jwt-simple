@@ -82,7 +82,8 @@ impl AsRef<ecdsa::SigningKey> for P384KeyPair {
 
 impl P384KeyPair {
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
-        let p384_sk = ecdsa::SigningKey::from_bytes(raw).map_err(|_| JWTError::InvalidKeyPair)?;
+        let p384_sk =
+            ecdsa::SigningKey::from_bytes(raw.into()).map_err(|_| JWTError::InvalidKeyPair)?;
         Ok(P384KeyPair {
             p384_sk,
             metadata: None,
