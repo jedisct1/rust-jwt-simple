@@ -1,4 +1,4 @@
-pub use anyhow::{anyhow, bail, ensure, Error};
+pub use anyhow::{bail, ensure, Error};
 
 #[derive(Debug, thiserror::Error)]
 pub enum JWTError {

@@ -25,7 +25,7 @@ k256 = { version = "0.13.1", features = ["ecdsa", "std", "pkcs8", "pem"] }
 p256 = { version = "0.13.2", features = ["ecdsa", "std", "pkcs8", "pem"] }
 p384 = { version = "0.13.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
 rand = "0.8.5"
-rsa = "0.7.2"
+rsa = "0.9.3"
 serde = { version = "1.0.190", features = ["derive"] }
 serde_json = "1.0.108"
 spki = "0.6.0"
