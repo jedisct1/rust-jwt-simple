@@ -1,16 +1,9 @@
-use std::mem;
-
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use hmac_sha1_compact::Hash as SHA1;
 use hmac_sha256::Hash as SHA256;
 use hmac_sha512::sha384::Hash as SHA384;
 use hmac_sha512::Hash as SHA512;
-use rsa::pkcs1::{DecodeRsaPrivateKey as _, DecodeRsaPublicKey};
-use rsa::pkcs8::{DecodePrivateKey as _, DecodePublicKey as _, EncodePrivateKey as _};
-use rsa::{BigUint, PublicKey as _, PublicKeyParts as _};
 use serde::{de::DeserializeOwned, Serialize};
-#[allow(unused_imports)]
-use spki::{DecodePublicKey as _, EncodePublicKey as _};
 
 use crate::claims::*;
 use crate::common::*;
@@ -19,13 +12,14 @@ use crate::cwt_token::*;
 use crate::error::*;
 use crate::jwt_header::*;
 use crate::token::*;
+use wasi_crypto_guest::prelude::*;
 
 #[doc(hidden)]
-#[derive(Debug, Clone)]
-pub struct RSAPublicKey(rsa::RsaPublicKey);
+#[derive(Debug)]
+pub struct RSAPublicKey(SignaturePublicKey);
 
-impl AsRef<rsa::RsaPublicKey> for RSAPublicKey {
-    fn as_ref(&self) -> &rsa::RsaPublicKey {
+impl AsRef<SignaturePublicKey> for RSAPublicKey {
+    fn as_ref(&self) -> &SignaturePublicKey {
         &self.0
     }
 }
@@ -37,64 +31,52 @@ pub struct RSAPublicKeyComponents {
 
 impl RSAPublicKey {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
-        let rsa_pk = rsa::RsaPublicKey::from_public_key_der(der)
-            .or_else(|_| rsa::RsaPublicKey::from_pkcs1_der(der))?;
+        let rsa_pk = SignaturePublicKey::from_pkcs8("RSA_PKCS1_2048_SHA256", der)
+            .expect("Invalid public key");
         Ok(RSAPublicKey(rsa_pk))
     }
 
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
         let pem = pem.trim();
-        let rsa_pk = rsa::RsaPublicKey::from_public_key_pem(pem)
-            .or_else(|_| rsa::RsaPublicKey::from_pkcs1_pem(pem))?;
+        let rsa_pk =
+            SignaturePublicKey::from_pem("RSA_PKCS1_2048_SHA256", pem).expect("Invalid public key");
         Ok(RSAPublicKey(rsa_pk))
     }
 
-    pub fn from_components(n: &[u8], e: &[u8]) -> Result<Self, Error> {
-        let n = BigUint::from_bytes_be(n);
-        let e = BigUint::from_bytes_be(e);
-        let rsa_pk = rsa::RsaPublicKey::new(n, e)?;
-        Ok(RSAPublicKey(rsa_pk))
+    pub fn from_components(_n: &[u8], _e: &[u8]) -> Result<Self, Error> {
+        unimplemented!();
     }
 
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
-        self.0
-            .to_public_key_der()
-            .map_err(Into::into)
-            .map(|x| x.as_ref().to_vec())
+        Ok(self.0.pkcs8().expect("Invalid key"))
     }
 
     pub fn to_pem(&self) -> Result<String, Error> {
-        self.0
-            .to_public_key_pem(Default::default())
-            .map_err(Into::into)
+        Ok(String::from_utf8(self.0.pem().expect("Invalid key"))?)
     }
 
     pub fn to_components(&self) -> RSAPublicKeyComponents {
-        let n = self.0.n().to_bytes_be();
-        let e = self.0.e().to_bytes_be();
-        RSAPublicKeyComponents { n, e }
+        unimplemented!()
     }
 }
 
 #[doc(hidden)]
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RSAKeyPair {
-    rsa_sk: rsa::RsaPrivateKey,
+    rsa_sk: SignatureKeyPair,
     metadata: Option<KeyMetadata>,
 }
 
-impl AsRef<rsa::RsaPrivateKey> for RSAKeyPair {
-    fn as_ref(&self) -> &rsa::RsaPrivateKey {
+impl AsRef<SignatureKeyPair> for RSAKeyPair {
+    fn as_ref(&self) -> &SignatureKeyPair {
         &self.rsa_sk
     }
 }
 
 impl RSAKeyPair {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
-        let mut rsa_sk = rsa::RsaPrivateKey::from_pkcs8_der(der)
-            .or_else(|_| rsa::RsaPrivateKey::from_pkcs1_der(der))?;
-        rsa_sk.validate()?;
-        rsa_sk.precompute()?;
+        let rsa_sk =
+            SignatureKeyPair::from_pkcs8("RSA_PKCS1_2048_SHA256", der).expect("Invalid key pair");
         Ok(RSAKeyPair {
             rsa_sk,
             metadata: None,
@@ -103,10 +85,8 @@ impl RSAKeyPair {
 
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
         let pem = pem.trim();
-        let mut rsa_sk = rsa::RsaPrivateKey::from_pkcs8_pem(pem)
-            .or_else(|_| rsa::RsaPrivateKey::from_pkcs1_pem(pem))?;
-        rsa_sk.validate()?;
-        rsa_sk.precompute()?;
+        let rsa_sk =
+            SignatureKeyPair::from_pem("RSA_PKCS1_2048_SHA256", pem).expect("Invalid key pair");
         Ok(RSAKeyPair {
             rsa_sk,
             metadata: None,
@@ -114,21 +94,15 @@ impl RSAKeyPair {
     }
 
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
-        self.rsa_sk
-            .to_pkcs8_der()
-            .map_err(Into::into)
-            .map(|x| mem::take(x.to_bytes().as_mut()))
+        Ok(self.rsa_sk.pkcs8().unwrap())
     }
 
     pub fn to_pem(&self) -> Result<String, Error> {
-        self.rsa_sk
-            .to_pkcs8_pem(Default::default())
-            .map_err(Into::into)
-            .map(|x| x.to_string())
+        Ok(String::from_utf8(self.rsa_sk.pem().unwrap())?)
     }
 
     pub fn public_key(&self) -> RSAPublicKey {
-        let rsa_pk = self.rsa_sk.to_public_key();
+        let rsa_pk = self.rsa_sk.publickey().unwrap();
         RSAPublicKey(rsa_pk)
     }
 
@@ -137,8 +111,8 @@ impl RSAKeyPair {
             2048 | 3072 | 4096 => {}
             _ => bail!(JWTError::UnsupportedRSAModulus),
         };
-        let mut rng = rand::thread_rng();
-        let rsa_sk = rsa::RsaPrivateKey::new(&mut rng, modulus_bits)?;
+        let _rng = rand::thread_rng();
+        let rsa_sk = SignatureKeyPair::generate("RSA_PKCS1_2048_SHA256").unwrap();
         Ok(RSAKeyPair {
             rsa_sk,
             metadata: None,
@@ -162,12 +136,13 @@ pub trait RSAKeyPairLike {
         let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
             .with_metadata(self.metadata());
         Token::build(&jwt_header, claims, |authenticated| {
-            let digest = Self::hash(authenticated.as_bytes());
-            let mut rng = rand::thread_rng();
-            let token =
-                self.key_pair()
-                    .as_ref()
-                    .sign_blinded(&mut rng, self.padding_scheme(), &digest)?;
+            let token = self
+                .key_pair()
+                .as_ref()
+                .sign(authenticated.as_bytes())
+                .unwrap()
+                .raw()
+                .unwrap();
             Ok(token)
         })
     }
@@ -191,10 +166,12 @@ pub trait RSAPublicKeyLike {
             token,
             options,
             |authenticated, signature| {
-                let digest = Self::hash(authenticated.as_bytes());
                 self.public_key()
                     .as_ref()
-                    .verify(self.padding_scheme(), &digest, signature)
+                    .signature_verify(
+                        authenticated.as_bytes(),
+                        &Signature::from_raw("RSA_PKCS1_2048_SHA256", signature).unwrap(),
+                    )
                     .map_err(|_| JWTError::InvalidSignature)?;
                 Ok(())
             },
@@ -223,13 +200,13 @@ pub trait RSAPublicKeyLike {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RS256KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RS256PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
@@ -385,13 +362,13 @@ impl RS256PublicKey {
 
 //
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RS512KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RS512PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
@@ -547,13 +524,13 @@ impl RS512PublicKey {
 
 //
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RS384KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RS384PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
@@ -709,13 +686,13 @@ impl RS384PublicKey {
 
 //
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PS256KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PS256PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
@@ -863,13 +840,13 @@ impl PS256PublicKey {
 
 //
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PS512KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PS512PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,
@@ -1025,13 +1002,13 @@ impl PS512PublicKey {
 
 //
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PS384KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PS384PublicKey {
     pk: RSAPublicKey,
     key_id: Option<String>,

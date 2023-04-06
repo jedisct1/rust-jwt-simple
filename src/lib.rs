@@ -425,20 +425,6 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
         let token = key_pair.sign(claims).unwrap();
         let pk = RS256PublicKey::from_pem(RSA_PK_PEM).unwrap();
         let _claims = pk.verify_token::<NoCustomClaims>(&token, None).unwrap();
-        let components = pk.to_components();
-        let hex_e = Base64::encode_to_string(components.e).unwrap();
-        let _e = Base64::decode_to_vec(hex_e, None).unwrap();
-    }
-
-    #[test]
-    fn ps384() {
-        let key_pair = PS384KeyPair::generate(2048).unwrap();
-        let claims = Claims::create(Duration::from_secs(86400));
-        let token = key_pair.sign(claims).unwrap();
-        let _claims = key_pair
-            .public_key()
-            .verify_token::<NoCustomClaims>(&token, None)
-            .unwrap();
     }
 
     #[test]

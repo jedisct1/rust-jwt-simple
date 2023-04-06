@@ -32,6 +32,8 @@ spki = "0.6.0"
 thiserror = "1.0.40"
 zeroize = "1.6.0"
 
+wasi-crypto-guest = { version = "0.1", path = "wasi-crypto-guest" }
+
 [dev-dependencies]
 benchmark-simple = "0.1.7"
 
