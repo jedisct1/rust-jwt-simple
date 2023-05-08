@@ -37,6 +37,7 @@ benchmark-simple = "0.1.7"
 
 [features]
 cwt = ["ciborium"]
+default = ["cwt"]
 
 [[bench]]
 name = "benchmark"

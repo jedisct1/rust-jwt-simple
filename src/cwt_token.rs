@@ -62,10 +62,10 @@ impl CWTToken {
             Cursor::new(parts_cbor[0].as_bytes().ok_or(JWTError::CWTDecodingError)?);
         let protected_cbor: CBORValue = from_cbor(&mut protected_reader)?;
         let protected = protected_cbor.as_map().ok_or(JWTError::CWTDecodingError)?;
-        jwt_header.mix_cwt(&protected)?;
+        jwt_header.mix_cwt(protected)?;
 
         let unprotected = parts_cbor[1].as_map().ok_or(JWTError::CWTDecodingError)?;
-        jwt_header.mix_cwt(&unprotected)?;
+        jwt_header.mix_cwt(unprotected)?;
 
         ensure!(
             jwt_header.algorithm == jwt_alg_name,
@@ -109,7 +109,7 @@ impl CWTToken {
             Cursor::new(parts_cbor[2].as_bytes().ok_or(JWTError::CWTDecodingError)?);
         let claims_cbor: CBORValue = from_cbor(&mut claims_reader)?;
         let claims_ = claims_cbor.as_map().ok_or(JWTError::CWTDecodingError)?;
-        claims.mix_cwt(&claims_)?;
+        claims.mix_cwt(claims_)?;
 
         claims.validate(&options)?;
         Ok(claims)
@@ -224,8 +224,14 @@ impl JWTHeader {
                     self.content_type = Some(content_type.into());
                 }
                 I_KID => {
-                    let key_id = value.as_text().ok_or(JWTError::CWTDecodingError)?;
-                    self.key_id = Some(key_id.into());
+                    if let Some(key_id) = value.as_text() {
+                        self.key_id = Some(key_id.into());
+                    } else if let Some(key_id) = value.as_bytes() {
+                        let key_id = BinString::from(key_id).into();
+                        self.key_id = Some(key_id);
+                    } else {
+                        bail!(JWTError::CWTDecodingError)
+                    }
                 }
                 I_CRIT => {
                     let crit_cbor = value.as_array().ok_or(JWTError::CWTDecodingError)?;
@@ -304,5 +310,21 @@ fn should_verify_token() {
 
     let token_hex = "d18443a10105a05835a60172636f6170733a2f2f61732e6578616d706c65026764616a69616a690743313233041a6296121f051a6296040f061a6296040f58206b310798de7f6b2aeff832344c2ea37674807b72a8a2cc263f1d31b1eb86139b";
     let token = Hex::decode_to_vec(token_hex, None).unwrap();
+    let mut options = VerificationOptions::default();
+    options.time_tolerance = Some(Duration::from_days(100000));
+    let _ = key.verify_cwt_token(token, Some(options)).unwrap();
+}
+
+#[test]
+fn should_verify_token2() {
+    use crate::prelude::*;
+    use ct_codecs::{Base64, Decoder, Hex};
+
+    let k_hex = "e105602d1b1e4032167eebb2479a1324e3b2011f60cc65fff9d4c985c4aa2870";
+    let k = Hex::decode_to_vec(k_hex, None).unwrap();
+    let key = HS256Key::from_bytes(&k);
+
+    let token_b64 = "0YRDoQEFoQRCMDFYb6UZAQ+CY0dFVGdPUFRJT05TGQEOoQOjAAMCeDBeLy4qLyhbYS16QS1aMC05XSspW19dKi4oPzptcGR8bTN1OHx0c3xtNHN8bTR2KSQEb215X3N0cmVhbV90aXRsZQQaZFkOlQUaZFkAhQYaZFkAhVggkt1vYdjswnbgrBu2qHCwHLb4TkOCB9ZvWex83c+MpMM=";
+    let token = Base64::decode_to_vec(token_b64, None).unwrap();
     let _ = key.verify_cwt_token(token, Default::default()).unwrap();
 }
