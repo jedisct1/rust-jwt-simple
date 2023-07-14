@@ -180,6 +180,7 @@ pub trait RSAPublicKeyLike {
     fn set_key_id(&mut self, key_id: String);
     fn hash(message: &[u8]) -> Vec<u8>;
     fn padding_scheme(&self) -> rsa::PaddingScheme;
+    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme>;
 
     fn verify_token<CustomClaims: Serialize + DeserializeOwned>(
         &self,
@@ -192,10 +193,23 @@ pub trait RSAPublicKeyLike {
             options,
             |authenticated, signature| {
                 let digest = Self::hash(authenticated.as_bytes());
-                self.public_key()
+                let mut verification_failed = self
+                    .public_key()
                     .as_ref()
                     .verify(self.padding_scheme(), &digest, signature)
-                    .map_err(|_| JWTError::InvalidSignature)?;
+                    .is_err();
+                if verification_failed {
+                    if let Some(padding_scheme_alt) = self.padding_scheme_alt() {
+                        verification_failed = self
+                            .public_key()
+                            .as_ref()
+                            .verify(padding_scheme_alt, &digest, signature)
+                            .is_err();
+                    }
+                }
+                if verification_failed {
+                    bail!(JWTError::InvalidSignature);
+                }
                 Ok(())
             },
         )
@@ -213,10 +227,23 @@ pub trait RSAPublicKeyLike {
             options,
             |authenticated, signature| {
                 let digest = Self::hash(authenticated.as_bytes());
-                self.public_key()
+                let mut verification_failed = self
+                    .public_key()
                     .as_ref()
                     .verify(self.padding_scheme(), &digest, signature)
-                    .map_err(|_| JWTError::InvalidSignature)?;
+                    .is_err();
+                if verification_failed {
+                    if let Some(padding_scheme_alt) = self.padding_scheme_alt() {
+                        verification_failed = self
+                            .public_key()
+                            .as_ref()
+                            .verify(padding_scheme_alt, &digest, signature)
+                            .is_err();
+                    }
+                }
+                if verification_failed {
+                    bail!(JWTError::InvalidSignature);
+                }
                 Ok(())
             },
         )
@@ -320,6 +347,10 @@ impl RSAPublicKeyLike for RS256PublicKey {
 
     fn padding_scheme(&self) -> rsa::PaddingScheme {
         rsa::PaddingScheme::new_pkcs1v15_sign::<SHA256>()
+    }
+
+    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+        None
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -484,6 +515,10 @@ impl RSAPublicKeyLike for RS512PublicKey {
         rsa::PaddingScheme::new_pkcs1v15_sign::<SHA512>()
     }
 
+    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+        None
+    }
+
     fn public_key(&self) -> &RSAPublicKey {
         &self.pk
     }
@@ -644,6 +679,10 @@ impl RSAPublicKeyLike for RS384PublicKey {
 
     fn padding_scheme(&self) -> rsa::PaddingScheme {
         rsa::PaddingScheme::new_pkcs1v15_sign::<SHA384>()
+    }
+
+    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+        None
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -808,6 +847,10 @@ impl RSAPublicKeyLike for PS256PublicKey {
         rsa::PaddingScheme::new_pss_with_salt::<SHA256>(256 / 8)
     }
 
+    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+        Some(rsa::PaddingScheme::new_pss::<SHA256>())
+    }
+
     fn public_key(&self) -> &RSAPublicKey {
         &self.pk
     }
@@ -960,6 +1003,10 @@ impl RSAPublicKeyLike for PS512PublicKey {
 
     fn padding_scheme(&self) -> rsa::PaddingScheme {
         rsa::PaddingScheme::new_pss_with_salt::<SHA512>(512 / 8)
+    }
+
+    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+        Some(rsa::PaddingScheme::new_pss::<SHA512>())
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -1122,6 +1169,10 @@ impl RSAPublicKeyLike for PS384PublicKey {
 
     fn padding_scheme(&self) -> rsa::PaddingScheme {
         rsa::PaddingScheme::new_pss_with_salt::<SHA384>(384 / 8)
+    }
+
+    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+        Some(rsa::PaddingScheme::new_pss::<SHA384>())
     }
 
     fn public_key(&self) -> &RSAPublicKey {
