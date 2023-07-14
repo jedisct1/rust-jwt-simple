@@ -748,7 +748,7 @@ impl RSAKeyPairLike for PS256KeyPair {
     }
 
     fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss::<SHA256>()
+        rsa::PaddingScheme::new_pss_with_salt::<SHA256>(256 / 8)
     }
 }
 
@@ -805,7 +805,7 @@ impl RSAPublicKeyLike for PS256PublicKey {
     }
 
     fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss::<SHA256>()
+        rsa::PaddingScheme::new_pss_with_salt::<SHA256>(256 / 8)
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -902,7 +902,7 @@ impl RSAKeyPairLike for PS512KeyPair {
     }
 
     fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss::<SHA512>()
+        rsa::PaddingScheme::new_pss_with_salt::<SHA512>(512 / 8)
     }
 }
 
@@ -959,7 +959,7 @@ impl RSAPublicKeyLike for PS512PublicKey {
     }
 
     fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss::<SHA512>()
+        rsa::PaddingScheme::new_pss_with_salt::<SHA512>(512 / 8)
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -1064,7 +1064,7 @@ impl RSAKeyPairLike for PS384KeyPair {
     }
 
     fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss::<SHA384>()
+        rsa::PaddingScheme::new_pss_with_salt::<SHA384>(384 / 8)
     }
 }
 
@@ -1121,7 +1121,7 @@ impl RSAPublicKeyLike for PS384PublicKey {
     }
 
     fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss::<SHA384>()
+        rsa::PaddingScheme::new_pss_with_salt::<SHA384>(384 / 8)
     }
 
     fn public_key(&self) -> &RSAPublicKey {
