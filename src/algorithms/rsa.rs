@@ -748,7 +748,7 @@ impl RSAKeyPairLike for PS256KeyPair {
     }
 
     fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss_with_salt::<SHA256>(256)
+        rsa::PaddingScheme::new_pss_with_salt::<SHA256>(32)
     }
 }
 
