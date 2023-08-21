@@ -50,6 +50,9 @@ pub struct VerificationOptions {
 
     /// Maximum unsafe, untrusted, unverified JWT header length to accept
     pub max_header_length: Option<usize>,
+
+    /// Change the current time. Only used for testing.
+    pub artificial_time: Option<UnixTimeStamp>,
 }
 
 impl Default for VerificationOptions {
@@ -67,6 +70,7 @@ impl Default for VerificationOptions {
             max_validity: None,
             max_token_length: Some(DEFAULT_MAX_TOKEN_LENGTH),
             max_header_length: None,
+            artificial_time: None,
         }
     }
 }

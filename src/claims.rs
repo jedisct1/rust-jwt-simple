@@ -173,7 +173,9 @@ pub struct JWTClaims<CustomClaims> {
 
 impl<CustomClaims> JWTClaims<CustomClaims> {
     pub(crate) fn validate(&self, options: &VerificationOptions) -> Result<(), Error> {
-        let now = Clock::now_since_epoch();
+        let now = options
+            .artificial_time
+            .unwrap_or_else(|| Clock::now_since_epoch());
         let time_tolerance = options.time_tolerance.unwrap_or_default();
 
         if let Some(reject_before) = options.reject_before {
@@ -369,5 +371,52 @@ mod tests {
             claims.expires_at,
             Some(UnixTimeStamp::from_secs(1617757825))
         );
+    }
+
+    #[test]
+    fn should_tolerate_clock_drift() {
+        let exp = Duration::from_mins(1);
+        let claims = Claims::create(exp);
+        let mut options = VerificationOptions::default();
+
+        // Verifier clock is 2 minutes ahead of the token clock
+        // The token is valid for 1 minute, with an extra tolerance of 1 minute
+        // Verification should still pass
+        let drift = Duration::from_mins(2);
+        options.artificial_time = Some(claims.issued_at.unwrap() + drift);
+        options.time_tolerance = Some(Duration::from_mins(1));
+        claims.validate(&options).unwrap();
+
+        // Verifier clock is 2 minutes ahead of the token clock
+        // The token is valid for 1 minute, with an extra tolerance of 1 minute
+        // Verification must not pass
+        let drift = Duration::from_mins(3);
+        options.artificial_time = Some(claims.issued_at.unwrap() + drift);
+        options.time_tolerance = Some(Duration::from_mins(1));
+        assert!(claims.validate(&options).is_err());
+
+        // Verifier clock is 2 minutes ahead of the token clock
+        // The token is valid for 30 seconds, with an extra tolerance of 1 minute
+        // Verification must not pass
+        let drift = Duration::from_secs(30);
+        options.artificial_time = Some(claims.issued_at.unwrap() + drift);
+        options.time_tolerance = Some(Duration::from_mins(1));
+        claims.validate(&options).unwrap();
+
+        // Verifier clock is 2 minutes behind the token clock,
+        // The token is valid for 1 minute, so it is already expired.
+        // We have a tolerance of 1 minute, so verification should not pass.
+        let drift = Duration::from_mins(2);
+        options.artificial_time = Some(claims.issued_at.unwrap() - drift);
+        options.time_tolerance = Some(Duration::from_mins(1));
+        assert!(claims.validate(&options).is_err());
+
+        // Verifier clock is 2 minutes behind the token clock,
+        // The token is valid for 1 minute, so it is already expired.
+        // We have a tolerance of 2 minute, so verification should pass.
+        let drift = Duration::from_mins(2);
+        options.artificial_time = Some(claims.issued_at.unwrap() - drift);
+        options.time_tolerance = Some(Duration::from_mins(2));
+        claims.validate(&options).unwrap();
     }
 }
