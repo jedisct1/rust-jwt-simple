@@ -15,7 +15,7 @@ readme = "README.md"
 anyhow = "1.0.75"
 binstring = "0.1.1"
 ciborium = { version = "0.2.1", optional = true }
-coarsetime = "0.1.23"
+coarsetime = "0.1.24"
 ct-codecs = "1.1.1"
 ed25519-compact = { version = "2.0.4", features = ["pem"] }
 hmac-sha1-compact = "1.1.4"
@@ -26,10 +26,10 @@ p256 = { version = "0.13.2", features = ["ecdsa", "std", "pkcs8", "pem"] }
 p384 = { version = "0.13.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
 rand = "0.8.5"
 rsa = "0.7.2"
-serde = { version = "1.0.183", features = ["derive"] }
-serde_json = "1.0.105"
+serde = { version = "1.0.188", features = ["derive"] }
+serde_json = "1.0.107"
 spki = "0.6.0"
-thiserror = "1.0.47"
+thiserror = "1.0.48"
 zeroize = "1.6.0"
 
 [dev-dependencies]
