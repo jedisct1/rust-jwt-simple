@@ -175,7 +175,7 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
     pub(crate) fn validate(&self, options: &VerificationOptions) -> Result<(), Error> {
         let now = options
             .artificial_time
-            .unwrap_or_else(|| Clock::now_since_epoch());
+            .unwrap_or_else(Clock::now_since_epoch);
         let time_tolerance = options.time_tolerance.unwrap_or_default();
 
         if let Some(reject_before) = options.reject_before {
