@@ -85,7 +85,7 @@ impl AsRef<Rsa<Private>> for RSAKeyPair {
 impl RSAKeyPair {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         let rsa_sk = Rsa::<Private>::private_key_from_der(der)?;
-        if rsa_sk.check_key()? == false {
+        if !(rsa_sk.check_key()?) {
             bail!(JWTError::InvalidKeyPair);
         }
         Ok(RSAKeyPair {
@@ -97,7 +97,7 @@ impl RSAKeyPair {
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
         let pem = pem.trim();
         let rsa_sk = Rsa::<Private>::private_key_from_pem(pem.as_bytes())?;
-        if rsa_sk.check_key()? == false {
+        if !(rsa_sk.check_key()?) {
             bail!(JWTError::InvalidKeyPair);
         }
         Ok(RSAKeyPair {
@@ -192,10 +192,9 @@ pub trait RSAPublicKeyLike {
                 let pkey = PKey::from_rsa(self.public_key().as_ref().clone())?;
                 let mut verifier = Verifier::new(digest, &pkey)?;
                 verifier.update(authenticated.as_bytes())?;
-                if verifier
-                    .verify(&signature)
-                    .map_err(|_| JWTError::InvalidSignature)?
-                    == false
+                if !(verifier
+                    .verify(signature)
+                    .map_err(|_| JWTError::InvalidSignature)?)
                 {
                     bail!(JWTError::InvalidSignature);
                 }
