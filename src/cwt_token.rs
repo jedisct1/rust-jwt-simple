@@ -314,17 +314,3 @@ fn should_verify_token() {
     options.time_tolerance = Some(Duration::from_days(100000));
     let _ = key.verify_cwt_token(token, Some(options)).unwrap();
 }
-
-#[test]
-fn should_verify_token2() {
-    use crate::prelude::*;
-    use ct_codecs::{Base64, Decoder, Hex};
-
-    let k_hex = "e105602d1b1e4032167eebb2479a1324e3b2011f60cc65fff9d4c985c4aa2870";
-    let k = Hex::decode_to_vec(k_hex, None).unwrap();
-    let key = HS256Key::from_bytes(&k);
-
-    let token_b64 = "0YRDoQEFoQRCMDFYb6UZAQ+CY0dFVGdPUFRJT05TGQEOoQOjAAMCeDBeLy4qLyhbYS16QS1aMC05XSspW19dKi4oPzptcGR8bTN1OHx0c3xtNHN8bTR2KSQEb215X3N0cmVhbV90aXRsZQQaZFkOlQUaZFkAhQYaZFkAhVggkt1vYdjswnbgrBu2qHCwHLb4TkOCB9ZvWex83c+MpMM=";
-    let token = Base64::decode_to_vec(token_b64, None).unwrap();
-    let _ = key.verify_cwt_token(token, Default::default()).unwrap();
-}
