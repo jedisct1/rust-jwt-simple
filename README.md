@@ -305,6 +305,4 @@ This crate was designed to:
 * Minimize code complexity and external dependencies
 * Automatically perform common tasks to prevent misuse. Signature verification and claims validation happen automatically instead of relying on applications.
 * Still allow power users to access everything JWT tokens include if they really need to
-* Be as portable as possible by using only Rust implementations of cryptographic primitives
-* Have no dependency on OpenSSL
 * Work out of the box in a WebAssembly environment, so that it can be used in function-as-a-service platforms.
