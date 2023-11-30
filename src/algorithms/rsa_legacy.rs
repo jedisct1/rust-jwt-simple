@@ -1,12 +1,16 @@
-use boring::bn::BigNum;
-use boring::hash::MessageDigest;
-use boring::pkey::{PKey, Private, Public};
-use boring::rsa::{Padding, Rsa};
-use boring::sign::{Signer, Verifier};
+use std::mem;
+
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use hmac_sha1_compact::Hash as SHA1;
 use hmac_sha256::Hash as SHA256;
+use hmac_sha512::sha384::Hash as SHA384;
+use hmac_sha512::Hash as SHA512;
+use rsa::pkcs1::{DecodeRsaPrivateKey as _, DecodeRsaPublicKey};
+use rsa::pkcs8::{DecodePrivateKey as _, DecodePublicKey as _, EncodePrivateKey as _};
+use rsa::{BigUint, PublicKey as _, PublicKeyParts as _};
 use serde::{de::DeserializeOwned, Serialize};
+#[allow(unused_imports)]
+use spki::{DecodePublicKey as _, EncodePublicKey as _};
 
 use crate::claims::*;
 use crate::common::*;
@@ -18,10 +22,10 @@ use crate::token::*;
 
 #[doc(hidden)]
 #[derive(Debug, Clone)]
-pub struct RSAPublicKey(Rsa<Public>);
+pub struct RSAPublicKey(rsa::RsaPublicKey);
 
-impl AsRef<Rsa<Public>> for RSAPublicKey {
-    fn as_ref(&self) -> &Rsa<Public> {
+impl AsRef<rsa::RsaPublicKey> for RSAPublicKey {
+    fn as_ref(&self) -> &rsa::RsaPublicKey {
         &self.0
     }
 }
@@ -33,38 +37,41 @@ pub struct RSAPublicKeyComponents {
 
 impl RSAPublicKey {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
-        let rsa_pk = Rsa::<Public>::public_key_from_der(der)
-            .or_else(|_| Rsa::<Public>::public_key_from_der_pkcs1(der))?;
+        let rsa_pk = rsa::RsaPublicKey::from_public_key_der(der)
+            .or_else(|_| rsa::RsaPublicKey::from_pkcs1_der(der))?;
         Ok(RSAPublicKey(rsa_pk))
     }
 
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
         let pem = pem.trim();
-        let rsa_pk = Rsa::<Public>::public_key_from_pem(pem.as_bytes())
-            .or_else(|_| Rsa::<Public>::public_key_from_pem_pkcs1(pem.as_bytes()))?;
+        let rsa_pk = rsa::RsaPublicKey::from_public_key_pem(pem)
+            .or_else(|_| rsa::RsaPublicKey::from_pkcs1_pem(pem))?;
         Ok(RSAPublicKey(rsa_pk))
     }
 
     pub fn from_components(n: &[u8], e: &[u8]) -> Result<Self, Error> {
-        let n = BigNum::from_slice(n)?;
-        let e = BigNum::from_slice(e)?;
-        let rsa_pk = Rsa::<Public>::from_public_components(n, e)?;
+        let n = BigUint::from_bytes_be(n);
+        let e = BigUint::from_bytes_be(e);
+        let rsa_pk = rsa::RsaPublicKey::new(n, e)?;
         Ok(RSAPublicKey(rsa_pk))
     }
 
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
-        self.0.public_key_to_der().map_err(Into::into)
+        self.0
+            .to_public_key_der()
+            .map_err(Into::into)
+            .map(|x| x.as_ref().to_vec())
     }
 
     pub fn to_pem(&self) -> Result<String, Error> {
-        let bytes = self.0.public_key_to_pem()?;
-        let pem = String::from_utf8(bytes)?;
-        Ok(pem)
+        self.0
+            .to_public_key_pem(Default::default())
+            .map_err(Into::into)
     }
 
     pub fn to_components(&self) -> RSAPublicKeyComponents {
-        let n = self.0.n().to_vec();
-        let e = self.0.e().to_vec();
+        let n = self.0.n().to_bytes_be();
+        let e = self.0.e().to_bytes_be();
         RSAPublicKeyComponents { n, e }
     }
 }
@@ -72,22 +79,22 @@ impl RSAPublicKey {
 #[doc(hidden)]
 #[derive(Debug, Clone)]
 pub struct RSAKeyPair {
-    rsa_sk: Rsa<Private>,
+    rsa_sk: rsa::RsaPrivateKey,
     metadata: Option<KeyMetadata>,
 }
 
-impl AsRef<Rsa<Private>> for RSAKeyPair {
-    fn as_ref(&self) -> &Rsa<Private> {
+impl AsRef<rsa::RsaPrivateKey> for RSAKeyPair {
+    fn as_ref(&self) -> &rsa::RsaPrivateKey {
         &self.rsa_sk
     }
 }
 
 impl RSAKeyPair {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
-        let rsa_sk = Rsa::<Private>::private_key_from_der(der)?;
-        if rsa_sk.check_key()? == false {
-            bail!(JWTError::InvalidKeyPair);
-        }
+        let mut rsa_sk = rsa::RsaPrivateKey::from_pkcs8_der(der)
+            .or_else(|_| rsa::RsaPrivateKey::from_pkcs1_der(der))?;
+        rsa_sk.validate()?;
+        rsa_sk.precompute()?;
         Ok(RSAKeyPair {
             rsa_sk,
             metadata: None,
@@ -96,10 +103,10 @@ impl RSAKeyPair {
 
     pub fn from_pem(pem: &str) -> Result<Self, Error> {
         let pem = pem.trim();
-        let rsa_sk = Rsa::<Private>::private_key_from_pem(pem.as_bytes())?;
-        if rsa_sk.check_key()? == false {
-            bail!(JWTError::InvalidKeyPair);
-        }
+        let mut rsa_sk = rsa::RsaPrivateKey::from_pkcs8_pem(pem)
+            .or_else(|_| rsa::RsaPrivateKey::from_pkcs1_pem(pem))?;
+        rsa_sk.validate()?;
+        rsa_sk.precompute()?;
         Ok(RSAKeyPair {
             rsa_sk,
             metadata: None,
@@ -107,27 +114,21 @@ impl RSAKeyPair {
     }
 
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
-        self.rsa_sk.private_key_to_der().map_err(Into::into)
+        self.rsa_sk
+            .to_pkcs8_der()
+            .map_err(Into::into)
+            .map(|x| mem::take(x.to_bytes().as_mut()))
     }
 
     pub fn to_pem(&self) -> Result<String, Error> {
-        let bytes = self.rsa_sk.private_key_to_pem()?;
-        let pem = String::from_utf8(bytes)?;
-        Ok(pem)
+        self.rsa_sk
+            .to_pkcs8_pem(Default::default())
+            .map_err(Into::into)
+            .map(|x| x.to_string())
     }
 
     pub fn public_key(&self) -> RSAPublicKey {
-        let rsa_pk = Rsa::<Public>::from_public_components(
-            self.rsa_sk
-                .n()
-                .to_owned()
-                .expect("failed to create public key"),
-            self.rsa_sk
-                .e()
-                .to_owned()
-                .expect("failed to create public key"),
-        )
-        .expect("failed to create public key");
+        let rsa_pk = self.rsa_sk.to_public_key();
         RSAPublicKey(rsa_pk)
     }
 
@@ -136,7 +137,8 @@ impl RSAKeyPair {
             2048 | 3072 | 4096 => {}
             _ => bail!(JWTError::UnsupportedRSAModulus),
         };
-        let rsa_sk = Rsa::<Private>::generate(modulus_bits as _)?;
+        let mut rng = rand::thread_rng();
+        let rsa_sk = rsa::RsaPrivateKey::new(&mut rng, modulus_bits)?;
         Ok(RSAKeyPair {
             rsa_sk,
             metadata: None,
@@ -150,8 +152,8 @@ pub trait RSAKeyPairLike {
     fn key_id(&self) -> &Option<String>;
     fn metadata(&self) -> &Option<KeyMetadata>;
     fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error>;
-    fn hash() -> MessageDigest;
-    fn padding_scheme(&self) -> Padding;
+    fn hash(message: &[u8]) -> Vec<u8>;
+    fn padding_scheme(&self) -> rsa::PaddingScheme;
 
     fn sign<CustomClaims: Serialize + DeserializeOwned>(
         &self,
@@ -160,12 +162,13 @@ pub trait RSAKeyPairLike {
         let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
             .with_metadata(self.metadata());
         Token::build(&jwt_header, claims, |authenticated| {
-            let digest = Self::hash();
-            let pkey = PKey::from_rsa(self.key_pair().as_ref().clone())?;
-            let mut signer = Signer::new(digest, &pkey).unwrap();
-            signer.update(authenticated.as_bytes())?;
-            let signature = signer.sign_to_vec()?;
-            Ok(signature)
+            let digest = Self::hash(authenticated.as_bytes());
+            let mut rng = rand::thread_rng();
+            let token =
+                self.key_pair()
+                    .as_ref()
+                    .sign_blinded(&mut rng, self.padding_scheme(), &digest)?;
+            Ok(token)
         })
     }
 }
@@ -175,8 +178,9 @@ pub trait RSAPublicKeyLike {
     fn public_key(&self) -> &RSAPublicKey;
     fn key_id(&self) -> &Option<String>;
     fn set_key_id(&mut self, key_id: String);
-    fn hash() -> MessageDigest;
-    fn padding_scheme(&self) -> Padding;
+    fn hash(message: &[u8]) -> Vec<u8>;
+    fn padding_scheme(&self) -> rsa::PaddingScheme;
+    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme>;
 
     fn verify_token<CustomClaims: Serialize + DeserializeOwned>(
         &self,
@@ -188,15 +192,22 @@ pub trait RSAPublicKeyLike {
             token,
             options,
             |authenticated, signature| {
-                let digest = Self::hash();
-                let pkey = PKey::from_rsa(self.public_key().as_ref().clone())?;
-                let mut verifier = Verifier::new(digest, &pkey)?;
-                verifier.update(authenticated.as_bytes())?;
-                if verifier
-                    .verify(&signature)
-                    .map_err(|_| JWTError::InvalidSignature)?
-                    == false
-                {
+                let digest = Self::hash(authenticated.as_bytes());
+                let mut verification_failed = self
+                    .public_key()
+                    .as_ref()
+                    .verify(self.padding_scheme(), &digest, signature)
+                    .is_err();
+                if verification_failed {
+                    if let Some(padding_scheme_alt) = self.padding_scheme_alt() {
+                        verification_failed = self
+                            .public_key()
+                            .as_ref()
+                            .verify(padding_scheme_alt, &digest, signature)
+                            .is_err();
+                    }
+                }
+                if verification_failed {
                     bail!(JWTError::InvalidSignature);
                 }
                 Ok(())
@@ -215,15 +226,22 @@ pub trait RSAPublicKeyLike {
             token,
             options,
             |authenticated, signature| {
-                let digest = Self::hash();
-                let pkey = PKey::from_rsa(self.public_key().as_ref().clone())?;
-                let mut verifier = Verifier::new(digest, &pkey)?;
-                verifier.update(authenticated.as_bytes())?;
-                if verifier
-                    .verify(&signature)
-                    .map_err(|_| JWTError::InvalidSignature)?
-                    == false
-                {
+                let digest = Self::hash(authenticated.as_bytes());
+                let mut verification_failed = self
+                    .public_key()
+                    .as_ref()
+                    .verify(self.padding_scheme(), &digest, signature)
+                    .is_err();
+                if verification_failed {
+                    if let Some(padding_scheme_alt) = self.padding_scheme_alt() {
+                        verification_failed = self
+                            .public_key()
+                            .as_ref()
+                            .verify(padding_scheme_alt, &digest, signature)
+                            .is_err();
+                    }
+                }
+                if verification_failed {
                     bail!(JWTError::InvalidSignature);
                 }
                 Ok(())
@@ -266,12 +284,12 @@ impl RSAKeyPairLike for RS256KeyPair {
         Ok(())
     }
 
-    fn hash() -> MessageDigest {
-        MessageDigest::sha256()
+    fn hash(message: &[u8]) -> Vec<u8> {
+        SHA256::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> Padding {
-        Padding::PKCS1
+    fn padding_scheme(&self) -> rsa::PaddingScheme {
+        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA256>()
     }
 }
 
@@ -323,12 +341,16 @@ impl RSAPublicKeyLike for RS256PublicKey {
         "RS256"
     }
 
-    fn hash() -> MessageDigest {
-        MessageDigest::sha256()
+    fn hash(message: &[u8]) -> Vec<u8> {
+        SHA256::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> Padding {
-        Padding::PKCS1
+    fn padding_scheme(&self) -> rsa::PaddingScheme {
+        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA256>()
+    }
+
+    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+        None
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -428,12 +450,12 @@ impl RSAKeyPairLike for RS512KeyPair {
         Ok(())
     }
 
-    fn hash() -> MessageDigest {
-        MessageDigest::sha512()
+    fn hash(message: &[u8]) -> Vec<u8> {
+        SHA512::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> Padding {
-        Padding::PKCS1
+    fn padding_scheme(&self) -> rsa::PaddingScheme {
+        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA512>()
     }
 }
 
@@ -485,12 +507,16 @@ impl RSAPublicKeyLike for RS512PublicKey {
         "RS512"
     }
 
-    fn hash() -> MessageDigest {
-        MessageDigest::sha512()
+    fn hash(message: &[u8]) -> Vec<u8> {
+        SHA512::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> Padding {
-        Padding::PKCS1
+    fn padding_scheme(&self) -> rsa::PaddingScheme {
+        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA512>()
+    }
+
+    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+        None
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -590,12 +616,12 @@ impl RSAKeyPairLike for RS384KeyPair {
         Ok(())
     }
 
-    fn hash() -> MessageDigest {
-        MessageDigest::sha384()
+    fn hash(message: &[u8]) -> Vec<u8> {
+        SHA384::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> Padding {
-        Padding::PKCS1
+    fn padding_scheme(&self) -> rsa::PaddingScheme {
+        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA384>()
     }
 }
 
@@ -647,12 +673,16 @@ impl RSAPublicKeyLike for RS384PublicKey {
         "RS384"
     }
 
-    fn hash() -> MessageDigest {
-        MessageDigest::sha384()
+    fn hash(message: &[u8]) -> Vec<u8> {
+        SHA384::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> Padding {
-        Padding::PKCS1
+    fn padding_scheme(&self) -> rsa::PaddingScheme {
+        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA384>()
+    }
+
+    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+        None
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -752,12 +782,12 @@ impl RSAKeyPairLike for PS256KeyPair {
         Ok(())
     }
 
-    fn hash() -> MessageDigest {
-        MessageDigest::sha256()
+    fn hash(message: &[u8]) -> Vec<u8> {
+        SHA256::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> Padding {
-        Padding::PKCS1_PSS
+    fn padding_scheme(&self) -> rsa::PaddingScheme {
+        rsa::PaddingScheme::new_pss_with_salt::<SHA256>(256 / 8)
     }
 }
 
@@ -809,12 +839,16 @@ impl RSAPublicKeyLike for PS256PublicKey {
         "PS256"
     }
 
-    fn hash() -> MessageDigest {
-        MessageDigest::sha256()
+    fn hash(message: &[u8]) -> Vec<u8> {
+        SHA256::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> Padding {
-        Padding::PKCS1_PSS
+    fn padding_scheme(&self) -> rsa::PaddingScheme {
+        rsa::PaddingScheme::new_pss_with_salt::<SHA256>(256 / 8)
+    }
+
+    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+        Some(rsa::PaddingScheme::new_pss::<SHA256>())
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -906,12 +940,12 @@ impl RSAKeyPairLike for PS512KeyPair {
         Ok(())
     }
 
-    fn hash() -> MessageDigest {
-        MessageDigest::sha512()
+    fn hash(message: &[u8]) -> Vec<u8> {
+        SHA512::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> Padding {
-        Padding::PKCS1_PSS
+    fn padding_scheme(&self) -> rsa::PaddingScheme {
+        rsa::PaddingScheme::new_pss_with_salt::<SHA512>(512 / 8)
     }
 }
 
@@ -963,12 +997,16 @@ impl RSAPublicKeyLike for PS512PublicKey {
         "PS512"
     }
 
-    fn hash() -> MessageDigest {
-        MessageDigest::sha512()
+    fn hash(message: &[u8]) -> Vec<u8> {
+        SHA512::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> Padding {
-        Padding::PKCS1_PSS
+    fn padding_scheme(&self) -> rsa::PaddingScheme {
+        rsa::PaddingScheme::new_pss_with_salt::<SHA512>(512 / 8)
+    }
+
+    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+        Some(rsa::PaddingScheme::new_pss::<SHA512>())
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -1068,12 +1106,12 @@ impl RSAKeyPairLike for PS384KeyPair {
         Ok(())
     }
 
-    fn hash() -> MessageDigest {
-        MessageDigest::sha384()
+    fn hash(message: &[u8]) -> Vec<u8> {
+        SHA384::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> Padding {
-        Padding::PKCS1_PSS
+    fn padding_scheme(&self) -> rsa::PaddingScheme {
+        rsa::PaddingScheme::new_pss_with_salt::<SHA384>(384 / 8)
     }
 }
 
@@ -1125,12 +1163,16 @@ impl RSAPublicKeyLike for PS384PublicKey {
         "PS384"
     }
 
-    fn hash() -> MessageDigest {
-        MessageDigest::sha384()
+    fn hash(message: &[u8]) -> Vec<u8> {
+        SHA384::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> Padding {
-        Padding::PKCS1_PSS
+    fn padding_scheme(&self) -> rsa::PaddingScheme {
+        rsa::PaddingScheme::new_pss_with_salt::<SHA384>(384 / 8)
+    }
+
+    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+        Some(rsa::PaddingScheme::new_pss::<SHA384>())
     }
 
     fn public_key(&self) -> &RSAPublicKey {
