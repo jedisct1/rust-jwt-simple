@@ -147,13 +147,15 @@ impl RSAKeyPair {
 }
 
 pub trait RSAKeyPairLike {
+    type PaddingScheme: rsa::SignatureScheme;
+
     fn jwt_alg_name() -> &'static str;
     fn key_pair(&self) -> &RSAKeyPair;
     fn key_id(&self) -> &Option<String>;
     fn metadata(&self) -> &Option<KeyMetadata>;
     fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error>;
     fn hash(message: &[u8]) -> Vec<u8>;
-    fn padding_scheme(&self) -> rsa::PaddingScheme;
+    fn padding_scheme(&self) -> Self::PaddingScheme;
 
     fn sign<CustomClaims: Serialize + DeserializeOwned>(
         &self,
@@ -167,20 +169,22 @@ pub trait RSAKeyPairLike {
             let token =
                 self.key_pair()
                     .as_ref()
-                    .sign_blinded(&mut rng, self.padding_scheme(), &digest)?;
+                    .sign_with_rng(&mut rng, self.padding_scheme(), &digest)?;
             Ok(token)
         })
     }
 }
 
 pub trait RSAPublicKeyLike {
+    type PaddingScheme: rsa::SignatureScheme;
+
     fn jwt_alg_name() -> &'static str;
     fn public_key(&self) -> &RSAPublicKey;
     fn key_id(&self) -> &Option<String>;
     fn set_key_id(&mut self, key_id: String);
     fn hash(message: &[u8]) -> Vec<u8>;
-    fn padding_scheme(&self) -> rsa::PaddingScheme;
-    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme>;
+    fn padding_scheme(&self) -> Self::PaddingScheme;
+    fn padding_scheme_alt(&self) -> Option<Self::PaddingScheme>;
 
     fn verify_token<CustomClaims: Serialize + DeserializeOwned>(
         &self,
@@ -263,6 +267,8 @@ pub struct RS256PublicKey {
 }
 
 impl RSAKeyPairLike for RS256KeyPair {
+    type PaddingScheme = rsa::Pkcs1v15Sign;
+
     fn jwt_alg_name() -> &'static str {
         "RS256"
     }
@@ -288,8 +294,8 @@ impl RSAKeyPairLike for RS256KeyPair {
         SHA256::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA256>()
+    fn padding_scheme(&self) -> rsa::Pkcs1v15Sign {
+        rsa::Pkcs1v15Sign::new::<SHA256>()
     }
 }
 
@@ -337,6 +343,8 @@ impl RS256KeyPair {
 }
 
 impl RSAPublicKeyLike for RS256PublicKey {
+    type PaddingScheme = rsa::Pkcs1v15Sign;
+
     fn jwt_alg_name() -> &'static str {
         "RS256"
     }
@@ -345,11 +353,11 @@ impl RSAPublicKeyLike for RS256PublicKey {
         SHA256::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA256>()
+    fn padding_scheme(&self) -> rsa::Pkcs1v15Sign {
+        rsa::Pkcs1v15Sign::new::<SHA256>()
     }
 
-    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+    fn padding_scheme_alt(&self) -> Option<Self::PaddingScheme> {
         None
     }
 
@@ -429,6 +437,8 @@ pub struct RS512PublicKey {
 }
 
 impl RSAKeyPairLike for RS512KeyPair {
+    type PaddingScheme = rsa::Pkcs1v15Sign;
+
     fn jwt_alg_name() -> &'static str {
         "RS512"
     }
@@ -454,8 +464,8 @@ impl RSAKeyPairLike for RS512KeyPair {
         SHA512::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA512>()
+    fn padding_scheme(&self) -> Self::PaddingScheme {
+        rsa::Pkcs1v15Sign::new::<SHA512>()
     }
 }
 
@@ -503,6 +513,8 @@ impl RS512KeyPair {
 }
 
 impl RSAPublicKeyLike for RS512PublicKey {
+    type PaddingScheme = rsa::Pkcs1v15Sign;
+
     fn jwt_alg_name() -> &'static str {
         "RS512"
     }
@@ -511,11 +523,11 @@ impl RSAPublicKeyLike for RS512PublicKey {
         SHA512::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA512>()
+    fn padding_scheme(&self) -> Self::PaddingScheme {
+        rsa::Pkcs1v15Sign::new::<SHA512>()
     }
 
-    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+    fn padding_scheme_alt(&self) -> Option<Self::PaddingScheme> {
         None
     }
 
@@ -595,6 +607,8 @@ pub struct RS384PublicKey {
 }
 
 impl RSAKeyPairLike for RS384KeyPair {
+    type PaddingScheme = rsa::Pkcs1v15Sign;
+
     fn jwt_alg_name() -> &'static str {
         "RS384"
     }
@@ -620,8 +634,8 @@ impl RSAKeyPairLike for RS384KeyPair {
         SHA384::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA384>()
+    fn padding_scheme(&self) -> Self::PaddingScheme {
+        rsa::Pkcs1v15Sign::new::<SHA384>()
     }
 }
 
@@ -669,6 +683,8 @@ impl RS384KeyPair {
 }
 
 impl RSAPublicKeyLike for RS384PublicKey {
+    type PaddingScheme = rsa::Pkcs1v15Sign;
+
     fn jwt_alg_name() -> &'static str {
         "RS384"
     }
@@ -677,11 +693,11 @@ impl RSAPublicKeyLike for RS384PublicKey {
         SHA384::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pkcs1v15_sign::<SHA384>()
+    fn padding_scheme(&self) -> Self::PaddingScheme {
+        rsa::Pkcs1v15Sign::new::<SHA384>()
     }
 
-    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
+    fn padding_scheme_alt(&self) -> Option<Self::PaddingScheme> {
         None
     }
 
@@ -761,6 +777,8 @@ pub struct PS256PublicKey {
 }
 
 impl RSAKeyPairLike for PS256KeyPair {
+    type PaddingScheme = rsa::Pss;
+
     fn jwt_alg_name() -> &'static str {
         "PS256"
     }
@@ -786,8 +804,8 @@ impl RSAKeyPairLike for PS256KeyPair {
         SHA256::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss_with_salt::<SHA256>(256 / 8)
+    fn padding_scheme(&self) -> Self::PaddingScheme {
+        Self::PaddingScheme::new_with_salt::<SHA256>(256 / 8)
     }
 }
 
@@ -835,6 +853,8 @@ impl PS256KeyPair {
 }
 
 impl RSAPublicKeyLike for PS256PublicKey {
+    type PaddingScheme = rsa::Pss;
+
     fn jwt_alg_name() -> &'static str {
         "PS256"
     }
@@ -843,12 +863,12 @@ impl RSAPublicKeyLike for PS256PublicKey {
         SHA256::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss_with_salt::<SHA256>(256 / 8)
+    fn padding_scheme(&self) -> Self::PaddingScheme {
+        Self::PaddingScheme::new_with_salt::<SHA256>(256 / 8)
     }
 
-    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
-        Some(rsa::PaddingScheme::new_pss::<SHA256>())
+    fn padding_scheme_alt(&self) -> Option<Self::PaddingScheme> {
+        Some(Self::PaddingScheme::new::<SHA256>())
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -919,6 +939,8 @@ pub struct PS512PublicKey {
 }
 
 impl RSAKeyPairLike for PS512KeyPair {
+    type PaddingScheme = rsa::Pss;
+
     fn jwt_alg_name() -> &'static str {
         "PS512"
     }
@@ -944,8 +966,8 @@ impl RSAKeyPairLike for PS512KeyPair {
         SHA512::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss_with_salt::<SHA512>(512 / 8)
+    fn padding_scheme(&self) -> Self::PaddingScheme {
+        Self::PaddingScheme::new_with_salt::<SHA512>(512 / 8)
     }
 }
 
@@ -993,6 +1015,8 @@ impl PS512KeyPair {
 }
 
 impl RSAPublicKeyLike for PS512PublicKey {
+    type PaddingScheme = rsa::Pss;
+
     fn jwt_alg_name() -> &'static str {
         "PS512"
     }
@@ -1001,12 +1025,12 @@ impl RSAPublicKeyLike for PS512PublicKey {
         SHA512::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss_with_salt::<SHA512>(512 / 8)
+    fn padding_scheme(&self) -> Self::PaddingScheme {
+        Self::PaddingScheme::new_with_salt::<SHA512>(512 / 8)
     }
 
-    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
-        Some(rsa::PaddingScheme::new_pss::<SHA512>())
+    fn padding_scheme_alt(&self) -> Option<Self::PaddingScheme> {
+        Some(Self::PaddingScheme::new::<SHA512>())
     }
 
     fn public_key(&self) -> &RSAPublicKey {
@@ -1085,6 +1109,8 @@ pub struct PS384PublicKey {
 }
 
 impl RSAKeyPairLike for PS384KeyPair {
+    type PaddingScheme = rsa::Pss;
+
     fn jwt_alg_name() -> &'static str {
         "PS384"
     }
@@ -1110,8 +1136,8 @@ impl RSAKeyPairLike for PS384KeyPair {
         SHA384::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss_with_salt::<SHA384>(384 / 8)
+    fn padding_scheme(&self) -> Self::PaddingScheme {
+        Self::PaddingScheme::new_with_salt::<SHA384>(384 / 8)
     }
 }
 
@@ -1159,6 +1185,8 @@ impl PS384KeyPair {
 }
 
 impl RSAPublicKeyLike for PS384PublicKey {
+    type PaddingScheme = rsa::Pss;
+
     fn jwt_alg_name() -> &'static str {
         "PS384"
     }
@@ -1167,12 +1195,12 @@ impl RSAPublicKeyLike for PS384PublicKey {
         SHA384::hash(message).to_vec()
     }
 
-    fn padding_scheme(&self) -> rsa::PaddingScheme {
-        rsa::PaddingScheme::new_pss_with_salt::<SHA384>(384 / 8)
+    fn padding_scheme(&self) -> Self::PaddingScheme {
+        Self::PaddingScheme::new_with_salt::<SHA384>(384 / 8)
     }
 
-    fn padding_scheme_alt(&self) -> Option<rsa::PaddingScheme> {
-        Some(rsa::PaddingScheme::new_pss::<SHA384>())
+    fn padding_scheme_alt(&self) -> Option<Self::PaddingScheme> {
+        Some(Self::PaddingScheme::new::<SHA384>())
     }
 
     fn public_key(&self) -> &RSAPublicKey {
