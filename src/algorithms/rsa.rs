@@ -163,6 +163,7 @@ pub trait RSAKeyPairLike {
             let digest = Self::hash();
             let pkey = PKey::from_rsa(self.key_pair().as_ref().clone())?;
             let mut signer = Signer::new(digest, &pkey).unwrap();
+            signer.set_rsa_padding(self.padding_scheme())?;
             signer.update(authenticated.as_bytes())?;
             let signature = signer.sign_to_vec()?;
             Ok(signature)
@@ -191,6 +192,7 @@ pub trait RSAPublicKeyLike {
                 let digest = Self::hash();
                 let pkey = PKey::from_rsa(self.public_key().as_ref().clone())?;
                 let mut verifier = Verifier::new(digest, &pkey)?;
+                verifier.set_rsa_padding(self.padding_scheme())?;
                 verifier.update(authenticated.as_bytes())?;
                 if !(verifier
                     .verify(signature)
