@@ -34,8 +34,7 @@ zeroize = "1.7.0"
 boring = "4.2.0"
 
 [target.'cfg(any(target_arch = "wasm32", target_arch = "wasm64"))'.dependencies]
-rsa = "0.8.2"
-spki = "0.6.0"
+superboring = "0.1.0"
 
 [dev-dependencies]
 benchmark-simple = "0.1.8"

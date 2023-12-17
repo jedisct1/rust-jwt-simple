@@ -1,3 +1,6 @@
+#[cfg(any(feature = "pure-rust", target_arch = "wasm32", target_arch = "wasm64"))]
+use superboring as boring;
+
 use boring::bn::BigNum;
 use boring::hash::MessageDigest;
 use boring::pkey::{PKey, Private, Public};
