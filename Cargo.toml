@@ -17,7 +17,7 @@ binstring = "0.1.1"
 ciborium = { version = "0.2.1", optional = true }
 coarsetime = "0.1.33"
 ct-codecs = "1.1.1"
-ed25519-compact = { version = "2.0.5", features = ["pem"] }
+ed25519-compact = { version = "2.0.6", features = ["pem"] }
 hmac-sha1-compact = "1.1.4"
 hmac-sha256 = { version = "1.1.7", features = ["traits010"] }
 hmac-sha512 = { version = "1.1.5", features = ["traits010", "sha384"] }
@@ -27,7 +27,7 @@ p384 = { version = "0.13.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
 rand = "0.8.5"
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
-thiserror = "1.0.50"
+thiserror = "1.0.51"
 zeroize = "1.7.0"
 
 [target.'cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))'.dependencies]
