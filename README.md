@@ -300,6 +300,8 @@ In order to do so, import the crate with `default-features=false, features=["pur
 
 Do not do it unconditionally. This is only required for very specific setups and targets, and only until issues with the `boring` crate have been solved. The way to configure this in Cargo may also change in future versions.
 
+Static builds targeting the `musl` library don't require that workaround. Just use [`cargo-zigbuild`](https://github.com/rust-cross/cargo-zigbuild) to build your project.
+
 ## Usage in Web browsers
 
 The `wasm32-freestanding` target (still sometimes called `wasm32-unknown-unknown` in Rust) is supported (as in "it compiles").
