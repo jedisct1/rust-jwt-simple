@@ -44,7 +44,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! jwt-simple = "0.10"
+//! jwt-simple = "0.12"
 //! ```
 //!
 //! Rust:

@@ -62,7 +62,7 @@ Important: JWT's purpose is to verify that data has been created by a party know
 
 ```toml
 [dependencies]
-jwt-simple = "0.10"
+jwt-simple = "0.12"
 ```
 
 Rust:
