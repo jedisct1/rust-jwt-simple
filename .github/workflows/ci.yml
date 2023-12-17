@@ -15,9 +15,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Build
-        run: cargo build --verbose
-      - name: WASI Build
+      - name: build
+        run: cargo build
+      - name: build with cwt
+        run: cargo build --features="cwt"
+      - name: pure rust implementations
+        run: cargo build --no-default-features --features="pure-rust"
+      - name: wasm32-freestanding build
+        run: |
+          rustup target add wasm32-unknown-unknown
+          cargo build --verbose --target=wasm32-unknown-unknown
+      - name: wasi32-wasi build
         run: |
           rustup target add wasm32-wasi
           cargo build --verbose --target=wasm32-wasi

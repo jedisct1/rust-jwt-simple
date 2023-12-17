@@ -301,6 +301,12 @@
 
 #![forbid(unsafe_code)]
 
+#[cfg(all(feature = "pure-rust", feature = "optimal"))]
+compile_error!("jwt-simple: the `optimal` feature is only available when the `pure-rust` feature is disabled - Consider disabling default Cargo features.");
+
+#[cfg(all(not(feature = "pure-rust"), not(feature = "optimal")))]
+compile_error!("jwt-simple: the `optimal` feature is required when the `pure-rust` feature is disabled - Consider enabling default Cargo features.");
+
 pub mod algorithms;
 pub mod claims;
 pub mod common;

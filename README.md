@@ -22,6 +22,8 @@
     - [Creating and attaching key identifiers](#creating-and-attaching-key-identifiers)
     - [Mitigations against replay attacks](#mitigations-against-replay-attacks)
     - [CWT (CBOR) support](#cwt-cbor-support)
+  - [Working around compilation issues with the `boring` crate](#working-around-compilation-issues-with-the-boring-crate)
+  - [Usage in Web browsers](#usage-in-web-browsers)
   - [Why yet another JWT crate](#why-yet-another-jwt-crate)
 
 <!-- /code_chunk_output -->
@@ -288,6 +290,20 @@ Please note that CWT doesn't support custom claims. The required identifiers [ha
 Also, the existing Rust crates for JSON and CBOR deserialization are not safe. An untrusted party can send a serialized object that requires a lot of memory and CPU to deserialize. Band-aids have been added for JSON, but with the current Rust tooling, it would be tricky to do for CBOR.
 
 As a mitigation, we highly recommend rejecting tokens that would be too large in the context of your application. That can be done by with the `max_token_length` verification option.
+
+## Working around compilation issues with the `boring` crate
+
+As a temporary workaround for portability issues with one of the dependencies (the `boring` crate), this library can be compiled to use only Rust implementations.
+
+In order to do so, import the crate with `default-features=false, features=["pure-rust"]` in your Cargo configuration.
+
+Do not do it unconditionally. This is only required for very specific setups and targets, and only until issues with the `boring` crate have been solved. The way to configure this in Cargo may also change in future versions.
+
+## Usage in Web browsers
+
+The `wasm32-freestanding` target (still sometimes called `wasm32-unknown-unknown` in Rust) is supported (as in "it compiles").
+
+However, using a native JavaScript implementation is highly recommended instead. There are high-quality JWT implementations in JavaScript, leveraging the WebCrypto API, that provide better performance and security guarantees than a WebAssembly module.
 
 ## Why yet another JWT crate
 
