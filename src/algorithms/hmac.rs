@@ -308,3 +308,74 @@ impl HS384Key {
         self
     }
 }
+
+//
+
+#[derive(Debug, Clone)]
+pub struct Blake2BKey {
+    key: HMACKey,
+    key_id: Option<String>,
+}
+
+impl MACLike for Blake2BKey {
+    fn jwt_alg_name() -> &'static str {
+        "BLAKE2B"
+    }
+
+    fn key(&self) -> &HMACKey {
+        &self.key
+    }
+
+    fn key_id(&self) -> &Option<String> {
+        &self.key_id
+    }
+
+    fn set_key_id(&mut self, key_id: String) {
+        self.key_id = Some(key_id);
+    }
+
+    fn metadata(&self) -> &Option<KeyMetadata> {
+        &self.key.metadata
+    }
+
+    fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error> {
+        self.key.metadata = Some(metadata);
+        Ok(())
+    }
+
+    fn authentication_tag(&self, authenticated: &str) -> Vec<u8> {
+        blake2b_simd::Params::new()
+            .hash_length(32)
+            .key(self.key().as_ref())
+            .to_state()
+            .update(authenticated.as_bytes())
+            .finalize()
+            .as_bytes()
+            .to_vec()
+    }
+}
+
+impl Blake2BKey {
+    pub fn from_bytes(raw_key: &[u8]) -> Self {
+        Blake2BKey {
+            key: HMACKey::from_bytes(raw_key),
+            key_id: None,
+        }
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.key.to_bytes()
+    }
+
+    pub fn generate() -> Self {
+        Blake2BKey {
+            key: HMACKey::generate(),
+            key_id: None,
+        }
+    }
+
+    pub fn with_key_id(mut self, key_id: &str) -> Self {
+        self.key_id = Some(key_id.to_string());
+        self
+    }
+}

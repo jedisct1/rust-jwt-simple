@@ -14,6 +14,7 @@
 //!   * `HS256`
 //!   * `HS384`
 //!   * `HS512`
+//! * `BLAKE2B`
 //! * RSA
 //!   * `RS256`
 //!   * `RS384`
@@ -412,6 +413,20 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
     #[test]
     fn hs384() {
         let key = HS384Key::from_bytes(b"your-256-bit-secret").with_key_id("my-key-id");
+        let claims = Claims::create(Duration::from_secs(86400)).with_issuer("test issuer");
+        let token = key.authenticate(claims).unwrap();
+        let options = VerificationOptions {
+            allowed_issuers: Some(HashSet::from_strings(&["test issuer"])),
+            ..Default::default()
+        };
+        let _claims = key
+            .verify_token::<NoCustomClaims>(&token, Some(options))
+            .unwrap();
+    }
+
+    #[test]
+    fn blake2b() {
+        let key = Blake2BKey::from_bytes(b"your-256-bit-secret").with_key_id("my-key-id");
         let claims = Claims::create(Duration::from_secs(86400)).with_issuer("test issuer");
         let token = key.authenticate(claims).unwrap();
         let options = VerificationOptions {

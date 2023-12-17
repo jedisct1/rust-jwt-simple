@@ -13,6 +13,7 @@ readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.75"
+blake2b_simd = "1.0.2"
 binstring = "0.1.1"
 ciborium = { version = "0.2.1", optional = true }
 coarsetime = "0.1.33"

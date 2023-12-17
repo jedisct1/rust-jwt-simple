@@ -36,10 +36,11 @@ A new JWT (JSON Web Tokens) implementation for Rust that focuses on simplicity, 
 `jwt-simple` is unopinionated and supports all commonly deployed authentication and signature algorithms:
 
 | JWT algorithm name | Description                           |
-|--------------------|---------------------------------------|
+| ------------------ | ------------------------------------- |
 | `HS256`            | HMAC-SHA-256                          |
 | `HS384`            | HMAC-SHA-384                          |
 | `HS512`            | HMAC-SHA-512                          |
+| `BLAKE2B`          | BLAKE2B-256                           |
 | `RS256`            | RSA with PKCS#1v1.5 padding / SHA-256 |
 | `RS384`            | RSA with PKCS#1v1.5 padding / SHA-384 |
 | `RS512`            | RSA with PKCS#1v1.5 padding / SHA-512 |
