@@ -426,7 +426,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
 
     #[test]
     fn blake2b() {
-        let key = Blake2BKey::from_bytes(b"your-256-bit-secret").with_key_id("my-key-id");
+        let key = Blake2bKey::from_bytes(b"your-256-bit-secret").with_key_id("my-key-id");
         let claims = Claims::create(Duration::from_secs(86400)).with_issuer("test issuer");
         let token = key.authenticate(claims).unwrap();
         let options = VerificationOptions {

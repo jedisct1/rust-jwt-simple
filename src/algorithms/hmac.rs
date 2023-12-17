@@ -312,12 +312,12 @@ impl HS384Key {
 //
 
 #[derive(Debug, Clone)]
-pub struct Blake2BKey {
+pub struct Blake2bKey {
     key: HMACKey,
     key_id: Option<String>,
 }
 
-impl MACLike for Blake2BKey {
+impl MACLike for Blake2bKey {
     fn jwt_alg_name() -> &'static str {
         "BLAKE2B"
     }
@@ -355,9 +355,9 @@ impl MACLike for Blake2BKey {
     }
 }
 
-impl Blake2BKey {
+impl Blake2bKey {
     pub fn from_bytes(raw_key: &[u8]) -> Self {
-        Blake2BKey {
+        Blake2bKey {
             key: HMACKey::from_bytes(raw_key),
             key_id: None,
         }
@@ -368,7 +368,7 @@ impl Blake2BKey {
     }
 
     pub fn generate() -> Self {
-        Blake2BKey {
+        Blake2bKey {
             key: HMACKey::generate(),
             key_id: None,
         }
