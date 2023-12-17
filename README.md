@@ -49,7 +49,7 @@ A new JWT (JSON Web Tokens) implementation for Rust that focuses on simplicity, 
 | `ES256K`           | ECDSA over secp256k1 / SHA-256        |
 | `EdDSA`            | Ed25519                               |
 
-`jwt-simple` uses only pure Rust implementations, and can be compiled out of the box to WebAssembly/WASI. It is fully compatible with Fastly _Compute_ service.
+`jwt-simple` can be compiled out of the box to WebAssembly/WASI. It is fully compatible with Fastly _Compute_ service.
 
 Important: JWT's purpose is to verify that data has been created by a party knowing a secret key. It does not provide any kind of confidentiality: JWT data is simply encoded as BASE64, and is not encrypted.
 
