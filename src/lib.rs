@@ -30,8 +30,8 @@
 //! * Ed25519
 //!   * `EdDSA`
 //!
-//! `jwt-simple` uses only pure Rust implementations, and can be compiled out of
-//! the box to WebAssembly/WASI. It is fully compatible with Fastly _Compute_ service.
+//! `jwt-simple` can be compiled out of the box to WebAssembly/WASI.
+//! It is fully compatible with Fastly _Compute_ service.
 //!
 //! Important: JWT's purpose is to verify that data has been created by a party
 //! knowing a secret key. It does not provide any kind of confidentiality: JWT
