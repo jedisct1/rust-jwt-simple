@@ -45,8 +45,8 @@ benchmark-simple = "0.1.8"
 default = ["optimal"]
 cwt = ["ciborium"]
 optimal = ["boring"]
+# Note: to emulate boringssl, "default-features = false" is required in addition to "pure-rust".
 pure-rust = ["superboring"]
-
 [[bench]]
 name = "benchmark"
 harness = false
