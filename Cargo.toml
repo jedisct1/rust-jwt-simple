@@ -1,6 +1,6 @@
 [package]
 name = "jwt-simple"
-version = "0.12.6"
+version = "0.12.7"
 description = "Easy to use, secure, non opinionated JWT (JSON Web Tokens) implementation for Rust."
 authors = ["Frank Denis <github@pureftpd.org>"]
 edition = "2018"
