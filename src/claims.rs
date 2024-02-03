@@ -176,7 +176,11 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         let now = options
             .artificial_time
             .unwrap_or_else(Clock::now_since_epoch);
-        let time_tolerance = options.time_tolerance.unwrap_or_default();
+        
+        let time_tolerance = match options.time_tolerance {
+            Some(tolerance) => tolerance,
+            None => Duration::from_secs(0)
+        };
 
         if let Some(reject_before) = options.reject_before {
             ensure!(now >= reject_before, JWTError::OldTokenReused);
