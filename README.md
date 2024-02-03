@@ -120,6 +120,7 @@ let mut options = VerificationOptions::default();
 options.accept_future = true;
 // Accept tokens even if they have expired up to 15 minutes after the deadline,
 // and/or they will be valid within 15 minutes.
+// Note that 15 minutes is the default, since it is very common for clocks to be slightly off.
 options.time_tolerance = Some(Duration::from_mins(15));
 // Reject tokens if they were issued more than 1 hour ago
 options.max_validity = Some(Duration::from_hours(1));

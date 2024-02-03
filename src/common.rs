@@ -40,6 +40,7 @@ pub struct VerificationOptions {
     pub allowed_audiences: Option<HashSet<String>>,
 
     /// How much clock drift to tolerate when verifying token timestamps
+    /// Default is 15 minutes, to work around common issues with clocks that are not perfectly accurate
     pub time_tolerance: Option<Duration>,
 
     /// Reject tokens created more than `max_validity` ago
