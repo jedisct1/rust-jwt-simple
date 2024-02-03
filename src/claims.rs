@@ -10,7 +10,7 @@ use crate::common::VerificationOptions;
 use crate::error::*;
 use crate::serde_additions;
 
-pub const DEFAULT_TIME_TOLERANCE_SECS: u64 = 900;
+pub const DEFAULT_TIME_TOLERANCE_SECS: u64 = 0;
 
 /// Type representing the fact that no application-defined claims is necessary.
 #[derive(Copy, Clone, Default, Debug, Serialize, Deserialize)]
@@ -177,10 +177,7 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
             .artificial_time
             .unwrap_or_else(Clock::now_since_epoch);
         
-        let time_tolerance = match options.time_tolerance {
-            Some(tolerance) => tolerance,
-            None => Duration::from_secs(0)
-        };
+        let time_tolerance = options.time_tolerance.unwrap_or_default();
 
         if let Some(reject_before) = options.reject_before {
             ensure!(now >= reject_before, JWTError::OldTokenReused);
