@@ -15,31 +15,31 @@ readme = "README.md"
 anyhow = "1.0.79"
 blake2b_simd = "1.0.2"
 binstring = "0.1.1"
-ciborium = { version = "0.2.1", optional = true }
-coarsetime = "0.1.33"
+ciborium = { version = "0.2.2", optional = true }
+coarsetime = "0.1.34"
 ct-codecs = "1.1.1"
-ed25519-compact = { version = "2.0.6", features = ["pem"] }
+ed25519-compact = { version = "2.1.1", features = ["pem"] }
 hmac-sha1-compact = "1.1.4"
 hmac-sha256 = { version = "1.1.7", features = ["traits010"] }
 hmac-sha512 = { version = "1.1.5", features = ["traits010", "sha384"] }
-k256 = { version = "0.13.2", features = ["ecdsa", "std", "pkcs8", "pem"] }
+k256 = { version = "0.13.3", features = ["ecdsa", "std", "pkcs8", "pem"] }
 p256 = { version = "0.13.2", features = ["ecdsa", "std", "pkcs8", "pem"] }
 p384 = { version = "0.13.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
 rand = "0.8.5"
-serde = { version = "1.0.195", features = ["derive"] }
-serde_json = "1.0.111"
+serde = { version = "1.0.196", features = ["derive"] }
+serde_json = "1.0.113"
 thiserror = "1.0.56"
 zeroize = "1.7.0"
 
 [target.'cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))'.dependencies]
-boring = { version = "4.3.0", optional = true }
+boring = { version = "4.5.0", optional = true }
 superboring = { version = "0.1.2", optional = true }
 
 [target.'cfg(any(target_arch = "wasm32", target_arch = "wasm64"))'.dependencies]
 superboring = { version = "0.1.2" }
 
 [dev-dependencies]
-benchmark-simple = "0.1.8"
+benchmark-simple = "0.1.9"
 
 [features]
 default = ["optimal"]
@@ -47,6 +47,8 @@ cwt = ["ciborium"]
 optimal = ["boring"]
 # Note: to emulate boringssl, "default-features = false" is required in addition to "pure-rust".
 pure-rust = ["superboring"]
+wasi-abi2 = ["coarsetime/wasi-abi2"]
+
 [[bench]]
 name = "benchmark"
 harness = false
