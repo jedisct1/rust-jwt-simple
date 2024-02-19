@@ -16,21 +16,21 @@ pub mod unix_timestamp {
         where
             E: DeError,
         {
-            Ok(UnixTimeStamp::from_secs(value as _))
+            Ok(UnixTimeStamp::from_ticks(value as _))
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
         where
             E: DeError,
         {
-            Ok(UnixTimeStamp::from_secs(value))
+            Ok(UnixTimeStamp::from_ticks(value))
         }
 
         fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
         where
             E: DeError,
         {
-            Ok(UnixTimeStamp::from_secs(value as _))
+            Ok(UnixTimeStamp::from_ticks(value as _))
         }
 
         fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
