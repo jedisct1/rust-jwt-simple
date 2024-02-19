@@ -261,3 +261,11 @@ fn explicitly_empty_audiences() {
     let decoded = key.verify_token::<NoCustomClaims>(&token, None).unwrap();
     assert!(decoded.audiences.is_none());
 }
+
+#[test]
+fn simple_timestamp_test() {
+    use crate::prelude::*;
+    let json = r#"{ "iat": 200 }"#;
+    let claims: JWTClaims<NoCustomClaims> = serde_json::from_str(json).unwrap();
+    assert_eq!(claims.issued_at.unwrap().as_secs(), 200);
+}
