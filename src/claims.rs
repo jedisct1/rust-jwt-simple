@@ -200,7 +200,7 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         }
         if let Some(expires_at) = self.expires_at {
             ensure!(
-                now - time_tolerance <= expires_at,
+                now >= time_tolerance && now - time_tolerance <= expires_at,
                 JWTError::TokenHasExpired
             );
         }
