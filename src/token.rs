@@ -263,9 +263,24 @@ fn explicitly_empty_audiences() {
 }
 
 #[test]
-fn simple_timestamp_test() {
+fn very_old_artificial_time() {
     use crate::prelude::*;
-    let json = r#"{ "iat": 200 }"#;
-    let claims: JWTClaims<NoCustomClaims> = serde_json::from_str(json).unwrap();
-    assert_eq!(claims.issued_at.unwrap().as_secs(), 200);
+    let key = RS256PublicKey::from_pem(
+        r#"-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt5N44H1mpb5Wlx/0e7Cd
+oKTY8xt+3yMby8BgNdagVNkeCkZ4pRbmQXRWNC7qn//Zaxx9dnzHbzGCul5W0RLf
+d3oB3PESwsrQh+oiXVEPTYhvUPQkX0vBfCXJtg/zY2mY1DxKOIiXnZ8PaK/7Sx0a
+MmvR//0Yy2a5dIAWCmjPsxn+PcGZOkVUm+D5bH1+ZStcA/68r4ZSPix7Szhgl1Ro
+Hb9Q6JSekyZqM0Qfwhgb7srZVXC/9/m5PEx9wMVNYpYJBrXhD5IQm9RzE9oJS8T+
+Ai+4/5mNTNXI8f1rrYgffWS4wf9cvsEihrvEg9867B2f98L7ux9Llle7jsHCtwgV
+1wIDAQAB
+-----END PUBLIC KEY-----"#,
+    )
+    .unwrap();
+    let jwt = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjEifQ.eyJuYW1lIjoiQWRhIExvdmVsYWNlIiwiaXNzIjoiaHR0cHM6Ly9jaHJvbm9nZWFycy5jb20vdGVzdCIsImF1ZCI6InRlc3QiLCJhdXRoX3RpbWUiOjEwMCwidXNlcl9pZCI6InVpZDEyMyIsInN1YiI6InNidTEyMyIsImlhdCI6MjAwLCJleHAiOjUwMCwibmJmIjozMDAsImVtYWlsIjoiYWxvdmVsYWNlQGNocm9ub2dlYXJzLmNvbSJ9.eTQnwXrri_uY55fS4IygseBzzbosDM1hP153EZXzNlLH5s29kdlGt2mL_KIjYmQa8hmptt9RwKJHBtw6l4KFHvIcuif86Ix-iI2fCpqNnKyGZfgERV51NXk1THkgWj0GQB6X5cvOoFIdHa9XvgPl_rVmzXSUYDgkhd2t01FOjQeeT6OL2d9KdlQHJqAsvvKVc3wnaYYoSqv2z0IluvK93Tk1dUBU2yWXH34nX3GAVGvIoFoNRiiFfZwFlnz78G0b2fQV7B5g5F8XlNRdD1xmVZXU8X2-xh9LqRpnEakdhecciFHg0u6AyC4c00rlo_HBb69wlXajQ3R4y26Kpxn7HA";
+    let mut options = VerificationOptions::default();
+    options.artificial_time = Some(UnixTimeStamp::from_secs(400));
+    options.time_tolerance = Some(Duration::from_secs(100));
+    key.verify_token::<NoCustomClaims>(jwt, Some(options))
+        .unwrap();
 }
