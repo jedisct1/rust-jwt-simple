@@ -1,10 +1,8 @@
 name: Rust
 
 on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
+  - push
+  - pull_request
 
 env:
   CARGO_TERM_COLOR: always
@@ -19,8 +17,10 @@ jobs:
         run: cargo build
       - name: build with cwt
         run: cargo build --features="cwt"
-      - name: pure rust implementations
+      - name: pure rust implementation
         run: cargo build --no-default-features --features="pure-rust"
+      - name: openssl implementation
+        run: cargo build --no-default-features --features="openssl"
       - name: wasm32-freestanding build
         run: |
           rustup target add wasm32-unknown-unknown

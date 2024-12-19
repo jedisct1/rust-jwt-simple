@@ -295,11 +295,14 @@ As a mitigation, we highly recommend rejecting tokens that would be too large in
 
 ## Working around compilation issues with the `boring` crate
 
-As a temporary workaround for portability issues with one of the dependencies (the `boring` crate), this library can be compiled to use only Rust implementations.
+The default dependency `boring-sys` [currently conflicts with `openssl-sys`](https://github.com/cloudflare/boring/issues/197).
 
-In order to do so, import the crate with `default-features=false, features=["pure-rust"]` in your Cargo configuration.
+As a temporary workaround for portability, import the crate with one of these in your `Cargo.toml`:
 
-Do not do it unconditionally. This is only required for very specific setups and targets, and only until issues with the `boring` crate have been solved. The way to configure this in Cargo may also change in future versions.
+* `default-features = false, features = ["openssl"]` to use OpenSSL instead of BoringSSL
+* `default-features = false, features = ["pure-rust"]` to use only Rust implementations
+
+Do not do it unconditionally. This is only required for very specific setups and targets, and only until issues with the `boring` crate have been solved. There is a performance cost, and the way to configure this in Cargo may also change in future versions.
 
 Static builds targeting the `musl` library don't require that workaround. Just use [`cargo-zigbuild`](https://github.com/rust-cross/cargo-zigbuild) to build your project.
 

@@ -302,11 +302,19 @@
 
 #![forbid(unsafe_code)]
 
+#[cfg(all(feature = "openssl", feature = "optimal"))]
+compile_error!("jwt-simple: the `openssl` feature is only available when the `optimal` feature is disabled - consider disabling default Cargo features");
 #[cfg(all(feature = "pure-rust", feature = "optimal"))]
-compile_error!("jwt-simple: the `optimal` feature is only available when the `pure-rust` feature is disabled - Consider disabling default Cargo features.");
+compile_error!("jwt-simple: the `pure-rust` feature is only available when the `optimal` feature is disabled - consider disabling default Cargo features");
+#[cfg(all(feature = "openssl", feature = "pure-rust"))]
+compile_error!("jwt-simple: the `openssl` feature and `pure-rust` feature cannot both be enabled");
 
-#[cfg(all(not(feature = "pure-rust"), not(feature = "optimal")))]
-compile_error!("jwt-simple: the `optimal` feature is required when the `pure-rust` feature is disabled - Consider enabling default Cargo features.");
+#[cfg(all(
+    not(feature = "optimal"),
+    not(feature = "openssl"),
+    not(feature = "pure-rust")
+))]
+compile_error!("jwt-simple: all features `optimal`, `openssl`, and `pure-rust` are disabled, but one is needed - consider enabling default Cargo features");
 
 pub mod algorithms;
 pub mod claims;

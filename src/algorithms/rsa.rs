@@ -1,15 +1,23 @@
+#[cfg(all(
+    feature = "optimal",
+    not(target_arch = "wasm32"),
+    not(target_arch = "wasm64")
+))]
+use boring as ssl;
+#[cfg(feature = "openssl")]
+use openssl as ssl;
 #[cfg(any(feature = "pure-rust", target_arch = "wasm32", target_arch = "wasm64"))]
-use superboring as boring;
+use superboring as ssl;
 
-use boring::bn::BigNum;
-use boring::hash::MessageDigest;
-use boring::pkey::{PKey, Private, Public};
-use boring::rsa::{Padding, Rsa};
-use boring::sign::{Signer, Verifier};
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use hmac_sha1_compact::Hash as SHA1;
 use hmac_sha256::Hash as SHA256;
 use serde::{de::DeserializeOwned, Serialize};
+use ssl::bn::BigNum;
+use ssl::hash::MessageDigest;
+use ssl::pkey::{PKey, Private, Public};
+use ssl::rsa::{Padding, Rsa};
+use ssl::sign::{Signer, Verifier};
 
 use crate::claims::*;
 use crate::common::*;
