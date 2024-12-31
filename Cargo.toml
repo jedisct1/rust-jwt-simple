@@ -12,7 +12,7 @@ keywords = ["jwt", "jws", "authentication", "tokens", "json"]
 readme = "README.md"
 
 [dependencies]
-anyhow = "1.0.94"
+anyhow = "1.0.95"
 blake2b_simd = "1.0.2"
 binstring = "0.1.2"
 ciborium = { version = "0.2.2", optional = true }
@@ -26,9 +26,9 @@ k256 = { version = "0.13.4", features = ["ecdsa", "std", "pkcs8", "pem"] }
 p256 = { version = "0.13.2", features = ["ecdsa", "std", "pkcs8", "pem"] }
 p384 = { version = "0.13.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
 rand = "0.8.5"
-serde = { version = "1.0.215", features = ["derive"] }
-serde_json = "1.0.133"
-thiserror = "2.0.6"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.134"
+thiserror = "2.0.9"
 zeroize = "1.8.1"
 
 [target.'cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))'.dependencies]
