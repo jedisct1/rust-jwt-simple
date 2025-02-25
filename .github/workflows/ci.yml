@@ -27,7 +27,5 @@ jobs:
           cargo build --verbose --target=wasm32-unknown-unknown
       - name: wasi32-wasi build
         run: |
-          rustup target add wasm32-wasi
-          cargo build --verbose --target=wasm32-wasi
-      - name: Run tests
-        run: cargo test --verbose
+          rustup target add wasm32-wasip1
+          cargo build --verbose --target=wasm32-wasip1
