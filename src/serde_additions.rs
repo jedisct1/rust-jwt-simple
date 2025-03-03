@@ -9,7 +9,7 @@ pub mod unix_timestamp {
 
     struct TimestampVisitor;
 
-    impl<'de> Visitor<'de> for TimestampVisitor {
+    impl Visitor<'_> for TimestampVisitor {
         type Value = UnixTimeStamp;
 
         fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>

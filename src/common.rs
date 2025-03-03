@@ -77,17 +77,14 @@ impl Default for VerificationOptions {
 }
 
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub enum Salt {
+    #[default]
     None,
     Signer(Vec<u8>),
     Verifier(Vec<u8>),
 }
 
-impl Default for Salt {
-    fn default() -> Self {
-        Salt::None
-    }
-}
 
 /// Unsigned metadata about a key to be attached to tokens.
 /// This information can be freely tampered with by an intermediate party.
