@@ -89,15 +89,15 @@ pub trait MACLike {
             .unwrap_or(Salt::None)
     }
 
-    fn verifier_salt(&self) -> Salt {
+    fn verifier_salt(&self) -> Result<Salt, Error> {
         match self.metadata().as_ref().map(|metadata| &metadata.salt) {
-            None => Salt::None,
+            None => bail!(JWTError::MissingSalt),
             Some(Salt::Signer(salt)) => {
                 let authenticated_salt = self.authentication_tag(salt);
-                Salt::Verifier(authenticated_salt)
+                Ok(Salt::Verifier(authenticated_salt))
             }
-            Some(x @ Salt::Verifier(_)) => x.clone(),
-            Some(Salt::None) => Salt::None,
+            Some(x @ Salt::Verifier(_)) => Ok(x.clone()),
+            Some(Salt::None) => bail!(JWTError::MissingSalt),
         }
     }
 

@@ -607,7 +607,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         let res = key.verify_token::<NoCustomClaims>(&token, Some(options.clone()));
         assert!(res.is_err());
 
-        let verifier_salt = key.verifier_salt();
+        let verifier_salt = key.verifier_salt().unwrap();
         key.attach_salt(verifier_salt).unwrap();
         key.verify_token::<NoCustomClaims>(&token, Some(options))
             .unwrap();
