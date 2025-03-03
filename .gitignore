@@ -2,3 +2,5 @@
 Cargo.lock
 *~
 .vscode/
+docupdate.sh
+.zig-cache
