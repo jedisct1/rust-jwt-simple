@@ -311,6 +311,6 @@ fn should_verify_token() {
     let token_hex = "d18443a10105a05835a60172636f6170733a2f2f61732e6578616d706c65026764616a69616a690743313233041a6296121f051a6296040f061a6296040f58206b310798de7f6b2aeff832344c2ea37674807b72a8a2cc263f1d31b1eb86139b";
     let token = Hex::decode_to_vec(token_hex, None).unwrap();
     let mut options = VerificationOptions::default();
-    options.time_tolerance = Some(Duration::from_days(100000));
+    options.time_tolerance = Some(Duration::from_days(20000));
     let _ = key.verify_cwt_token(token, Some(options)).unwrap();
 }
