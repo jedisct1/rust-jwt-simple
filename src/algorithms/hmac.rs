@@ -82,6 +82,34 @@ pub trait MACLike {
     fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error>;
     fn authentication_tag(&self, authenticated: &[u8]) -> Vec<u8>;
 
+    fn salt(&self) -> Salt {
+        self.metadata()
+            .as_ref()
+            .map(|metadata| metadata.salt.clone())
+            .unwrap_or(Salt::None)
+    }
+
+    fn verifier_salt(&self) -> Salt {
+        match self.metadata().as_ref().map(|metadata| &metadata.salt) {
+            None => Salt::None,
+            Some(Salt::Signer(salt)) => {
+                let authenticated_salt = self.authentication_tag(salt);
+                Salt::Verifier(authenticated_salt)
+            }
+            Some(x @ Salt::Verifier(_)) => x.clone(),
+            Some(Salt::None) => Salt::None,
+        }
+    }
+
+    fn attach_salt(&mut self, salt: Salt) -> Result<(), Error> {
+        let metadata = KeyMetadata {
+            salt,
+            ..Default::default()
+        };
+        self.attach_metadata(metadata).unwrap();
+        Ok(())
+    }
+
     fn authenticate<CustomClaims: Serialize + DeserializeOwned>(
         &self,
         claims: JWTClaims<CustomClaims>,
@@ -221,6 +249,13 @@ impl HS256Key {
         }
     }
 
+    pub fn generate_with_salt() -> Self {
+        HS256Key {
+            key: HMACKey::generate_with_salt(),
+            key_id: None,
+        }
+    }
+
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
@@ -283,6 +318,13 @@ impl HS512Key {
         }
     }
 
+    pub fn generate_with_salt() -> Self {
+        HS512Key {
+            key: HMACKey::generate_with_salt(),
+            key_id: None,
+        }
+    }
+
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
@@ -341,6 +383,13 @@ impl HS384Key {
     pub fn generate() -> Self {
         HS384Key {
             key: HMACKey::generate(),
+            key_id: None,
+        }
+    }
+
+    pub fn generate_with_salt() -> Self {
+        HS384Key {
+            key: HMACKey::generate_with_salt(),
             key_id: None,
         }
     }
@@ -412,6 +461,13 @@ impl Blake2bKey {
     pub fn generate() -> Self {
         Blake2bKey {
             key: HMACKey::generate(),
+            key_id: None,
+        }
+    }
+
+    pub fn generate_with_salt() -> Self {
+        Blake2bKey {
+            key: HMACKey::generate_with_salt(),
             key_id: None,
         }
     }

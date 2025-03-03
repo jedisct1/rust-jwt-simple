@@ -593,4 +593,23 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         let claims = key.verify_token::<NoCustomClaims>(&token, Some(options));
         assert!(claims.is_err());
     }
+
+    #[test]
+    fn salt() {
+        let mut key = HS256Key::generate_with_salt();
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key.authenticate(claims).unwrap();
+
+        let options = VerificationOptions {
+            ..Default::default()
+        };
+
+        let res = key.verify_token::<NoCustomClaims>(&token, Some(options.clone()));
+        assert!(res.is_err());
+
+        let verifier_salt = key.verifier_salt();
+        key.attach_salt(verifier_salt).unwrap();
+        key.verify_token::<NoCustomClaims>(&token, Some(options))
+            .unwrap();
+    }
 }
