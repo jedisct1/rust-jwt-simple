@@ -600,9 +600,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         let claims = Claims::create(Duration::from_secs(86400));
         let token = key.authenticate(claims).unwrap();
 
-        let options = VerificationOptions {
-            ..Default::default()
-        };
+        let options = VerificationOptions::default();
 
         let res = key.verify_token::<NoCustomClaims>(&token, Some(options.clone()));
         assert!(res.is_err());
@@ -611,5 +609,22 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         key.attach_salt(verifier_salt).unwrap();
         key.verify_token::<NoCustomClaims>(&token, Some(options))
             .unwrap();
+    }
+
+    #[test]
+    fn salt2() {
+        let mut key = HS256Key::generate();
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key.authenticate(claims).unwrap();
+
+        let options = VerificationOptions::default();
+
+        key.verify_token::<NoCustomClaims>(&token, Some(options.clone()))
+            .unwrap();
+
+        let verifier_salt = Salt::Verifier(b"salt".to_vec());
+        key.attach_salt(verifier_salt).unwrap();
+        let res = key.verify_token::<NoCustomClaims>(&token, Some(options));
+        assert!(res.is_err());
     }
 }
