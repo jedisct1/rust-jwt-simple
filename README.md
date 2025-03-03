@@ -281,6 +281,56 @@ If an identifier has been attached to a shared key or a key pair, tokens created
 - The verification procedure can reject tokens created too long ago, no matter what their expiration date is. This prevents tokens from malicious (or compromised) signers from being used for too long.
 - The verification procedure can reject tokens created before a date. For a given user, the date of the last successful authentication can be stored in a database, and used later along with this option to reject older (replayed) tokens.
 
+### Salted keys
+
+Symmetric keys, such as the ones use with the `HS256`, `HS384`, `HS512` and `BLAKE2B` algorithms, are simple and fast, but have a major downside: signature and verification use the exact same key. Therefore, an adversary having access to the verifier key can forge arbitrary, valid tokens.
+
+Salted keys mitigate this issue the following way:
+
+- A random signer salt is created, and attached to the shared key. This salt is meant to be only known by the signer.
+- Another salt is computed from the signer salt, and is meant to be used for verification.
+- The verifier salt is used to verify the signer salt, which is included in tokens, in the `salt` JWT header.
+
+If the verifier has access to tokens, it can forge arbitrary tokens. But given only the verification code and keys, this is impossible. This greatly improve the security of symmetric keys used for verification on 3rd party servers, such as CDNs.
+
+A salt can be of any length. But the `generate_with_salt()` function generates both a random symmetric key, and a 32-byte salt.
+
+Example usage:
+
+```rust
+/// Create a random key and a signer salt
+let key = HS256Key::generate_with_salt();
+let claims = Claims::create(Duration::from_secs(86400));
+let token = key.authenticate(claims).unwrap();
+```
+
+A salt is a `Salt` enum, because it can be either a salt for signing, or a salt for verification.
+It can be saved and restored:
+
+```rust
+/// Get the salt
+let salt = key.salt();
+/// Attach an existing salt to a key
+key.attach_salt(salt)?;
+```
+
+Given a signer salt, the corresponding verifier salt can be computed:
+
+```rust
+/// Compute the verifier salt, given a signer salt
+let verifier_salt = key.verifier_salt()?;
+```
+
+The verifier salt doesn't have to be secret, and can even be hard-coded in the verification code.
+
+Verification:
+
+```rust
+let verifier_salt = Salt::Verifier(verifier_salt_bytes);
+key.attach_salt(verifier_salt)?;
+let claims = key.verify_token::<NoCustomClaims>(&token, None)?;
+```
+
 ### CWT (CBOR) support
 
 The development code includes a `cwt` cargo feature that enables experimental parsing and validation of CWT tokens.
