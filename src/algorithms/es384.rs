@@ -166,7 +166,7 @@ pub trait ECDSAP384KeyPairLike {
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
         let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
-            .with_metadata(self.metadata());
+            .with_key_metadata(self.metadata());
         Token::build(&jwt_header, claims, |authenticated| {
             let mut digest = hmac_sha512::sha384::Hash::new();
             digest.update(authenticated.as_bytes());
@@ -206,6 +206,7 @@ pub trait ECDSAP384PublicKeyLike {
                     .map_err(|_| JWTError::InvalidSignature)?;
                 Ok(())
             },
+            |_salt: Option<&[u8]>| Ok(()),
         )
     }
 

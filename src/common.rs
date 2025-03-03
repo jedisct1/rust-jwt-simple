@@ -76,6 +76,19 @@ impl Default for VerificationOptions {
     }
 }
 
+#[derive(Debug, Clone)]
+pub enum Salt {
+    None,
+    Signer(Vec<u8>),
+    Verifier(Vec<u8>),
+}
+
+impl Default for Salt {
+    fn default() -> Self {
+        Salt::None
+    }
+}
+
 /// Unsigned metadata about a key to be attached to tokens.
 /// This information can be freely tampered with by an intermediate party.
 /// Most applications should not need to use this.
@@ -86,9 +99,16 @@ pub struct KeyMetadata {
     pub(crate) certificate_url: Option<String>,
     pub(crate) certificate_sha1_thumbprint: Option<String>,
     pub(crate) certificate_sha256_thumbprint: Option<String>,
+    pub(crate) salt: Salt,
 }
 
 impl KeyMetadata {
+    /// Add a salt to the metadata
+    pub fn with_salt(mut self, salt: Salt) -> Self {
+        self.salt = salt;
+        self
+    }
+
     /// Add a key set URL to the metadata ("jku")
     pub fn with_key_set_url(mut self, key_set_url: impl ToString) -> Self {
         self.key_set_url = Some(key_set_url.to_string());

@@ -92,6 +92,17 @@ impl TokenMetadata {
     pub fn certificate_sha256_thumbprint(&self) -> Option<&str> {
         self.jwt_header.certificate_sha256_thumbprint.as_deref()
     }
+
+    /// Salt
+    pub fn salt(&self) -> Option<Vec<u8>> {
+        match self.jwt_header.salt {
+            Some(ref salt) => {
+                let salt = Base64UrlSafeNoPadding::decode_to_vec(salt, None).unwrap();
+                Some(salt)
+            }
+            None => None,
+        }
+    }
 }
 
 impl Token {
@@ -119,14 +130,20 @@ impl Token {
         Ok(token)
     }
 
-    pub(crate) fn verify<AuthenticationOrSignatureFn, CustomClaims: Serialize + DeserializeOwned>(
+    pub(crate) fn verify<
+        AuthenticationOrSignatureFn,
+        SaltCheckFn,
+        CustomClaims: Serialize + DeserializeOwned,
+    >(
         jwt_alg_name: &'static str,
         token: &str,
         options: Option<VerificationOptions>,
         authentication_or_signature_fn: AuthenticationOrSignatureFn,
+        salt_check_fn: SaltCheckFn,
     ) -> Result<JWTClaims<CustomClaims>, Error>
     where
         AuthenticationOrSignatureFn: FnOnce(&str, &[u8]) -> Result<(), Error>,
+        SaltCheckFn: FnOnce(Option<&[u8]>) -> Result<(), Error>,
     {
         let options = options.unwrap_or_default();
 
@@ -163,6 +180,12 @@ impl Token {
             } else {
                 bail!(JWTError::MissingJWTKeyIdentifier)
             }
+        }
+        if let Some(salt) = &jwt_header.salt {
+            let salt = Base64UrlSafeNoPadding::decode_to_vec(salt, None)?;
+            salt_check_fn(Some(&salt))?;
+        } else {
+            salt_check_fn(None)?;
         }
         let authentication_tag =
             Base64UrlSafeNoPadding::decode_to_vec(authentication_tag_b64, None)?;

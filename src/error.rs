@@ -63,6 +63,8 @@ pub enum JWTError {
     NotJWT,
     #[error("Token is too long")]
     TokenTooLong,
+    #[error("Missing salt")]
+    MissingSalt,
 }
 
 impl From<&str> for JWTError {

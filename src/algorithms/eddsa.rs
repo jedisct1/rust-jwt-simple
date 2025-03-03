@@ -142,7 +142,7 @@ pub trait EdDSAKeyPairLike {
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
         let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
-            .with_metadata(self.metadata());
+            .with_key_metadata(self.metadata());
         Token::build(&jwt_header, claims, |authenticated| {
             let noise = ed25519_compact::Noise::generate();
             let signature = self.key_pair().as_ref().sk.sign(authenticated, Some(noise));
@@ -174,6 +174,7 @@ pub trait EdDSAPublicKeyLike {
                     .map_err(|_| JWTError::InvalidSignature)?;
                 Ok(())
             },
+            |_salt: Option<&[u8]>| Ok(()),
         )
     }
 

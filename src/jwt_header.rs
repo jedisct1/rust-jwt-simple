@@ -1,3 +1,4 @@
+use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use serde::{Deserialize, Serialize};
 
 use crate::common::*;
@@ -36,6 +37,9 @@ pub(crate) struct JWTHeader {
 
     #[serde(rename = "x5t#S256", default, skip_serializing_if = "Option::is_none")]
     pub certificate_sha256_thumbprint: Option<String>,
+
+    #[serde(rename = "salt", default, skip_serializing_if = "Option::is_none")]
+    pub salt: Option<String>,
 }
 
 impl Default for JWTHeader {
@@ -52,6 +56,7 @@ impl Default for JWTHeader {
             certificate_sha256_thumbprint: None,
             signature_type: Some("JWT".to_string()),
             critical: None,
+            salt: None,
         }
     }
 }
@@ -65,7 +70,7 @@ impl JWTHeader {
         }
     }
 
-    pub(crate) fn with_metadata(mut self, metadata: &Option<KeyMetadata>) -> Self {
+    pub(crate) fn with_key_metadata(mut self, metadata: &Option<KeyMetadata>) -> Self {
         let metadata = match metadata {
             None => return self,
             Some(metadata) => metadata,
@@ -84,6 +89,11 @@ impl JWTHeader {
         }
         if self.certificate_sha256_thumbprint.is_none() {
             self.certificate_sha256_thumbprint = metadata.certificate_sha256_thumbprint.clone();
+        }
+        if self.salt.is_none() {
+            if let Salt::Signer(salt) = &metadata.salt {
+                self.salt = Some(Base64UrlSafeNoPadding::encode_to_string(salt).unwrap());
+            }
         }
         self
     }

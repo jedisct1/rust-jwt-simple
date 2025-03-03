@@ -60,16 +60,16 @@ pub trait MACLike {
     fn set_key_id(&mut self, key_id: String);
     fn metadata(&self) -> &Option<KeyMetadata>;
     fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error>;
-    fn authentication_tag(&self, authenticated: &str) -> Vec<u8>;
+    fn authentication_tag(&self, authenticated: &[u8]) -> Vec<u8>;
 
     fn authenticate<CustomClaims: Serialize + DeserializeOwned>(
         &self,
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
         let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
-            .with_metadata(self.metadata());
+            .with_key_metadata(self.metadata());
         Token::build(&jwt_header, claims, |authenticated| {
-            Ok(self.authentication_tag(authenticated))
+            Ok(self.authentication_tag(authenticated.as_bytes()))
         })
     }
 
@@ -84,9 +84,31 @@ pub trait MACLike {
             options,
             |authenticated, authentication_tag| {
                 ensure!(
-                    timingsafe_eq(&self.authentication_tag(authenticated), authentication_tag),
+                    timingsafe_eq(
+                        &self.authentication_tag(authenticated.as_bytes()),
+                        authentication_tag
+                    ),
                     JWTError::InvalidAuthenticationTag
                 );
+                Ok(())
+            },
+            |salt: Option<&[u8]>| {
+                if let Some(Salt::Verifier(authenticated_salt)) =
+                    self.metadata().as_ref().map(|metadata| &metadata.salt)
+                {
+                    match salt {
+                        None => bail!(JWTError::MissingSalt),
+                        Some(salt) => {
+                            let expected_authenticated_tag = self.authentication_tag(salt);
+                            ensure!(
+                                timingsafe_eq(authenticated_salt, &expected_authenticated_tag),
+                                JWTError::InvalidAuthenticationTag
+                            );
+                        }
+                    }
+                } else {
+                    ensure!(salt.is_none(), JWTError::MissingSalt);
+                }
                 Ok(())
             },
         )
@@ -155,8 +177,8 @@ impl MACLike for HS256Key {
         Ok(())
     }
 
-    fn authentication_tag(&self, authenticated: &str) -> Vec<u8> {
-        hmac_sha256::HMAC::mac(authenticated.as_bytes(), self.key().as_ref()).to_vec()
+    fn authentication_tag(&self, authenticated: &[u8]) -> Vec<u8> {
+        hmac_sha256::HMAC::mac(authenticated, self.key().as_ref()).to_vec()
     }
 }
 
@@ -217,8 +239,8 @@ impl MACLike for HS512Key {
         Ok(())
     }
 
-    fn authentication_tag(&self, authenticated: &str) -> Vec<u8> {
-        hmac_sha512::HMAC::mac(authenticated.as_bytes(), self.key().as_ref()).to_vec()
+    fn authentication_tag(&self, authenticated: &[u8]) -> Vec<u8> {
+        hmac_sha512::HMAC::mac(authenticated, self.key().as_ref()).to_vec()
     }
 }
 
@@ -279,8 +301,8 @@ impl MACLike for HS384Key {
         Ok(())
     }
 
-    fn authentication_tag(&self, authenticated: &str) -> Vec<u8> {
-        hmac_sha384::HMAC::mac(authenticated.as_bytes(), self.key().as_ref()).to_vec()
+    fn authentication_tag(&self, authenticated: &[u8]) -> Vec<u8> {
+        hmac_sha384::HMAC::mac(authenticated, self.key().as_ref()).to_vec()
     }
 }
 
@@ -343,12 +365,12 @@ impl MACLike for Blake2bKey {
         Ok(())
     }
 
-    fn authentication_tag(&self, authenticated: &str) -> Vec<u8> {
+    fn authentication_tag(&self, authenticated: &[u8]) -> Vec<u8> {
         blake2b_simd::Params::new()
             .hash_length(32)
             .key(self.key().as_ref())
             .to_state()
-            .update(authenticated.as_bytes())
+            .update(authenticated)
             .finalize()
             .as_bytes()
             .to_vec()

@@ -161,7 +161,7 @@ pub trait RSAKeyPairLike {
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
         let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
-            .with_metadata(self.metadata());
+            .with_key_metadata(self.metadata());
         Token::build(&jwt_header, claims, |authenticated| {
             let digest = Self::hash();
             let pkey = PKey::from_rsa(self.key_pair().as_ref().clone())?;
@@ -205,6 +205,7 @@ pub trait RSAPublicKeyLike {
                 }
                 Ok(())
             },
+            |_salt: Option<&[u8]>| Ok(()),
         )
     }
 
