@@ -121,7 +121,6 @@ pub trait MACLike {
     }
 
     /// Authenticate a token.
-
     fn authenticate<CustomClaims: Serialize + DeserializeOwned>(
         &self,
         claims: JWTClaims<CustomClaims>,
@@ -134,7 +133,6 @@ pub trait MACLike {
     }
 
     /// Verify a token.
-
     fn verify_token<CustomClaims: Serialize + DeserializeOwned>(
         &self,
         token: &str,
