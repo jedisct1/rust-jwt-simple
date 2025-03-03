@@ -174,7 +174,10 @@ pub trait MACLike {
             options,
             |authenticated, authentication_tag| {
                 ensure!(
-                    timingsafe_eq(&self.authentication_tag(authenticated), authentication_tag),
+                    timingsafe_eq(
+                        &self.authentication_tag(authenticated.as_bytes()),
+                        authentication_tag
+                    ),
                     JWTError::InvalidAuthenticationTag
                 );
                 Ok(())
