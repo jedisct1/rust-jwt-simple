@@ -2,7 +2,6 @@
 [![Docs.rs](https://docs.rs/jwt-simple/badge.svg)](https://docs.rs/jwt-simple/)
 [![crates.io](https://img.shields.io/crates/v/jwt-simple.svg)](https://crates.io/crates/jwt-simple)
 
-
 <!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
 
 <!-- code_chunk_output -->
@@ -27,7 +26,6 @@
   - [Why yet another JWT crate](#why-yet-another-jwt-crate)
 
 <!-- /code_chunk_output -->
-
 
 # JWT-Simple
 
@@ -279,9 +277,9 @@ If an identifier has been attached to a shared key or a key pair, tokens created
 
 `jwt-simple` includes mechanisms to mitigate replay attacks:
 
-* Nonces can be created and attached to new tokens using the `create_nonce()` claim function. The verification procedure can later reject any token that doesn't include the expected nonce (`required_nonce` verification option).
-* The verification procedure can reject tokens created too long ago, no matter what their expiration date is. This prevents tokens from malicious (or compromised) signers from being used for too long.
-* The verification procedure can reject tokens created before a date. For a given user, the date of the last successful authentication can be stored in a database, and used later along with this option to reject older (replayed) tokens.
+- Nonces can be created and attached to new tokens using the `create_nonce()` claim function. The verification procedure can later reject any token that doesn't include the expected nonce (`required_nonce` verification option).
+- The verification procedure can reject tokens created too long ago, no matter what their expiration date is. This prevents tokens from malicious (or compromised) signers from being used for too long.
+- The verification procedure can reject tokens created before a date. For a given user, the date of the last successful authentication can be stored in a database, and used later along with this option to reject older (replayed) tokens.
 
 ### CWT (CBOR) support
 
@@ -319,10 +317,10 @@ However, JWT is still widely used in the industry, and remains absolutely mandat
 
 This crate was designed to:
 
-* Be simple to use, even to people who are new to Rust
-* Avoid common JWT API pitfalls
-* Support features widely in use. I'd love to limit the algorithm choices to Ed25519, but other methods are required to connect to existing APIs, so just provide them (with the exception of the `None` signature method for obvious reasons).
-* Minimize code complexity and external dependencies
-* Automatically perform common tasks to prevent misuse. Signature verification and claims validation happen automatically instead of relying on applications.
-* Still allow power users to access everything JWT tokens include if they really need to
-* Work out of the box in a WebAssembly environment, so that it can be used in function-as-a-service platforms.
+- Be simple to use, even to people who are new to Rust
+- Avoid common JWT API pitfalls
+- Support features widely in use. I'd love to limit the algorithm choices to Ed25519, but other methods are required to connect to existing APIs, so just provide them (with the exception of the `None` signature method for obvious reasons).
+- Minimize code complexity and external dependencies
+- Automatically perform common tasks to prevent misuse. Signature verification and claims validation happen automatically instead of relying on applications.
+- Still allow power users to access everything JWT tokens include if they really need to
+- Work out of the box in a WebAssembly environment, so that it can be used in function-as-a-service platforms.
