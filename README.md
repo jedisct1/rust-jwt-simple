@@ -293,7 +293,7 @@ Salted keys mitigate this issue the following way:
 
 If the verifier has access to tokens, it can forge arbitrary tokens. But given only the verification code and keys, this is impossible. This greatly improve the security of symmetric keys used for verification on 3rd party servers, such as CDNs.
 
-A salt binds to a key, and can be of any length. But the `generate_with_salt()` function generates both a random symmetric key, and a 32-byte salt.
+A salt binds to a key, and can be of any length. The `generate_with_salt()` function generates both a random symmetric key, and a 32-byte salt.
 
 Example usage:
 
