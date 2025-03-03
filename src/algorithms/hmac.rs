@@ -26,6 +26,7 @@ impl Drop for HMACKey {
 }
 
 impl HMACKey {
+    /// Create a HMAC key from a byte slice.
     pub fn from_bytes(raw_key: &[u8]) -> Self {
         HMACKey {
             raw_key: raw_key.to_vec(),
@@ -33,14 +34,17 @@ impl HMACKey {
         }
     }
 
+    /// Convert the HMAC key to a byte slice.
     pub fn to_bytes(&self) -> Vec<u8> {
         self.raw_key.clone()
     }
 
+    /// Get the salt associated with the key.
     pub fn salt(&self) -> Option<Salt> {
         self.metadata.as_ref().map(|metadata| metadata.salt.clone())
     }
 
+    /// Set the salt associated with the key.
     pub fn with_salt(mut self, salt: Salt) -> Self {
         if let Some(metadata) = self.metadata.as_mut() {
             metadata.salt = salt;
@@ -53,6 +57,7 @@ impl HMACKey {
         self
     }
 
+    /// Generate a random HMAC key.
     pub fn generate() -> Self {
         let mut raw_key = vec![0u8; 32];
         rand::thread_rng().fill_bytes(&mut raw_key);
@@ -62,12 +67,14 @@ impl HMACKey {
         }
     }
 
+    /// Generate a random HMAC key with a random salt.
     pub fn generate_with_salt() -> Self {
         HMACKey::generate().with_salt(Salt::generate())
     }
 }
 
 impl AsRef<[u8]> for HMACKey {
+    /// Get the raw key, as a byte slice
     fn as_ref(&self) -> &[u8] {
         &self.raw_key
     }
@@ -82,6 +89,7 @@ pub trait MACLike {
     fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error>;
     fn authentication_tag(&self, authenticated: &[u8]) -> Vec<u8>;
 
+    /// Get the salt associated with the key.
     fn salt(&self) -> Salt {
         self.metadata()
             .as_ref()
@@ -89,6 +97,7 @@ pub trait MACLike {
             .unwrap_or(Salt::None)
     }
 
+    /// Compute the salt to be used for verification, given a signer salt.
     fn verifier_salt(&self) -> Result<Salt, Error> {
         match self.metadata().as_ref().map(|metadata| &metadata.salt) {
             None => bail!(JWTError::MissingSalt),
@@ -101,6 +110,7 @@ pub trait MACLike {
         }
     }
 
+    /// Attach a salt to the key.
     fn attach_salt(&mut self, salt: Salt) -> Result<(), Error> {
         let metadata = KeyMetadata {
             salt,
@@ -109,6 +119,8 @@ pub trait MACLike {
         self.attach_metadata(metadata).unwrap();
         Ok(())
     }
+
+    /// Authenticate a token.
 
     fn authenticate<CustomClaims: Serialize + DeserializeOwned>(
         &self,
@@ -120,6 +132,8 @@ pub trait MACLike {
             Ok(self.authentication_tag(authenticated.as_bytes()))
         })
     }
+
+    /// Verify a token.
 
     fn verify_token<CustomClaims: Serialize + DeserializeOwned>(
         &self,

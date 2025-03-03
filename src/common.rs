@@ -79,13 +79,17 @@ impl Default for VerificationOptions {
 
 #[derive(Debug, Clone, Default)]
 pub enum Salt {
+    /// No salt. This is the default.
     #[default]
     None,
+    /// A salt to be used for signing tokens.
     Signer(Vec<u8>),
+    /// A salt to be used for verifying tokens.
     Verifier(Vec<u8>),
 }
 
 impl Salt {
+    /// Get the length of the salt.
     pub fn len(&self) -> usize {
         match self {
             Salt::None => 0,
@@ -94,6 +98,7 @@ impl Salt {
         }
     }
 
+    /// Generate a new random salt.
     pub fn generate() -> Self {
         let mut salt = vec![0u8; 32];
         rand::thread_rng().fill_bytes(&mut salt);
@@ -102,6 +107,7 @@ impl Salt {
 }
 
 impl AsRef<[u8]> for Salt {
+    /// Get the salt as a byte slice.
     fn as_ref(&self) -> &[u8] {
         match self {
             Salt::None => &[],
