@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use coarsetime::{Duration, UnixTimeStamp};
 use ct_codecs::{Base64UrlSafeNoPadding, Decoder, Encoder, Hex};
+use rand::RngCore;
 
 use crate::{claims::DEFAULT_TIME_TOLERANCE_SECS, error::*};
 
@@ -76,8 +77,7 @@ impl Default for VerificationOptions {
     }
 }
 
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub enum Salt {
     #[default]
     None,
@@ -85,6 +85,31 @@ pub enum Salt {
     Verifier(Vec<u8>),
 }
 
+impl Salt {
+    pub fn len(&self) -> usize {
+        match self {
+            Salt::None => 0,
+            Salt::Signer(s) => s.len(),
+            Salt::Verifier(s) => s.len(),
+        }
+    }
+
+    pub fn generate() -> Self {
+        let mut salt = vec![0u8; 32];
+        rand::thread_rng().fill_bytes(&mut salt);
+        Salt::Signer(salt)
+    }
+}
+
+impl AsRef<[u8]> for Salt {
+    fn as_ref(&self) -> &[u8] {
+        match self {
+            Salt::None => &[],
+            Salt::Signer(s) => s,
+            Salt::Verifier(s) => s,
+        }
+    }
+}
 
 /// Unsigned metadata about a key to be attached to tokens.
 /// This information can be freely tampered with by an intermediate party.

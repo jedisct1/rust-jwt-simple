@@ -37,6 +37,22 @@ impl HMACKey {
         self.raw_key.clone()
     }
 
+    pub fn salt(&self) -> Option<Salt> {
+        self.metadata.as_ref().map(|metadata| metadata.salt.clone())
+    }
+
+    pub fn with_salt(mut self, salt: Salt) -> Self {
+        if let Some(metadata) = self.metadata.as_mut() {
+            metadata.salt = salt;
+        } else {
+            self.metadata = Some(KeyMetadata {
+                salt,
+                ..Default::default()
+            });
+        }
+        self
+    }
+
     pub fn generate() -> Self {
         let mut raw_key = vec![0u8; 32];
         rand::thread_rng().fill_bytes(&mut raw_key);
@@ -44,6 +60,10 @@ impl HMACKey {
             raw_key,
             metadata: None,
         }
+    }
+
+    pub fn generate_with_salt() -> Self {
+        HMACKey::generate().with_salt(Salt::generate())
     }
 }
 
