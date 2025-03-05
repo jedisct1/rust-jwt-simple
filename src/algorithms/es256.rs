@@ -158,15 +158,20 @@ pub trait ECDSAP256KeyPairLike {
     fn jwt_alg_name() -> &'static str;
     fn key_pair(&self) -> &P256KeyPair;
     fn key_id(&self) -> &Option<String>;
+    fn content_type(&self) -> &Option<String>;
+    fn signature_type(&self) -> &Option<String>;
     fn metadata(&self) -> &Option<KeyMetadata>;
     fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error>;
-
+    fn for_content_type(&mut self, content_type: Option<String>) -> Result<(), Error>;
+    fn for_signature_type(&mut self, signature_type: Option<String>) -> Result<(), Error>;
     fn sign<CustomClaims: Serialize + DeserializeOwned>(
         &self,
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
         let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
-            .with_key_metadata(self.metadata());
+            .with_key_metadata(self.metadata())
+            .with_content_type(self.content_type().clone())
+            .with_signature_type(self.signature_type().clone());
         Token::build(&jwt_header, claims, |authenticated| {
             let mut digest = hmac_sha256::Hash::new();
             digest.update(authenticated.as_bytes());
@@ -248,6 +253,8 @@ pub trait ECDSAP256PublicKeyLike {
 pub struct ES256KeyPair {
     key_pair: P256KeyPair,
     key_id: Option<String>,
+    content_type: Option<String>,
+    signature_type: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -277,6 +284,24 @@ impl ECDSAP256KeyPairLike for ES256KeyPair {
         self.key_pair.metadata = Some(metadata);
         Ok(())
     }
+
+    fn content_type(&self) -> &Option<String> {
+        &self.content_type
+    }
+
+    fn signature_type(&self) -> &Option<String> {
+        &self.signature_type
+    }
+
+    fn for_content_type(&mut self, content_type: Option<String>) -> Result<(), Error> {
+        self.content_type = content_type;
+        Ok(())
+    }
+
+    fn for_signature_type(&mut self, signature_type: Option<String>) -> Result<(), Error> {
+        self.signature_type = signature_type;
+        Ok(())
+    }
 }
 
 impl ES256KeyPair {
@@ -284,6 +309,8 @@ impl ES256KeyPair {
         Ok(ES256KeyPair {
             key_pair: P256KeyPair::from_bytes(raw)?,
             key_id: None,
+            content_type: None,
+            signature_type: None,
         })
     }
 
@@ -291,6 +318,8 @@ impl ES256KeyPair {
         Ok(ES256KeyPair {
             key_pair: P256KeyPair::from_der(der)?,
             key_id: None,
+            content_type: None,
+            signature_type: None,
         })
     }
 
@@ -298,6 +327,8 @@ impl ES256KeyPair {
         Ok(ES256KeyPair {
             key_pair: P256KeyPair::from_pem(pem)?,
             key_id: None,
+            content_type: None,
+            signature_type: None,
         })
     }
 
@@ -324,6 +355,8 @@ impl ES256KeyPair {
         ES256KeyPair {
             key_pair: P256KeyPair::generate(),
             key_id: None,
+            content_type: None,
+            signature_type: None,
         }
     }
 

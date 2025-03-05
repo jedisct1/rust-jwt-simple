@@ -84,9 +84,13 @@ pub trait MACLike {
     fn jwt_alg_name() -> &'static str;
     fn key(&self) -> &HMACKey;
     fn key_id(&self) -> &Option<String>;
+    fn content_type(&self) -> &Option<String>;
+    fn signature_type(&self) -> &Option<String>;
     fn set_key_id(&mut self, key_id: String);
     fn metadata(&self) -> &Option<KeyMetadata>;
     fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error>;
+    fn for_content_type(&mut self, content_type: Option<String>) -> Result<(), Error>;
+    fn for_signature_type(&mut self, signature_type: Option<String>) -> Result<(), Error>;
     fn authentication_tag(&self, authenticated: &[u8]) -> Vec<u8>;
 
     /// Get the salt associated with the key.
@@ -126,7 +130,10 @@ pub trait MACLike {
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
         let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
-            .with_key_metadata(self.metadata());
+            .with_key_metadata(self.metadata())
+            .with_content_type(self.content_type().clone())
+            .with_signature_type(self.signature_type().clone());
+
         Token::build(&jwt_header, claims, |authenticated| {
             Ok(self.authentication_tag(authenticated.as_bytes()))
         })
@@ -212,6 +219,8 @@ pub trait MACLike {
 pub struct HS256Key {
     key: HMACKey,
     key_id: Option<String>,
+    content_type: Option<String>,
+    signature_type: Option<String>,
 }
 
 impl MACLike for HS256Key {
@@ -243,6 +252,24 @@ impl MACLike for HS256Key {
     fn authentication_tag(&self, authenticated: &[u8]) -> Vec<u8> {
         hmac_sha256::HMAC::mac(authenticated, self.key().as_ref()).to_vec()
     }
+
+    fn content_type(&self) -> &Option<String> {
+        &self.content_type
+    }
+
+    fn signature_type(&self) -> &Option<String> {
+        &self.signature_type
+    }
+
+    fn for_content_type(&mut self, content_type: Option<String>) -> Result<(), Error> {
+        self.content_type = content_type;
+        Ok(())
+    }
+
+    fn for_signature_type(&mut self, signature_type: Option<String>) -> Result<(), Error> {
+        self.signature_type = signature_type;
+        Ok(())
+    }
 }
 
 impl HS256Key {
@@ -250,6 +277,8 @@ impl HS256Key {
         HS256Key {
             key: HMACKey::from_bytes(raw_key),
             key_id: None,
+            content_type: None,
+            signature_type: None,
         }
     }
 
@@ -261,6 +290,8 @@ impl HS256Key {
         HS256Key {
             key: HMACKey::generate(),
             key_id: None,
+            content_type: None,
+            signature_type: None,
         }
     }
 
@@ -268,6 +299,8 @@ impl HS256Key {
         HS256Key {
             key: HMACKey::generate_with_salt(),
             key_id: None,
+            content_type: None,
+            signature_type: None,
         }
     }
 
@@ -281,6 +314,8 @@ impl HS256Key {
 pub struct HS512Key {
     key: HMACKey,
     key_id: Option<String>,
+    signature_type: Option<String>,
+    content_type: Option<String>,
 }
 
 impl MACLike for HS512Key {
@@ -312,6 +347,24 @@ impl MACLike for HS512Key {
     fn authentication_tag(&self, authenticated: &[u8]) -> Vec<u8> {
         hmac_sha512::HMAC::mac(authenticated, self.key().as_ref()).to_vec()
     }
+
+    fn content_type(&self) -> &Option<String> {
+        &self.content_type
+    }
+
+    fn signature_type(&self) -> &Option<String> {
+        &self.signature_type
+    }
+
+    fn for_content_type(&mut self, content_type: Option<String>) -> Result<(), Error> {
+        self.content_type = content_type;
+        Ok(())
+    }
+
+    fn for_signature_type(&mut self, signature_type: Option<String>) -> Result<(), Error> {
+        self.signature_type = signature_type;
+        Ok(())
+    }
 }
 
 impl HS512Key {
@@ -319,6 +372,8 @@ impl HS512Key {
         HS512Key {
             key: HMACKey::from_bytes(raw_key),
             key_id: None,
+            signature_type: None,
+            content_type: None,
         }
     }
 
@@ -330,6 +385,8 @@ impl HS512Key {
         HS512Key {
             key: HMACKey::generate(),
             key_id: None,
+            signature_type: None,
+            content_type: None,
         }
     }
 
@@ -337,6 +394,8 @@ impl HS512Key {
         HS512Key {
             key: HMACKey::generate_with_salt(),
             key_id: None,
+            signature_type: None,
+            content_type: None,
         }
     }
 
@@ -350,6 +409,8 @@ impl HS512Key {
 pub struct HS384Key {
     key: HMACKey,
     key_id: Option<String>,
+    signature_type: Option<String>,
+    content_type: Option<String>,
 }
 
 impl MACLike for HS384Key {
@@ -381,6 +442,24 @@ impl MACLike for HS384Key {
     fn authentication_tag(&self, authenticated: &[u8]) -> Vec<u8> {
         hmac_sha384::HMAC::mac(authenticated, self.key().as_ref()).to_vec()
     }
+
+    fn content_type(&self) -> &Option<String> {
+        &self.content_type
+    }
+
+    fn signature_type(&self) -> &Option<String> {
+        &self.signature_type
+    }
+
+    fn for_content_type(&mut self, content_type: Option<String>) -> Result<(), Error> {
+        self.content_type = content_type;
+        Ok(())
+    }
+
+    fn for_signature_type(&mut self, signature_type: Option<String>) -> Result<(), Error> {
+        self.signature_type = signature_type;
+        Ok(())
+    }
 }
 
 impl HS384Key {
@@ -388,6 +467,8 @@ impl HS384Key {
         HS384Key {
             key: HMACKey::from_bytes(raw_key),
             key_id: None,
+            signature_type: None,
+            content_type: None,
         }
     }
 
@@ -399,6 +480,8 @@ impl HS384Key {
         HS384Key {
             key: HMACKey::generate(),
             key_id: None,
+            signature_type: None,
+            content_type: None,
         }
     }
 
@@ -406,6 +489,8 @@ impl HS384Key {
         HS384Key {
             key: HMACKey::generate_with_salt(),
             key_id: None,
+            signature_type: None,
+            content_type: None,
         }
     }
 
@@ -421,6 +506,8 @@ impl HS384Key {
 pub struct Blake2bKey {
     key: HMACKey,
     key_id: Option<String>,
+    content_type: Option<String>,
+    signature_type: Option<String>,
 }
 
 impl MACLike for Blake2bKey {
@@ -459,6 +546,24 @@ impl MACLike for Blake2bKey {
             .as_bytes()
             .to_vec()
     }
+
+    fn content_type(&self) -> &Option<String> {
+        &self.content_type
+    }
+
+    fn signature_type(&self) -> &Option<String> {
+        &self.signature_type
+    }
+
+    fn for_content_type(&mut self, content_type: Option<String>) -> Result<(), Error> {
+        self.content_type = content_type;
+        Ok(())
+    }
+
+    fn for_signature_type(&mut self, signature_type: Option<String>) -> Result<(), Error> {
+        self.signature_type = signature_type;
+        Ok(())
+    }
 }
 
 impl Blake2bKey {
@@ -466,6 +571,8 @@ impl Blake2bKey {
         Blake2bKey {
             key: HMACKey::from_bytes(raw_key),
             key_id: None,
+            content_type: None,
+            signature_type: None,
         }
     }
 
@@ -477,6 +584,8 @@ impl Blake2bKey {
         Blake2bKey {
             key: HMACKey::generate(),
             key_id: None,
+            content_type: None,
+            signature_type: None,
         }
     }
 
@@ -484,6 +593,8 @@ impl Blake2bKey {
         Blake2bKey {
             key: HMACKey::generate_with_salt(),
             key_id: None,
+            content_type: None,
+            signature_type: None,
         }
     }
 

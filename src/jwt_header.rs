@@ -97,4 +97,18 @@ impl JWTHeader {
         }
         self
     }
+
+    pub(crate) fn with_signature_type(mut self, signature_type: Option<String>) -> Self {
+        if self.signature_type.as_deref() == Some("JWT") && !signature_type.is_none() {
+            self.signature_type = signature_type;
+        }
+        self
+    }
+
+    pub(crate) fn with_content_type(mut self, content_type: Option<String>) -> Self {
+        if self.content_type.is_none() && !content_type.is_none() {
+            self.content_type = content_type;
+        }
+        self
+    }
 }

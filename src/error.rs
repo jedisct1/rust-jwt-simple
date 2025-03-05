@@ -61,6 +61,10 @@ pub enum JWTError {
     InvalidCertThumprint,
     #[error("Not a JWT token")]
     NotJWT,
+    #[error("Required signature type mismatch")]
+    RequiredSignatureTypeMismatch,
+    #[error("Required content type mismatch")]
+    RequiredContentTypeMismatch,
     #[error("Token is too long")]
     TokenTooLong,
     #[error("Missing salt")]

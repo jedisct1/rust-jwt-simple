@@ -341,6 +341,36 @@ Also, the existing Rust crates for JSON and CBOR deserialization are not safe. A
 
 As a mitigation, we highly recommend rejecting tokens that would be too large in the context of your application. That can be done by with the `max_token_length` verification option.
 
+### Specifying Content Type
+
+Sometimes, it is necessary to set the `content_type` (`cty`) header field that will be associated with a JWT signed with a given key, typically in cases involving nested JWTs. By default, `jwt_simple` omits this field. However, it is possible to set a custom content type by associating it with the key before signing the claims:
+
+```rust
+key_pair.for_content_type(Some("JWT".into())).unwrap();
+```
+
+### Specifying Signature Type
+
+The `signature_type` (`typ`) field in the JWT header is sometimes used to differentiate JWTs. This can be set for a key similarly to how content_type can be set:
+
+```rust
+key_pair.for_signature_type(Some("type+jwt".into())).unwrap();
+```
+//!
+If unset, the field will contain the string "JWT" in the serialized token.
+
+### Validating content and signature types
+
+By default, `jwt_simple` ignores the `content_type` field when doing validation, and checks `signature_type` to ensure it is either exactly `JWT` or ends in `+JWT`, case insensitive, if it is present. Both fields may instead be case-insensitively compared against an expected string:
+
+```rust
+options.required_signature_type = Some("JWT".into());
+options.required_content_type = Some("foo+jwt".into());
+```
+
+When validating CWTs, note that CWTs do not have a `content_type` field in their header, and therefore attempting to match a specific one by setting `required_content_type`during validation will **always result in an error**.
+
+
 ## Working around compilation issues with the `boring` crate
 
 As a temporary workaround for portability issues with one of the dependencies (the `boring` crate), this library can be compiled to use only Rust implementations.
