@@ -151,12 +151,8 @@ pub trait RSAKeyPairLike {
     fn jwt_alg_name() -> &'static str;
     fn key_pair(&self) -> &RSAKeyPair;
     fn key_id(&self) -> &Option<String>;
-    fn content_type(&self) -> &Option<String>;
-    fn signature_type(&self) -> &Option<String>;
     fn metadata(&self) -> &Option<KeyMetadata>;
     fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error>;
-    fn for_content_type(&mut self, content_type: Option<String>) -> Result<(), Error>;
-    fn for_signature_type(&mut self, signature_type: Option<String>) -> Result<(), Error>;
     fn hash() -> MessageDigest;
     fn padding_scheme(&self) -> Padding;
 
@@ -164,10 +160,17 @@ pub trait RSAKeyPairLike {
         &self,
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
+        self.sign_with_header_opts(claims, &Default::default())
+    }
+
+    fn sign_with_header_opts<CustomClaims: Serialize + DeserializeOwned>(
+        &self,
+        claims: JWTClaims<CustomClaims>,
+        opts: &HeaderOptions,
+    ) -> Result<String, Error> {
         let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
             .with_key_metadata(self.metadata())
-            .with_content_type(self.content_type().clone())
-            .with_signature_type(self.signature_type().clone());
+            .with_header_options(opts);
         Token::build(&jwt_header, claims, |authenticated| {
             let digest = Self::hash();
             let pkey = PKey::from_rsa(self.key_pair().as_ref().clone())?;
@@ -247,8 +250,6 @@ pub trait RSAPublicKeyLike {
 pub struct RS256KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
-    content_type: Option<String>,
-    signature_type: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -286,24 +287,6 @@ impl RSAKeyPairLike for RS256KeyPair {
     fn padding_scheme(&self) -> Padding {
         Padding::PKCS1
     }
-
-    fn content_type(&self) -> &Option<String> {
-        &self.content_type
-    }
-
-    fn signature_type(&self) -> &Option<String> {
-        &self.signature_type
-    }
-
-    fn for_content_type(&mut self, content_type: Option<String>) -> Result<(), Error> {
-        self.content_type = content_type;
-        Ok(())
-    }
-
-    fn for_signature_type(&mut self, signature_type: Option<String>) -> Result<(), Error> {
-        self.signature_type = signature_type;
-        Ok(())
-    }
 }
 
 impl RS256KeyPair {
@@ -311,8 +294,6 @@ impl RS256KeyPair {
         Ok(RS256KeyPair {
             key_pair: RSAKeyPair::from_der(der)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -320,8 +301,6 @@ impl RS256KeyPair {
         Ok(RS256KeyPair {
             key_pair: RSAKeyPair::from_pem(pem)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -344,8 +323,6 @@ impl RS256KeyPair {
         Ok(RS256KeyPair {
             key_pair: RSAKeyPair::generate(modulus_bits)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -435,8 +412,6 @@ impl RS256PublicKey {
 pub struct RS512KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
-    content_type: Option<String>,
-    signature_type: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -474,24 +449,6 @@ impl RSAKeyPairLike for RS512KeyPair {
     fn padding_scheme(&self) -> Padding {
         Padding::PKCS1
     }
-
-    fn content_type(&self) -> &Option<String> {
-        &self.content_type
-    }
-
-    fn signature_type(&self) -> &Option<String> {
-        &self.signature_type
-    }
-
-    fn for_content_type(&mut self, content_type: Option<String>) -> Result<(), Error> {
-        self.content_type = content_type;
-        Ok(())
-    }
-
-    fn for_signature_type(&mut self, signature_type: Option<String>) -> Result<(), Error> {
-        self.signature_type = signature_type;
-        Ok(())
-    }
 }
 
 impl RS512KeyPair {
@@ -499,8 +456,6 @@ impl RS512KeyPair {
         Ok(RS512KeyPair {
             key_pair: RSAKeyPair::from_der(der)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -508,8 +463,6 @@ impl RS512KeyPair {
         Ok(RS512KeyPair {
             key_pair: RSAKeyPair::from_pem(pem)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -532,8 +485,6 @@ impl RS512KeyPair {
         Ok(RS512KeyPair {
             key_pair: RSAKeyPair::generate(modulus_bits)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -623,8 +574,6 @@ impl RS512PublicKey {
 pub struct RS384KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
-    content_type: Option<String>,
-    signature_type: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -662,24 +611,6 @@ impl RSAKeyPairLike for RS384KeyPair {
     fn padding_scheme(&self) -> Padding {
         Padding::PKCS1
     }
-
-    fn content_type(&self) -> &Option<String> {
-        &self.content_type
-    }
-
-    fn signature_type(&self) -> &Option<String> {
-        &self.signature_type
-    }
-
-    fn for_content_type(&mut self, content_type: Option<String>) -> Result<(), Error> {
-        self.content_type = content_type;
-        Ok(())
-    }
-
-    fn for_signature_type(&mut self, signature_type: Option<String>) -> Result<(), Error> {
-        self.signature_type = signature_type;
-        Ok(())
-    }
 }
 
 impl RS384KeyPair {
@@ -687,8 +618,6 @@ impl RS384KeyPair {
         Ok(RS384KeyPair {
             key_pair: RSAKeyPair::from_der(der)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -696,8 +625,6 @@ impl RS384KeyPair {
         Ok(RS384KeyPair {
             key_pair: RSAKeyPair::from_pem(pem)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -720,8 +647,6 @@ impl RS384KeyPair {
         Ok(RS384KeyPair {
             key_pair: RSAKeyPair::generate(modulus_bits)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -811,8 +736,6 @@ impl RS384PublicKey {
 pub struct PS256KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
-    content_type: Option<String>,
-    signature_type: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -850,24 +773,6 @@ impl RSAKeyPairLike for PS256KeyPair {
     fn padding_scheme(&self) -> Padding {
         Padding::PKCS1_PSS
     }
-
-    fn content_type(&self) -> &Option<String> {
-        &self.content_type
-    }
-
-    fn signature_type(&self) -> &Option<String> {
-        &self.signature_type
-    }
-
-    fn for_content_type(&mut self, content_type: Option<String>) -> Result<(), Error> {
-        self.content_type = content_type;
-        Ok(())
-    }
-
-    fn for_signature_type(&mut self, signature_type: Option<String>) -> Result<(), Error> {
-        self.signature_type = signature_type;
-        Ok(())
-    }
 }
 
 impl PS256KeyPair {
@@ -875,8 +780,6 @@ impl PS256KeyPair {
         Ok(PS256KeyPair {
             key_pair: RSAKeyPair::from_der(der)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -884,8 +787,6 @@ impl PS256KeyPair {
         Ok(PS256KeyPair {
             key_pair: RSAKeyPair::from_pem(pem)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -908,8 +809,6 @@ impl PS256KeyPair {
         Ok(PS256KeyPair {
             key_pair: RSAKeyPair::generate(modulus_bits)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -991,8 +890,6 @@ impl PS256PublicKey {
 pub struct PS512KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
-    content_type: Option<String>,
-    signature_type: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -1030,24 +927,6 @@ impl RSAKeyPairLike for PS512KeyPair {
     fn padding_scheme(&self) -> Padding {
         Padding::PKCS1_PSS
     }
-
-    fn content_type(&self) -> &Option<String> {
-        &self.content_type
-    }
-
-    fn signature_type(&self) -> &Option<String> {
-        &self.signature_type
-    }
-
-    fn for_content_type(&mut self, content_type: Option<String>) -> Result<(), Error> {
-        self.content_type = content_type;
-        Ok(())
-    }
-
-    fn for_signature_type(&mut self, signature_type: Option<String>) -> Result<(), Error> {
-        self.signature_type = signature_type;
-        Ok(())
-    }
 }
 
 impl PS512KeyPair {
@@ -1055,8 +934,6 @@ impl PS512KeyPair {
         Ok(PS512KeyPair {
             key_pair: RSAKeyPair::from_der(der)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -1064,8 +941,6 @@ impl PS512KeyPair {
         Ok(PS512KeyPair {
             key_pair: RSAKeyPair::from_pem(pem)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -1088,8 +963,6 @@ impl PS512KeyPair {
         Ok(PS512KeyPair {
             key_pair: RSAKeyPair::generate(modulus_bits)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -1179,8 +1052,6 @@ impl PS512PublicKey {
 pub struct PS384KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
-    content_type: Option<String>,
-    signature_type: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -1218,24 +1089,6 @@ impl RSAKeyPairLike for PS384KeyPair {
     fn padding_scheme(&self) -> Padding {
         Padding::PKCS1_PSS
     }
-
-    fn content_type(&self) -> &Option<String> {
-        &self.content_type
-    }
-
-    fn signature_type(&self) -> &Option<String> {
-        &self.signature_type
-    }
-
-    fn for_content_type(&mut self, content_type: Option<String>) -> Result<(), Error> {
-        self.content_type = content_type;
-        Ok(())
-    }
-
-    fn for_signature_type(&mut self, signature_type: Option<String>) -> Result<(), Error> {
-        self.signature_type = signature_type;
-        Ok(())
-    }
 }
 
 impl PS384KeyPair {
@@ -1243,8 +1096,6 @@ impl PS384KeyPair {
         Ok(PS384KeyPair {
             key_pair: RSAKeyPair::from_der(der)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -1252,8 +1103,6 @@ impl PS384KeyPair {
         Ok(PS384KeyPair {
             key_pair: RSAKeyPair::from_pem(pem)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 
@@ -1276,8 +1125,6 @@ impl PS384KeyPair {
         Ok(PS384KeyPair {
             key_pair: RSAKeyPair::generate(modulus_bits)?,
             key_id: None,
-            content_type: None,
-            signature_type: None,
         })
     }
 

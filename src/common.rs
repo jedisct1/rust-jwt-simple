@@ -85,6 +85,18 @@ impl Default for VerificationOptions {
     }
 }
 
+/// Options for header creation when constructing a token.
+#[derive(Debug, Clone, Default)]
+pub struct HeaderOptions {
+    /// The contents of the content type (`cty`) field in the JWT header. If set
+    /// to `None`, this field is not present on the serialized JWT.
+    pub content_type: Option<String>,
+    /// The contents of the signature type (`typ`) field in the JWT header. If
+    /// set to `None`, the serialized JWT's `typ` field will contain the string
+    /// "JWT".
+    pub signature_type: Option<String>,
+}
+
 #[derive(Debug, Clone, Default)]
 pub enum Salt {
     /// No salt. This is the default.

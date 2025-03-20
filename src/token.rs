@@ -339,7 +339,7 @@ Ai+4/5mNTNXI8f1rrYgffWS4wf9cvsEihrvEg9867B2f98L7ux9Llle7jsHCtwgV
 #[test]
 fn content_type() {
     use crate::prelude::*;
-    let mut key = HS256Key::generate();
+    let key = HS256Key::generate();
     let options = VerificationOptions {
         required_content_type: Some("JWT".into()),
         ..VerificationOptions::default()
@@ -350,9 +350,14 @@ fn content_type() {
     let res = key.verify_token::<NoCustomClaims>(&token, Some(options.clone()));
     assert!(res.is_err());
 
-    key.for_content_type(Some("jwt".into())).unwrap();
     let token = key
-        .authenticate(Claims::create(Duration::from_secs(86400)))
+        .authenticate_with_header_options(
+            Claims::create(Duration::from_secs(86400)),
+            &HeaderOptions {
+                content_type: Some("jwt".into()),
+                ..Default::default()
+            },
+        )
         .unwrap();
     key.verify_token::<NoCustomClaims>(&token, Some(options.clone()))
         .unwrap();
@@ -361,7 +366,7 @@ fn content_type() {
 #[test]
 fn signature_type() {
     use crate::prelude::*;
-    let mut key = ES256KeyPair::generate();
+    let key = ES256KeyPair::generate();
     let options = VerificationOptions {
         required_signature_type: Some("dpop+jwt".into()),
         ..VerificationOptions::default()
@@ -374,9 +379,14 @@ fn signature_type() {
         .verify_token::<NoCustomClaims>(&token, Some(options.clone()));
     assert!(res.is_err());
 
-    key.for_signature_type(Some("dpop+jwt".into())).unwrap();
     let token = key
-        .sign(Claims::create(Duration::from_secs(86400)))
+        .sign_with_header_options(
+            Claims::create(Duration::from_secs(86400)),
+            &HeaderOptions {
+                signature_type: Some("dpop+jwt".into()),
+                ..Default::default()
+            },
+        )
         .unwrap();
     key.public_key()
         .verify_token::<NoCustomClaims>(&token, Some(options.clone()))

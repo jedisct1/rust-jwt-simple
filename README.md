@@ -341,23 +341,20 @@ Also, the existing Rust crates for JSON and CBOR deserialization are not safe. A
 
 As a mitigation, we highly recommend rejecting tokens that would be too large in the context of your application. That can be done by with the `max_token_length` verification option.
 
-### Specifying Content Type
+### Specifying header options
 
-Sometimes, it is necessary to set the `content_type` (`cty`) header field that will be associated with a JWT signed with a given key, typically in cases involving nested JWTs. By default, `jwt_simple` omits this field. However, it is possible to set a custom content type by associating it with the key before signing the claims:
+It is possible to change the content type (`cty`) and signature type (`typ`) fields of a signed JWT by using the `sign_with_header_options`/`authenticate_with_header_options` functions, by passing in a `HeaderOptions` struct:
 
-```rust
-key_pair.for_content_type(Some("JWT".into())).unwrap();
+``` rust
+let options = HeaderOptions {
+   content_type: Some("foo".into()),
+   signature_type: Some("foo+JWT".into()),
+   ..Default::default()
+};
+key_pair.sign_with_header_options(claims, &options).unwrap();
 ```
 
-### Specifying Signature Type
-
-The `signature_type` (`typ`) field in the JWT header is sometimes used to differentiate JWTs. This can be set for a key similarly to how content_type can be set:
-
-```rust
-key_pair.for_signature_type(Some("type+jwt".into())).unwrap();
-```
-//!
-If unset, the field will contain the string "JWT" in the serialized token.
+By default, generated JWTs will have a signature type field containing the string "JWT", and the content type field will not be present.
 
 ### Validating content and signature types
 
