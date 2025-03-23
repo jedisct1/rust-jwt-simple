@@ -446,7 +446,7 @@
 //!
 //! ### Specifying header options
 //!
-//! It is possible to change the content type (`cty`) and signature type (`typ`) fields of a signed JWT by using the `sign_with_header_options`/`authenticate_with_header_options` functions, by passing in a `HeaderOptions` struct:
+//! It is possible to change the content type (`cty`) and signature type (`typ`) fields of a signed JWT by using the `sign_with_options`/`authenticate_with_options` functions, passing in a `HeaderOptions` struct:
 //!
 //! ```rust
 //! # use jwt_simple::prelude::*;
@@ -457,7 +457,7 @@
 //!    signature_type: Some("foo+JWT".into()),
 //!    ..Default::default()
 //! };
-//! key_pair.sign_with_header_options(claims, &options).unwrap();
+//! key_pair.sign_with_options(claims, &options).unwrap();
 //! ```
 //! By default, generated JWTs will have a signature type field containing the string "JWT", and the content type field will not be present.
 //!
@@ -790,7 +790,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         let key_pair = Ed25519KeyPair::generate();
         let claims = Claims::create(Duration::from_secs(86400));
         let token = key_pair
-            .sign_with_header_options(
+            .sign_with_options(
                 claims,
                 &HeaderOptions {
                     content_type: Some("foo".into()),
@@ -814,7 +814,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         let key_pair = Ed25519KeyPair::generate();
         let claims = Claims::create(Duration::from_secs(86400));
         let token = key_pair
-            .sign_with_header_options(
+            .sign_with_options(
                 claims,
                 &HeaderOptions {
                     signature_type: Some("etc+jwt".into()),

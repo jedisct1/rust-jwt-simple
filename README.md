@@ -343,7 +343,7 @@ As a mitigation, we highly recommend rejecting tokens that would be too large in
 
 ### Specifying header options
 
-It is possible to change the content type (`cty`) and signature type (`typ`) fields of a signed JWT by using the `sign_with_header_options`/`authenticate_with_header_options` functions, by passing in a `HeaderOptions` struct:
+It is possible to change the content type (`cty`) and signature type (`typ`) fields of a signed JWT by using the `sign_with_options`/`authenticate_with_options` functions, by passing in a `HeaderOptions` struct:
 
 ``` rust
 let options = HeaderOptions {
@@ -351,7 +351,7 @@ let options = HeaderOptions {
    signature_type: Some("foo+JWT".into()),
    ..Default::default()
 };
-key_pair.sign_with_header_options(claims, &options).unwrap();
+key_pair.sign_with_options(claims, &options).unwrap();
 ```
 
 By default, generated JWTs will have a signature type field containing the string "JWT", and the content type field will not be present.

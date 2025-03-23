@@ -351,7 +351,7 @@ fn content_type() {
     assert!(res.is_err());
 
     let token = key
-        .authenticate_with_header_options(
+        .authenticate_with_options(
             Claims::create(Duration::from_secs(86400)),
             &HeaderOptions {
                 content_type: Some("jwt".into()),
@@ -380,7 +380,7 @@ fn signature_type() {
     assert!(res.is_err());
 
     let token = key
-        .sign_with_header_options(
+        .sign_with_options(
             Claims::create(Duration::from_secs(86400)),
             &HeaderOptions {
                 signature_type: Some("dpop+jwt".into()),
