@@ -28,9 +28,6 @@ pub struct VerificationOptions {
     /// Require a specific key identifier to be present
     pub required_key_id: Option<String>,
 
-    /// Require a specific public key to be present
-    pub required_public_key: Option<String>,
-
     /// Require a specific nonce to be present
     pub required_nonce: Option<String>,
 
@@ -64,7 +61,6 @@ impl Default for VerificationOptions {
             accept_future: false,
             required_subject: None,
             required_key_id: None,
-            required_public_key: None,
             required_nonce: None,
             allowed_issuers: None,
             allowed_audiences: None,
