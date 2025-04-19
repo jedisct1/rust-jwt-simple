@@ -99,10 +99,10 @@ impl JWTHeader {
     }
 
     pub(crate) fn with_options(mut self, opts: &HeaderOptions) -> Self {
-        if self.signature_type.as_deref() == Some("JWT") && !opts.signature_type.is_none() {
+        if self.signature_type.as_deref() == Some("JWT") && opts.signature_type.is_some() {
             self.signature_type = opts.signature_type.clone();
         }
-        if self.content_type.is_none() && !opts.content_type.is_none() {
+        if self.content_type.is_none() && opts.content_type.is_some() {
             self.content_type = opts.content_type.clone();
         }
         self
