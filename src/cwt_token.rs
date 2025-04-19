@@ -30,6 +30,13 @@ impl CWTToken {
         let options = options.unwrap_or_default();
         let token = token.as_ref();
         let token_len = token.len();
+
+        // cwt doesn't have a typ field, so specifying a signature type in
+        // options triggers an immediate mismatch.
+        if options.required_signature_type.is_some() {
+            bail!(JWTError::RequiredSignatureTypeMismatch);
+        }
+
         if let Some(max_token_length) = options.max_token_length {
             ensure!(token_len <= max_token_length, JWTError::TokenTooLong);
         }
@@ -78,6 +85,18 @@ impl CWTToken {
             } else {
                 bail!(JWTError::MissingJWTKeyIdentifier)
             }
+        }
+
+        if let Some(required_content_type) = &options.required_content_type {
+            let required_content_type_uc = required_content_type.to_uppercase();
+            let content_type_uc = jwt_header
+                .content_type
+                .ok_or(JWTError::RequiredContentTypeMismatch)?
+                .to_uppercase();
+            ensure!(
+                content_type_uc == required_content_type_uc,
+                JWTError::RequiredContentTypeMismatch
+            )
         }
 
         let authentication_tag_or_signature =
@@ -313,4 +332,23 @@ fn should_verify_token() {
     let mut options = VerificationOptions::default();
     options.time_tolerance = Some(Duration::from_days(20000));
     let _ = key.verify_cwt_token(token, Some(options)).unwrap();
+}
+
+#[test]
+fn verify_content_type() {
+    use ct_codecs::{Decoder, Hex};
+
+    use crate::prelude::*;
+
+    let k_hex = "e176d07d2a9f8b73553487d0b41ef9294873512c62a0471439a758420097e589";
+    let k = Hex::decode_to_vec(k_hex, None).unwrap();
+    let key = HS256Key::from_bytes(&k);
+
+    let token_hex = "d18443a10105a05835a60172636f6170733a2f2f61732e6578616d706c65026764616a69616a690743313233041a6296121f051a6296040f061a6296040f58206b310798de7f6b2aeff832344c2ea37674807b72a8a2cc263f1d31b1eb86139b";
+    let token = Hex::decode_to_vec(token_hex, None).unwrap();
+    let mut options = VerificationOptions::default();
+    options.time_tolerance = Some(Duration::from_days(20000));
+    options.required_content_type = Some("JWT".into());
+    let res = key.verify_cwt_token(token, Some(options));
+    assert!(res.is_err());
 }

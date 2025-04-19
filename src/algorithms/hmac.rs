@@ -125,8 +125,17 @@ pub trait MACLike {
         &self,
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
+        self.authenticate_with_options(claims, &Default::default())
+    }
+
+    fn authenticate_with_options<CustomClaims: Serialize + DeserializeOwned>(
+        &self,
+        claims: JWTClaims<CustomClaims>,
+        options: &HeaderOptions,
+    ) -> Result<String, Error> {
         let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
-            .with_key_metadata(self.metadata());
+            .with_key_metadata(self.metadata())
+            .with_options(options);
         Token::build(&jwt_header, claims, |authenticated| {
             Ok(self.authentication_tag(authenticated.as_bytes()))
         })

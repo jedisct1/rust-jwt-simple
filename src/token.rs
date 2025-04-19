@@ -163,13 +163,37 @@ impl Token {
         let jwt_header: JWTHeader = serde_json::from_slice(
             &Base64UrlSafeNoPadding::decode_to_vec(jwt_header_b64, None)?,
         )?;
-        if let Some(signature_type) = &jwt_header.signature_type {
+
+        if let Some(expected_signature_type) = &options.required_signature_type {
+            let expected_signature_type_uc = expected_signature_type.to_uppercase();
+            let signature_type_uc = jwt_header
+                .signature_type
+                .ok_or(JWTError::RequiredSignatureTypeMismatch)?
+                .to_uppercase();
+            ensure!(
+                signature_type_uc == expected_signature_type_uc,
+                JWTError::RequiredSignatureTypeMismatch
+            )
+        } else if let Some(signature_type) = &jwt_header.signature_type {
             let signature_type_uc = signature_type.to_uppercase();
             ensure!(
                 signature_type_uc == "JWT" || signature_type_uc.ends_with("+JWT"),
                 JWTError::NotJWT
             );
         }
+
+        if let Some(expected_content_type) = &options.required_content_type {
+            let expected_content_type_uc = expected_content_type.to_uppercase();
+            let content_type_uc = jwt_header
+                .content_type
+                .ok_or(JWTError::RequiredContentTypeMismatch)?
+                .to_uppercase();
+            ensure!(
+                content_type_uc == expected_content_type_uc,
+                JWTError::RequiredContentTypeMismatch
+            );
+        }
+
         ensure!(
             jwt_header.algorithm == jwt_alg_name,
             JWTError::AlgorithmMismatch
@@ -309,5 +333,62 @@ Ai+4/5mNTNXI8f1rrYgffWS4wf9cvsEihrvEg9867B2f98L7ux9Llle7jsHCtwgV
 
     options.time_tolerance = Some(Duration::from_secs(100));
     key.verify_token::<NoCustomClaims>(jwt, Some(options))
+        .unwrap();
+}
+
+#[test]
+fn content_type() {
+    use crate::prelude::*;
+    let key = HS256Key::generate();
+    let options = VerificationOptions {
+        required_content_type: Some("JWT".into()),
+        ..VerificationOptions::default()
+    };
+    let token = key
+        .authenticate(Claims::create(Duration::from_secs(86400)))
+        .unwrap();
+    let res = key.verify_token::<NoCustomClaims>(&token, Some(options.clone()));
+    assert!(res.is_err());
+
+    let token = key
+        .authenticate_with_options(
+            Claims::create(Duration::from_secs(86400)),
+            &HeaderOptions {
+                content_type: Some("jwt".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    key.verify_token::<NoCustomClaims>(&token, Some(options.clone()))
+        .unwrap();
+}
+
+#[test]
+fn signature_type() {
+    use crate::prelude::*;
+    let key = ES256KeyPair::generate();
+    let options = VerificationOptions {
+        required_signature_type: Some("dpop+jwt".into()),
+        ..VerificationOptions::default()
+    };
+    let token = key
+        .sign(Claims::create(Duration::from_secs(86400)))
+        .unwrap();
+    let res = key
+        .public_key()
+        .verify_token::<NoCustomClaims>(&token, Some(options.clone()));
+    assert!(res.is_err());
+
+    let token = key
+        .sign_with_options(
+            Claims::create(Duration::from_secs(86400)),
+            &HeaderOptions {
+                signature_type: Some("dpop+jwt".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    key.public_key()
+        .verify_token::<NoCustomClaims>(&token, Some(options.clone()))
         .unwrap();
 }

@@ -443,6 +443,37 @@
 //!
 //! As a mitigation, we highly recommend rejecting tokens that would be too large in the context of your application. That can be done by with the `max_token_length` verification option.
 //!
+//!
+//! ### Specifying header options
+//!
+//! It is possible to change the content type (`cty`) and signature type (`typ`) fields of a signed JWT by using the `sign_with_options`/`authenticate_with_options` functions, passing in a `HeaderOptions` struct:
+//!
+//! ```rust
+//! # use jwt_simple::prelude::*;
+//! # let mut key_pair = Ed25519KeyPair::generate();
+//! # let claims = Claims::create(Duration::from_secs(86400));
+//! let options = HeaderOptions {
+//!    content_type: Some("foo".into()),
+//!    signature_type: Some("foo+JWT".into()),
+//!    ..Default::default()
+//! };
+//! key_pair.sign_with_options(claims, &options).unwrap();
+//! ```
+//! By default, generated JWTs will have a signature type field containing the string "JWT", and the content type field will not be present.
+//!
+//! ### Validating content and signature types
+//!
+//! By default, `jwt_simple` ignores the `content_type` field when doing validation, and checks `signature_type` to ensure it is either exactly `JWT` or ends in `+JWT`, case insensitive, if it is present. Both fields may instead be case-insensitively compared against an expected string:
+//!
+//! ```rust
+//! # use jwt_simple::prelude::*;
+//! # let mut options = VerificationOptions::default();
+//! options.required_signature_type = Some("JWT".into());
+//! options.required_content_type = Some("foo+jwt".into());
+//! ```
+//!
+//! When validating CWTs, note that CWTs do not have a `content_type` field in their header, and therefore attempting to match a specific one by setting `required_content_type`during validation will **always result in an error**.
+//!
 //! ## Working around compilation issues with the `boring` crate
 //!
 //! As a temporary workaround for portability issues with one of the dependencies (the `boring` crate), this library can be compiled to use only Rust implementations.
@@ -747,6 +778,54 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         assert_eq!(
             decoded_metadata.certificate_sha1_thumbprint(),
             Some(thumbprint.as_ref())
+        );
+        let _ = key_pair
+            .public_key()
+            .verify_token::<NoCustomClaims>(&token, None)
+            .unwrap();
+    }
+
+    #[test]
+    fn set_header_content_type() {
+        let key_pair = Ed25519KeyPair::generate();
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key_pair
+            .sign_with_options(
+                claims,
+                &HeaderOptions {
+                    content_type: Some("foo".into()),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        let decoded_metadata = Token::decode_metadata(&token).unwrap();
+        assert_eq!(
+            decoded_metadata.jwt_header.content_type.as_deref(),
+            Some("foo")
+        );
+        let _ = key_pair
+            .public_key()
+            .verify_token::<NoCustomClaims>(&token, None)
+            .unwrap();
+    }
+
+    #[test]
+    fn set_header_signature_type() {
+        let key_pair = Ed25519KeyPair::generate();
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key_pair
+            .sign_with_options(
+                claims,
+                &HeaderOptions {
+                    signature_type: Some("etc+jwt".into()),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        let decoded_metadata = Token::decode_metadata(&token).unwrap();
+        assert_eq!(
+            decoded_metadata.jwt_header.signature_type.as_deref(),
+            Some("etc+jwt")
         );
         let _ = key_pair
             .public_key()

@@ -341,6 +341,33 @@ Also, the existing Rust crates for JSON and CBOR deserialization are not safe. A
 
 As a mitigation, we highly recommend rejecting tokens that would be too large in the context of your application. That can be done by with the `max_token_length` verification option.
 
+### Specifying header options
+
+It is possible to change the content type (`cty`) and signature type (`typ`) fields of a signed JWT by using the `sign_with_options`/`authenticate_with_options` functions, by passing in a `HeaderOptions` struct:
+
+``` rust
+let options = HeaderOptions {
+   content_type: Some("foo".into()),
+   signature_type: Some("foo+JWT".into()),
+   ..Default::default()
+};
+key_pair.sign_with_options(claims, &options).unwrap();
+```
+
+By default, generated JWTs will have a signature type field containing the string "JWT", and the content type field will not be present.
+
+### Validating content and signature types
+
+By default, `jwt_simple` ignores the `content_type` field when doing validation, and checks `signature_type` to ensure it is either exactly `JWT` or ends in `+JWT`, case insensitive, if it is present. Both fields may instead be case-insensitively compared against an expected string:
+
+```rust
+options.required_signature_type = Some("JWT".into());
+options.required_content_type = Some("foo+jwt".into());
+```
+
+When validating CWTs, note that CWTs do not have a `content_type` field in their header, and therefore attempting to match a specific one by setting `required_content_type`during validation will **always result in an error**.
+
+
 ## Working around compilation issues with the `boring` crate
 
 As a temporary workaround for portability issues with one of the dependencies (the `boring` crate), this library can be compiled to use only Rust implementations.

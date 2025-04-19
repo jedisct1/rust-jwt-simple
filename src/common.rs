@@ -28,6 +28,12 @@ pub struct VerificationOptions {
     /// Require a specific key identifier to be present
     pub required_key_id: Option<String>,
 
+    /// Require a specific signature type
+    pub required_signature_type: Option<String>,
+
+    /// Require a specific content type
+    pub required_content_type: Option<String>,
+
     /// Require a specific nonce to be present
     pub required_nonce: Option<String>,
 
@@ -61,6 +67,8 @@ impl Default for VerificationOptions {
             accept_future: false,
             required_subject: None,
             required_key_id: None,
+            required_signature_type: None,
+            required_content_type: None,
             required_nonce: None,
             allowed_issuers: None,
             allowed_audiences: None,
@@ -71,6 +79,18 @@ impl Default for VerificationOptions {
             artificial_time: None,
         }
     }
+}
+
+/// Options for header creation when constructing a token.
+#[derive(Debug, Clone, Default)]
+pub struct HeaderOptions {
+    /// The contents of the content type (`cty`) field in the JWT header. If set
+    /// to `None`, this field is not present on the serialized JWT.
+    pub content_type: Option<String>,
+    /// The contents of the signature type (`typ`) field in the JWT header. If
+    /// set to `None`, the serialized JWT's `typ` field will contain the string
+    /// "JWT".
+    pub signature_type: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
