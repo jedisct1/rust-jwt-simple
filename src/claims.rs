@@ -151,6 +151,10 @@ pub struct JWTClaims<CustomClaims> {
     )]
     pub audiences: Option<Audiences>,
 
+    /// Key identifier
+    #[serde(rename = "kid", default, skip_serializing_if = "Option::is_none")]
+    pub key_id: Option<String>,
+
     /// JWT identifier
     ///
     /// That property was originally designed to avoid replay attacks, but
@@ -229,6 +233,13 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
                 ensure!(nonce == required_nonce, JWTError::RequiredNonceMismatch);
             } else {
                 bail!(JWTError::RequiredNonceMissing);
+            }
+        }
+        if let Some(required_key_id) = &options.required_key_id {
+            if let Some(key_id) = &self.key_id {
+                ensure!(key_id == required_key_id, JWTError::RequiredKeyIdMismatch);
+            } else {
+                bail!(JWTError::RequiredKeyIdMissing);
             }
         }
         if let Some(allowed_audiences) = &options.allowed_audiences {
@@ -316,6 +327,7 @@ impl Claims {
             jwt_id: None,
             subject: None,
             nonce: None,
+            key_id: None,
             custom: NoCustomClaims {},
         }
     }
@@ -335,6 +347,7 @@ impl Claims {
             jwt_id: None,
             subject: None,
             nonce: None,
+            key_id: None,
             custom: custom_claims,
         }
     }
