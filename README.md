@@ -209,7 +209,7 @@ let claims = Claims::create(Duration::from_hours(2)).
     with_issuer("Example issuer").with_subject("Example subject");
 ```
 
-But application-defined claims can also be defined. These simply have to be present in a serializable type (this requires the `serde` crate):
+But application-defined claims can also be used. These simply have to be present in a serializable type (this requires the `serde` crate):
 
 ```rust
 #[derive(Serialize, Deserialize)]
@@ -269,7 +269,7 @@ Instead of delegating this to applications, `jwt-simple` can also create such an
 let key_id = public_key.create_key_id();
 ```
 
-This creates an text-encoded identifier for the key, attaches it, and returns it.
+This creates a text-encoded identifier for the key, attaches it, and returns it.
 
 If an identifier has been attached to a shared key or a key pair, tokens created with them will include it.
 
@@ -283,15 +283,15 @@ If an identifier has been attached to a shared key or a key pair, tokens created
 
 ### Salted keys
 
-Symmetric keys, such as the ones use with the `HS256`, `HS384`, `HS512` and `BLAKE2B` algorithms, are simple and fast, but have a major downside: signature and verification use the exact same key. Therefore, an adversary having access to the verifier key can forge arbitrary, valid tokens.
+Symmetric keys, such as the ones used with the `HS256`, `HS384`, `HS512` and `BLAKE2B` algorithms, are simple and fast, but have a major downside: signature and verification use the exact same key. Therefore, an adversary having access to the verifier key can forge arbitrary, valid tokens.
 
-Salted keys mitigate this issue the following way:
+Salted keys mitigate this issue in the following way:
 
-- A random signer salt is created, and attached to the shared key. This salt is meant to be only known by the signer.
-- Another salt is computed from the signer salt, and is meant to be used for verification.
-- The verifier salt is used to verify the signer salt, which is included in tokens, in the `salt` JWT header.
+- A random signer salt is created and attached to the shared key. This salt is meant to be known only by the signer.
+- Another salt is computed from the signer salt and is meant to be used for verification.
+- The verifier salt is used to verify the signer salt, which is included in tokens in the `salt` JWT header.
 
-If the verifier has access to tokens, it can forge arbitrary tokens. But given only the verification code and keys, this is impossible. This greatly improve the security of symmetric keys used for verification on 3rd party servers, such as CDNs.
+If the verifier has access to tokens, it can forge arbitrary tokens. But given only the verification code and keys, this is impossible. This greatly improves the security of symmetric keys used for verification on 3rd party servers, such as CDNs.
 
 A salt binds to a key, and can be of any length. The `generate_with_salt()` function generates both a random symmetric key, and a 32-byte salt.
 
@@ -365,7 +365,7 @@ options.required_signature_type = Some("JWT".into());
 options.required_content_type = Some("foo+jwt".into());
 ```
 
-When validating CWTs, note that CWTs do not have a `content_type` field in their header, and therefore attempting to match a specific one by setting `required_content_type`during validation will **always result in an error**.
+When validating CWTs, note that CWTs do not have a `content_type` field in their header, and therefore attempting to match a specific one by setting `required_content_type` during validation will **always result in an error**.
 
 
 ## Working around compilation issues with the `boring` crate

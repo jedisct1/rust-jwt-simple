@@ -14,7 +14,7 @@ readme = "README.md"
 [dependencies]
 anyhow = "1.0.98"
 blake2b_simd = "1.0.3"
-binstring = "0.1.2"
+binstring = "0.1.6"
 ciborium = { version = "0.2.2", optional = true }
 coarsetime = "0.1.36"
 ct-codecs = "1.1.3"
