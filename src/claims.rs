@@ -151,7 +151,7 @@ pub struct JWTClaims<CustomClaims> {
     )]
     pub audiences: Option<Audiences>,
 
-    /// Key identifier - Apply as_bytes() to get a byte representation if needed.
+    /// Key identifier - Apply .map(as_bytes) to get a byte representation instead of a String if needed.
     #[serde(rename = "kid", default, skip_serializing_if = "Option::is_none")]
     pub key_id: Option<String>,
 
@@ -166,7 +166,7 @@ pub struct JWTClaims<CustomClaims> {
     #[serde(rename = "jti", default, skip_serializing_if = "Option::is_none")]
     pub jwt_id: Option<String>,
 
-    /// Nonce - Apply as_bytes() to get a byte representation if needed.
+    /// Nonce - Apply .map(as_bytes) to get a byte representation instead of a String if needed.
     #[serde(rename = "nonce", default, skip_serializing_if = "Option::is_none")]
     pub nonce: Option<String>,
 
