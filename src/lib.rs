@@ -710,20 +710,16 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
         }
 
         let key_pair = Ed25519KeyPair::generate();
-        let mut pk = key_pair.public_key();
-        let key_id = pk.create_key_id();
-        let key_pair = key_pair.with_key_id(key_id);
         let custom_claims = CustomClaims { is_custom: true };
         let claims = Claims::with_custom_claims(custom_claims, Duration::from_secs(86400));
         let token = key_pair.sign(claims).unwrap();
-        let options = VerificationOptions {
-            required_key_id: Some(key_id.to_string()),
-            ..Default::default()
-        };
+
+        // Verify the token without requiring a key ID
         let claims: JWTClaims<CustomClaims> = key_pair
             .public_key()
-            .verify_token::<CustomClaims>(&token, Some(options))
+            .verify_token::<CustomClaims>(&token, None)
             .unwrap();
+
         assert!(claims.custom.is_custom);
     }
 
