@@ -182,7 +182,6 @@ impl<CustomClaims: std::fmt::Debug> std::fmt::Debug for JWTClaims<CustomClaims> 
             if s.chars().all(|c| c as u32 != 0xFFFD) {
                 format!("Some(\"{}\")", s)
             } else {
-                // Use ct_codecs::Hex to encode to hex
                 let hex_encoded = Hex::encode_to_string(s.as_bytes()).unwrap_or_default();
                 format!("Some(hex: \"{}\")", hex_encoded)
             }

@@ -52,7 +52,7 @@ A new JWT (JSON Web Tokens) implementation for Rust that focuses on simplicity, 
 
 `jwt-simple` can be compiled out of the box to WebAssembly/WASI. It is fully compatible with Fastly _Compute_ service.
 
-Important: JWT's purpose is to verify that data has been created by a party knowing a secret key. It does not provide any kind of confidentiality: JWT data is simply encoded as BASE64, and is not encrypted.
+Important: JWT's purpose is to verify that data has been created by a party knowing a secret key. It does not provide any kind of confidentiality: JWT data is simply encoded as Base64, and is not encrypted.
 
 ## Usage
 
@@ -91,7 +91,7 @@ A key can be exported as bytes with `key.to_bytes()`, and restored with `HS256Ke
 Token creation:
 
 ```rust
-/// create claims valid for 2 hours
+// create claims valid for 2 hours
 let claims = Claims::create(Duration::from_hours(2));
 let token = key.authenticate(claims)?;
 ```
@@ -130,7 +130,7 @@ options.allowed_issuers = Some(HashSet::from_strings(&["example app"]));
 let claims = key.verify_token::<NoCustomClaims>(&token, Some(options))?;
 ```
 
-Note that `allowed_issuers` and `allowed_audiences` are not strings, but sets of strings (using the `HashSet` type from the Rust standard library), as the application can allow multiple return values.
+Note that `allowed_issuers` and `allowed_audiences` are not strings, but sets of strings (using the `HashSet` type from the Rust standard library), as the application can allow multiple values.
 
 ## Signatures (asymmetric, `RS*`, `PS*`, `ES*` and `EdDSA` algorithms) example
 
@@ -185,7 +185,7 @@ Token creation and verification work the same way as with `HS*` algorithms, exce
 Token creation:
 
 ```rust
-/// create claims valid for 2 hours
+// create claims valid for 2 hours
 let claims = Claims::create(Duration::from_hours(2));
 let token = key_pair.sign(claims)?;
 ```
@@ -298,7 +298,7 @@ A salt binds to a key, and can be of any length. The `generate_with_salt()` func
 Example usage:
 
 ```rust
-/// Create a random key and a signer salt
+// Create a random key and a signer salt
 let key = HS256Key::generate_with_salt();
 let claims = Claims::create(Duration::from_secs(86400));
 let token = key.authenticate(claims).unwrap();
@@ -308,16 +308,16 @@ A salt is a `Salt` enum, because it can be either a salt for signing, or a salt 
 It can be saved and restored:
 
 ```rust
-/// Get the salt
+// Get the salt
 let salt = key.salt();
-/// Attach an existing salt to a key
+// Attach an existing salt to a key
 key.attach_salt(salt)?;
 ```
 
 Given a signer salt, the corresponding verifier salt can be computed:
 
 ```rust
-/// Compute the verifier salt, given a signer salt
+// Compute the verifier salt, given a signer salt
 let verifier_salt = key.verifier_salt()?;
 ```
 
@@ -337,13 +337,13 @@ The development code includes a `cwt` cargo feature that enables experimental pa
 
 Please note that CWT doesn't support custom claims. The required identifiers [haven't been standardized yet](https://www.iana.org/assignments/cwt/cwt.xhtml).
 
-Also, the existing Rust crates for JSON and CBOR deserialization are not safe. An untrusted party can send a serialized object that requires a lot of memory and CPU to deserialize. Band-aids have been added for JSON, but with the current Rust tooling, it would be tricky to do for CBOR.
+Also, the existing Rust crates for JSON and CBOR deserialization are not safe. An untrusted party can send a serialized object that requires a lot of memory and CPU to deserialize. Band-aids have been added for JSON, but with the current Rust tooling, it would be tricky to implement for CBOR.
 
-As a mitigation, we highly recommend rejecting tokens that would be too large in the context of your application. That can be done by with the `max_token_length` verification option.
+As a mitigation, we highly recommend rejecting tokens that would be too large in the context of your application. That can be done with the `max_token_length` verification option.
 
 ### Specifying header options
 
-It is possible to change the content type (`cty`) and signature type (`typ`) fields of a signed JWT by using the `sign_with_options`/`authenticate_with_options` functions, by passing in a `HeaderOptions` struct:
+It is possible to change the content type (`cty`) and signature type (`typ`) fields of a signed JWT by using the `sign_with_options`/`authenticate_with_options` functions and passing in a `HeaderOptions` struct:
 
 ``` rust
 let options = HeaderOptions {
@@ -372,7 +372,7 @@ When validating CWTs, note that CWTs do not have a `content_type` field in their
 
 As a temporary workaround for portability issues with one of the dependencies (the `boring` crate), this library can be compiled to use only Rust implementations.
 
-In order to do so, import the crate with `default-features=false, features=["pure-rust"]` in your Cargo configuration.
+In order to do so, import the crate with `default-features = false, features = ["pure-rust"]` in your Cargo configuration.
 
 Do not do it unconditionally. This is only required for very specific setups and targets, and only until issues with the `boring` crate have been solved. The way to configure this in Cargo may also change in future versions.
 
@@ -394,9 +394,9 @@ However, JWT is still widely used in the industry, and remains absolutely mandat
 
 This crate was designed to:
 
-- Be simple to use, even to people who are new to Rust
+- Be simple to use, even for people who are new to Rust
 - Avoid common JWT API pitfalls
-- Support features widely in use. I'd love to limit the algorithm choices to Ed25519, but other methods are required to connect to existing APIs, so just provide them (with the exception of the `None` signature method for obvious reasons).
+- Support features widely in use. I'd love to limit the algorithm choices to Ed25519, but other methods are required to connect to existing APIs, so we provide them (with the exception of the `None` signature method for obvious reasons).
 - Minimize code complexity and external dependencies
 - Automatically perform common tasks to prevent misuse. Signature verification and claims validation happen automatically instead of relying on applications.
 - Still allow power users to access everything JWT tokens include if they really need to
