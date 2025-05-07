@@ -114,6 +114,11 @@ impl Salt {
         }
     }
 
+    /// Check if the salt is empty.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Generate a new random salt.
     pub fn generate() -> Self {
         let mut salt = vec![0u8; 32];
