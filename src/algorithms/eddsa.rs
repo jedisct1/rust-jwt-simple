@@ -146,14 +146,9 @@ pub trait EdDSAKeyPairLike {
 
     fn sign_with_options<CustomClaims: Serialize + DeserializeOwned>(
         &self,
-        mut claims: JWTClaims<CustomClaims>,
+        claims: JWTClaims<CustomClaims>,
         opts: &HeaderOptions,
     ) -> Result<String, Error> {
-        // If the key pair has a key_id, add it to the claims as well
-        if let Some(key_id) = self.key_id() {
-            claims.key_id = Some(key_id.clone());
-        }
-
         let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
             .with_key_metadata(self.metadata())
             .with_options(opts);

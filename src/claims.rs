@@ -438,17 +438,6 @@ pub struct JWTClaims<CustomClaims> {
     )]
     pub audiences: Option<Audiences>,
 
-    /// The "Key ID" (`kid`) claim - identifies the key used to secure the JWT.
-    ///
-    /// This claim is typically used to select the key in situations where multiple keys
-    /// are available for verification. It provides a hint to the verifier about which key
-    /// was used to sign the token.
-    ///
-    /// This field is optional and is typically set automatically when using a key with an
-    /// attached identifier.
-    #[serde(rename = "kid", default, skip_serializing_if = "Option::is_none")]
-    pub key_id: Option<String>,
-
     /// The "JWT ID" (`jti`) claim - provides a unique identifier for the JWT.
     ///
     /// This claim creates a unique identifier for the token, which can be used to
@@ -531,7 +520,6 @@ impl<CustomClaims: std::fmt::Debug> std::fmt::Debug for JWTClaims<CustomClaims> 
             .field("issuer", &self.issuer)
             .field("subject", &self.subject)
             .field("audiences", &self.audiences)
-            .field("key_id", &self.key_id)
             .field("jwt_id", &format_args!("{}", jwt_id_display))
             .field("nonce", &format_args!("{}", nonce_display))
             .field("custom", &self.custom)
@@ -642,13 +630,6 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
                 ensure!(nonce == required_nonce, JWTError::RequiredNonceMismatch);
             } else {
                 bail!(JWTError::RequiredNonceMissing);
-            }
-        }
-        if let Some(required_key_id) = &options.required_key_id {
-            if let Some(key_id) = &self.key_id {
-                ensure!(key_id == required_key_id, JWTError::RequiredKeyIdMismatch);
-            } else {
-                bail!(JWTError::RequiredKeyIdMissing);
             }
         }
         if let Some(allowed_audiences) = &options.allowed_audiences {
@@ -936,7 +917,6 @@ impl Claims {
             jwt_id: None,
             subject: None,
             nonce: None,
-            key_id: None,
             custom: NoCustomClaims {},
         }
     }
@@ -1005,7 +985,6 @@ impl Claims {
             jwt_id: None,
             subject: None,
             nonce: None,
-            key_id: None,
             custom: custom_claims,
         }
     }
