@@ -4,3 +4,5 @@ Cargo.lock
 .vscode/
 docupdate.sh
 .zig-cache
+
+**/.claude/settings.local.json
