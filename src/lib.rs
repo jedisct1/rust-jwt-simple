@@ -713,6 +713,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
         let mut pk = key_pair.public_key();
         let key_id = pk.create_key_id();
         let key_pair = key_pair.with_key_id(key_id);
+        let public_key = key_pair.public_key(); // Get public key after setting key_id
         let custom_claims = CustomClaims { is_custom: true };
         let claims = Claims::with_custom_claims(custom_claims, Duration::from_secs(86400));
         let token = key_pair.sign(claims).unwrap();
@@ -720,8 +721,7 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
             required_key_id: Some(key_id.to_string()),
             ..Default::default()
         };
-        let claims: JWTClaims<CustomClaims> = key_pair
-            .public_key()
+        let claims: JWTClaims<CustomClaims> = public_key
             .verify_token::<CustomClaims>(&token, Some(options))
             .unwrap();
         assert!(claims.custom.is_custom);
