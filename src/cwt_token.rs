@@ -11,6 +11,7 @@ use crate::claims::*;
 use crate::common::*;
 use crate::error::*;
 use crate::jwt_header::*;
+use crate::token::TokenMetadata;
 
 pub const MAX_CWT_HEADER_LENGTH: usize = 4096;
 
@@ -18,6 +19,69 @@ pub const MAX_CWT_HEADER_LENGTH: usize = 4096;
 pub struct CWTToken;
 
 impl CWTToken {
+    /// Decode CWT token metadata that can be useful prior to signature/tag verification
+    ///
+    /// Similar to `Token::decode_metadata` but for CWT tokens.
+    pub fn decode_metadata(token: impl AsRef<[u8]>) -> Result<TokenMetadata, Error> {
+        let token = token.as_ref();
+        let token_len = token.len();
+
+        let mut parts_reader = Cursor::new(token);
+        let parts_cbor_tagged = from_cbor(&mut parts_reader)?;
+
+        let parts_cbor: &[CBORValue] = match &parts_cbor_tagged {
+            ciborium::tag::Captured::<CBORValue>(Some(tag), x) if *tag == 17 || *tag == 18 => {
+                x.as_array().ok_or(JWTError::CWTDecodingError)?
+            }
+            ciborium::tag::Captured::<CBORValue>(Some(61), x) => {
+                // Handle tag 61 (CWT tag) wrapping a COSE tag (17 or 18)
+                match x {
+                    CBORValue::Tag(inner_tag, inner_value) => {
+                        // The inner_tag should be 17 or 18 for MAC0 or Signature1
+                        ensure!(
+                            *inner_tag == 17 || *inner_tag == 18,
+                            JWTError::CWTDecodingError
+                        );
+
+                        // Extract the array inside the inner tag
+                        match inner_value.as_ref() {
+                            CBORValue::Array(arr) => arr,
+                            _ => bail!(JWTError::CWTDecodingError),
+                        }
+                    }
+                    _ => bail!(JWTError::CWTDecodingError),
+                }
+            }
+            _ => {
+                bail!(JWTError::CWTDecodingError)
+            }
+        };
+
+        ensure!(parts_cbor.len() == 4, JWTError::CWTDecodingError);
+        let header_len = token_len.saturating_sub(
+            parts_cbor[2]
+                .as_bytes()
+                .ok_or(JWTError::CWTDecodingError)?
+                .len(),
+        );
+        ensure!(header_len > 0 && header_len <= MAX_CWT_HEADER_LENGTH);
+
+        let mut jwt_header = JWTHeader::default();
+
+        // Parse protected header
+        let mut protected_reader =
+            Cursor::new(parts_cbor[0].as_bytes().ok_or(JWTError::CWTDecodingError)?);
+        let protected_cbor: CBORValue = from_cbor(&mut protected_reader)?;
+        let protected = protected_cbor.as_map().ok_or(JWTError::CWTDecodingError)?;
+        jwt_header.mix_cwt(protected)?;
+
+        // Parse unprotected header
+        let unprotected = parts_cbor[1].as_map().ok_or(JWTError::CWTDecodingError)?;
+        jwt_header.mix_cwt(unprotected)?;
+
+        Ok(TokenMetadata { jwt_header })
+    }
+
     pub(crate) fn verify<AuthenticationOrSignatureFn>(
         jwt_alg_name: &'static str,
         token: impl AsRef<[u8]>,
@@ -388,4 +452,36 @@ fn verify_with_tag_61_wrapper() {
     let mut options = VerificationOptions::default();
     options.time_tolerance = Some(Duration::from_days(20000));
     let _ = key.verify_cwt_token(token, Some(options)).unwrap();
+}
+
+#[test]
+fn decode_cwt_metadata() {
+    use ct_codecs::{Decoder, Hex};
+
+    use crate::prelude::*;
+
+    let k_hex = "e176d07d2a9f8b73553487d0b41ef9294873512c62a0471439a758420097e589";
+    let k = Hex::decode_to_vec(k_hex, None).unwrap();
+    let key = HS256Key::from_bytes(&k);
+
+    // Token from should_verify_token test
+    let token_hex = "d18443a10105a05835a60172636f6170733a2f2f61732e6578616d706c65026764616a69616a690743313233041a6296121f051a6296040f061a6296040f58206b310798de7f6b2aeff832344c2ea37674807b72a8a2cc263f1d31b1eb86139b";
+    let token = Hex::decode_to_vec(token_hex, None).unwrap();
+
+    // First check the verification works
+    let mut options = VerificationOptions::default();
+    options.time_tolerance = Some(Duration::from_days(20000));
+    let _ = key.verify_cwt_token(token.clone(), Some(options)).unwrap();
+
+    // Now test metadata extraction
+    let metadata = key.decode_cwt_metadata(token).unwrap();
+    assert_eq!(metadata.algorithm(), "HS256");
+
+    // Same token as above but wrapped in tag 61
+    let token_hex = "d83dd18443a10105a05835a60172636f6170733a2f2f61732e6578616d706c65026764616a69616a690743313233041a6296121f051a6296040f061a6296040f58206b310798de7f6b2aeff832344c2ea37674807b72a8a2cc263f1d31b1eb86139b";
+    let token = Hex::decode_to_vec(token_hex, None).unwrap();
+
+    // Test metadata extraction for tag 61 wrapped token
+    let metadata = key.decode_cwt_metadata(token).unwrap();
+    assert_eq!(metadata.algorithm(), "HS256");
 }

@@ -17,7 +17,7 @@ blake2b_simd = "1.0.3"
 binstring = "0.1.6"
 ciborium = { version = "0.2.2", optional = true }
 coarsetime = "0.1.36"
-ct-codecs = "1.1.3"
+ct-codecs = "1.1.4"
 ed25519-compact = { version = "2.1.1", features = ["pem"] }
 hmac-sha1-compact = "1.1.5"
 hmac-sha256 = { version = "1.1.8", features = ["traits010"] }

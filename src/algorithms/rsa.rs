@@ -244,6 +244,12 @@ pub trait RSAPublicKeyLike {
             },
         )
     }
+
+    /// Decode CWT token metadata that can be useful prior to signature/tag verification
+    #[cfg(feature = "cwt")]
+    fn decode_cwt_metadata(&self, token: impl AsRef<[u8]>) -> Result<TokenMetadata, Error> {
+        CWTToken::decode_metadata(token)
+    }
 }
 
 #[derive(Debug, Clone)]

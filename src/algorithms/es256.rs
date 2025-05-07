@@ -243,6 +243,12 @@ pub trait ECDSAP256PublicKeyLike {
         )
     }
 
+    /// Decode CWT token metadata that can be useful prior to signature/tag verification
+    #[cfg(feature = "cwt")]
+    fn decode_cwt_metadata(&self, token: impl AsRef<[u8]>) -> Result<TokenMetadata, Error> {
+        CWTToken::decode_metadata(token)
+    }
+
     fn create_key_id(&mut self) -> &str {
         self.set_key_id(
             Base64UrlSafeNoPadding::encode_to_string(hmac_sha256::Hash::hash(
