@@ -45,9 +45,27 @@ impl CWTToken {
         let parts_cbor_tagged = from_cbor(&mut parts_reader)?;
 
         let (tag, parts_cbor): (u64, &[CBORValue]) = match &parts_cbor_tagged {
-            ciborium::tag::Captured::<CBORValue>(Some(tag), x) => {
-                ensure!(*tag == 17 || *tag == 18, JWTError::CWTDecodingError);
+            ciborium::tag::Captured::<CBORValue>(Some(tag), x) if *tag == 17 || *tag == 18 => {
                 (*tag, x.as_array().ok_or(JWTError::CWTDecodingError)?)
+            }
+            ciborium::tag::Captured::<CBORValue>(Some(61), x) => {
+                // Handle tag 61 (CWT tag) wrapping a COSE tag (17 or 18)
+                match x {
+                    CBORValue::Tag(inner_tag, inner_value) => {
+                        // The inner_tag should be 17 or 18 for MAC0 or Signature1
+                        ensure!(
+                            *inner_tag == 17 || *inner_tag == 18,
+                            JWTError::CWTDecodingError
+                        );
+
+                        // Extract the array inside the inner tag
+                        match inner_value.as_ref() {
+                            CBORValue::Array(arr) => (*inner_tag, arr),
+                            _ => bail!(JWTError::CWTDecodingError),
+                        }
+                    }
+                    _ => bail!(JWTError::CWTDecodingError),
+                }
             }
             _ => {
                 bail!(JWTError::CWTDecodingError)
@@ -351,4 +369,23 @@ fn verify_content_type() {
     options.required_content_type = Some("JWT".into());
     let res = key.verify_cwt_token(token, Some(options));
     assert!(res.is_err());
+}
+
+#[test]
+fn verify_with_tag_61_wrapper() {
+    use ct_codecs::{Decoder, Hex};
+
+    use crate::prelude::*;
+
+    let k_hex = "e176d07d2a9f8b73553487d0b41ef9294873512c62a0471439a758420097e589";
+    let k = Hex::decode_to_vec(k_hex, None).unwrap();
+    let key = HS256Key::from_bytes(&k);
+
+    // Same token as should_verify_token but wrapped in tag 61
+    // d83d - Tag 61, followed by the original token
+    let token_hex = "d83dd18443a10105a05835a60172636f6170733a2f2f61732e6578616d706c65026764616a69616a690743313233041a6296121f051a6296040f061a6296040f58206b310798de7f6b2aeff832344c2ea37674807b72a8a2cc263f1d31b1eb86139b";
+    let token = Hex::decode_to_vec(token_hex, None).unwrap();
+    let mut options = VerificationOptions::default();
+    options.time_tolerance = Some(Duration::from_days(20000));
+    let _ = key.verify_cwt_token(token, Some(options)).unwrap();
 }
