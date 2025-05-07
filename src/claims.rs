@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::convert::TryInto;
 
 use coarsetime::{Clock, Duration, UnixTimeStamp};
-use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
+use ct_codecs::{Base64UrlSafeNoPadding, Encoder, Hex};
 use rand::RngCore;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -105,7 +105,7 @@ impl<T: ToString> From<T> for Audiences {
 /// The `CustomClaims` parameter can be set to `NoCustomClaims` if only standard
 /// claims are used, or to a user-defined type that must be `serde`-serializable
 /// if custom claims are required.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct JWTClaims<CustomClaims> {
     /// Time the claims were created at
     #[serde(
@@ -151,7 +151,7 @@ pub struct JWTClaims<CustomClaims> {
     )]
     pub audiences: Option<Audiences>,
 
-    /// Key identifier
+    /// Key identifier - Apply as_bytes() to get a byte representation if needed.
     #[serde(rename = "kid", default, skip_serializing_if = "Option::is_none")]
     pub key_id: Option<String>,
 
@@ -166,13 +166,51 @@ pub struct JWTClaims<CustomClaims> {
     #[serde(rename = "jti", default, skip_serializing_if = "Option::is_none")]
     pub jwt_id: Option<String>,
 
-    /// Nonce
+    /// Nonce - Apply as_bytes() to get a byte representation if needed.
     #[serde(rename = "nonce", default, skip_serializing_if = "Option::is_none")]
     pub nonce: Option<String>,
 
     /// Custom (application-defined) claims
     #[serde(flatten)]
     pub custom: CustomClaims,
+}
+
+impl<CustomClaims: std::fmt::Debug> std::fmt::Debug for JWTClaims<CustomClaims> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Helper function to format potentially non-UTF8 strings
+        let format_binary_string = |s: &String| -> String {
+            if s.chars().all(|c| c as u32 != 0xFFFD) {
+                format!("Some(\"{}\")", s)
+            } else {
+                // Use ct_codecs::Hex to encode to hex
+                let hex_encoded = Hex::encode_to_string(s.as_bytes()).unwrap_or_default();
+                format!("Some(hex: \"{}\")", hex_encoded)
+            }
+        };
+
+        let jwt_id_display = match &self.jwt_id {
+            Some(id) => format_binary_string(id),
+            None => "None".to_string(),
+        };
+
+        let nonce_display = match &self.nonce {
+            Some(nonce) => format_binary_string(nonce),
+            None => "None".to_string(),
+        };
+
+        f.debug_struct("JWTClaims")
+            .field("issued_at", &self.issued_at)
+            .field("expires_at", &self.expires_at)
+            .field("invalid_before", &self.invalid_before)
+            .field("issuer", &self.issuer)
+            .field("subject", &self.subject)
+            .field("audiences", &self.audiences)
+            .field("key_id", &self.key_id)
+            .field("jwt_id", &format_args!("{}", jwt_id_display))
+            .field("nonce", &format_args!("{}", nonce_display))
+            .field("custom", &self.custom)
+            .finish()
+    }
 }
 
 impl<CustomClaims> JWTClaims<CustomClaims> {
@@ -433,5 +471,25 @@ mod tests {
         options.artificial_time = Some(claims.issued_at.unwrap() - drift);
         options.time_tolerance = Some(Duration::from_mins(2));
         claims.validate(&options).unwrap();
+    }
+
+    #[test]
+    fn debug_displays_jwt_id_correctly() {
+        let exp = Duration::from_mins(10);
+
+        // Test valid UTF-8
+        let claims1 = Claims::create(exp).with_jwt_id("valid-utf8-jwt-id");
+        let debug_str1 = format!("{:?}", claims1);
+        assert!(debug_str1.contains("jwt_id: Some(\"valid-utf8-jwt-id\")"));
+
+        // Test non-UTF8 sequence
+        let mut non_utf8_jwt_id = String::new();
+        non_utf8_jwt_id.push_str("test-");
+        non_utf8_jwt_id.push(std::char::REPLACEMENT_CHARACTER); // The � character (U+FFFD)
+        non_utf8_jwt_id.push_str("-id");
+
+        let claims2 = Claims::create(exp).with_jwt_id(non_utf8_jwt_id);
+        let debug_str2 = format!("{:?}", claims2);
+        assert!(debug_str2.contains("jwt_id: Some(hex: \""));
     }
 }
