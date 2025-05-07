@@ -990,6 +990,22 @@ impl Claims {
     }
 }
 
+impl Default for JWTClaims<NoCustomClaims> {
+    fn default() -> Self {
+        JWTClaims {
+            issued_at: None,
+            expires_at: None,
+            invalid_before: None,
+            audiences: None,
+            issuer: None,
+            jwt_id: None,
+            subject: None,
+            nonce: None,
+            custom: NoCustomClaims::default(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

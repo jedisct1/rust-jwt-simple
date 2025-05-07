@@ -145,7 +145,7 @@ impl CWTToken {
         ensure!(header_len > 0 && header_len <= MAX_CWT_HEADER_LENGTH);
 
         let mut jwt_header = JWTHeader::default();
-        let mut claims: JWTClaims<NoCustomClaims> = Claims::create(Default::default());
+        let mut claims: JWTClaims<NoCustomClaims> = Default::default();
 
         let mut protected_reader =
             Cursor::new(parts_cbor[0].as_bytes().ok_or(JWTError::CWTDecodingError)?);
