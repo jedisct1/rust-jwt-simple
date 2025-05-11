@@ -206,6 +206,79 @@ pub trait MACLike {
         )
     }
 
+    /// Verify a CWT token with custom claims
+    ///
+    /// This function allows verification of CWT tokens that contain application-specific
+    /// claims beyond the standard set defined in the CWT specification.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `CustomClaims` - A struct that implements `DeserializeOwned + Default` which
+    ///   represents your application-specific claims.
+    ///
+    /// # Arguments
+    ///
+    /// * `token` - The CWT token to verify
+    /// * `options` - Optional verification options
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the verified claims (including custom claims) or an error
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// # fn main() -> Result<(), jwt_simple::Error> {
+    /// use jwt_simple::prelude::*;
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Debug, Serialize, Deserialize, Default)]
+    /// struct MyCustomClaims {
+    ///     user_role: String,
+    ///     permissions: Vec<String>,
+    /// }
+    ///
+    /// // Given a key and token bytes
+    /// let key_bytes = b"some secret key bytes";
+    /// let token_bytes = b"a CWT token in bytes"; // This would be your actual token
+    ///
+    /// let key = HS256Key::from_bytes(key_bytes);
+    /// let claims = key.verify_cwt_token_with_custom_claims::<MyCustomClaims>(
+    ///     token_bytes,
+    ///     None
+    /// )?;
+    ///
+    /// // Access verified custom claims
+    /// println!("User role: {}", claims.custom.user_role);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(feature = "cwt")]
+    fn verify_cwt_token_with_custom_claims<CustomClaims>(
+        &self,
+        token: impl AsRef<[u8]>,
+        options: Option<VerificationOptions>,
+    ) -> Result<JWTClaims<CustomClaims>, Error>
+    where
+        CustomClaims: DeserializeOwned + Default + 'static,
+    {
+        CWTToken::verify(
+            Self::jwt_alg_name(),
+            token,
+            options,
+            |authenticated, authentication_tag| {
+                ensure!(
+                    timingsafe_eq(
+                        &self.authentication_tag(authenticated.as_bytes()),
+                        authentication_tag
+                    ),
+                    JWTError::InvalidAuthenticationTag
+                );
+                Ok(())
+            },
+        )
+    }
+
     /// Decode CWT token metadata that can be useful prior to signature/tag verification
     #[cfg(feature = "cwt")]
     fn decode_cwt_metadata(&self, token: impl AsRef<[u8]>) -> Result<TokenMetadata, Error> {
@@ -290,6 +363,65 @@ impl HS256Key {
         self.key_id = Some(key_id.to_string());
         self
     }
+
+    /// Verify a CWT token with custom claims
+    ///
+    /// This function allows verification of CWT tokens that contain application-specific
+    /// claims beyond the standard set defined in the CWT specification.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `CustomClaims` - A struct that implements `DeserializeOwned + Default` which
+    ///   represents your application-specific claims.
+    ///
+    /// # Arguments
+    ///
+    /// * `token` - The CWT token to verify
+    /// * `options` - Optional verification options
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the verified claims (including custom claims) or an error
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// # fn main() -> Result<(), jwt_simple::Error> {
+    /// use jwt_simple::prelude::*;
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Debug, Serialize, Deserialize, Default)]
+    /// struct MyCustomClaims {
+    ///     user_role: String,
+    ///     permissions: Vec<String>,
+    /// }
+    ///
+    /// // Given a key and token bytes
+    /// let key_bytes = b"some secret key bytes";
+    /// let token_bytes = b"a CWT token in bytes"; // This would be your actual token
+    ///
+    /// let key = HS256Key::from_bytes(key_bytes);
+    /// let claims = key.verify_cwt_token_with_custom_claims::<MyCustomClaims>(
+    ///     token_bytes,
+    ///     None
+    /// )?;
+    ///
+    /// // Access verified custom claims
+    /// println!("User role: {}", claims.custom.user_role);
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[cfg(feature = "cwt")]
+    pub fn verify_cwt_token_with_custom_claims<CustomClaims>(
+        &self,
+        token: impl AsRef<[u8]>,
+        options: Option<VerificationOptions>,
+    ) -> Result<JWTClaims<CustomClaims>, Error>
+    where
+        CustomClaims: DeserializeOwned + Default + 'static,
+    {
+        <Self as MACLike>::verify_cwt_token_with_custom_claims::<CustomClaims>(self, token, options)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -358,6 +490,36 @@ impl HS512Key {
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
+    }
+
+    /// Verify a CWT token with custom claims
+    ///
+    /// This function allows verification of CWT tokens that contain application-specific
+    /// claims beyond the standard set defined in the CWT specification.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `CustomClaims` - A struct that implements `DeserializeOwned + Default` which
+    ///   represents your application-specific claims.
+    ///
+    /// # Arguments
+    ///
+    /// * `token` - The CWT token to verify
+    /// * `options` - Optional verification options
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the verified claims (including custom claims) or an error
+    #[cfg(feature = "cwt")]
+    pub fn verify_cwt_token_with_custom_claims<CustomClaims>(
+        &self,
+        token: impl AsRef<[u8]>,
+        options: Option<VerificationOptions>,
+    ) -> Result<JWTClaims<CustomClaims>, Error>
+    where
+        CustomClaims: DeserializeOwned + Default + 'static,
+    {
+        <Self as MACLike>::verify_cwt_token_with_custom_claims::<CustomClaims>(self, token, options)
     }
 }
 
@@ -428,6 +590,36 @@ impl HS384Key {
         self.key_id = Some(key_id.to_string());
         self
     }
+
+    /// Verify a CWT token with custom claims
+    ///
+    /// This function allows verification of CWT tokens that contain application-specific
+    /// claims beyond the standard set defined in the CWT specification.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `CustomClaims` - A struct that implements `DeserializeOwned + Default` which
+    ///   represents your application-specific claims.
+    ///
+    /// # Arguments
+    ///
+    /// * `token` - The CWT token to verify
+    /// * `options` - Optional verification options
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the verified claims (including custom claims) or an error
+    #[cfg(feature = "cwt")]
+    pub fn verify_cwt_token_with_custom_claims<CustomClaims>(
+        &self,
+        token: impl AsRef<[u8]>,
+        options: Option<VerificationOptions>,
+    ) -> Result<JWTClaims<CustomClaims>, Error>
+    where
+        CustomClaims: DeserializeOwned + Default + 'static,
+    {
+        <Self as MACLike>::verify_cwt_token_with_custom_claims::<CustomClaims>(self, token, options)
+    }
 }
 
 //
@@ -493,6 +685,36 @@ impl Blake2bKey {
             key: HMACKey::generate(),
             key_id: None,
         }
+    }
+
+    /// Verify a CWT token with custom claims
+    ///
+    /// This function allows verification of CWT tokens that contain application-specific
+    /// claims beyond the standard set defined in the CWT specification.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `CustomClaims` - A struct that implements `DeserializeOwned + Default` which
+    ///   represents your application-specific claims.
+    ///
+    /// # Arguments
+    ///
+    /// * `token` - The CWT token to verify
+    /// * `options` - Optional verification options
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the verified claims (including custom claims) or an error
+    #[cfg(feature = "cwt")]
+    pub fn verify_cwt_token_with_custom_claims<CustomClaims>(
+        &self,
+        token: impl AsRef<[u8]>,
+        options: Option<VerificationOptions>,
+    ) -> Result<JWTClaims<CustomClaims>, Error>
+    where
+        CustomClaims: DeserializeOwned + Default + 'static,
+    {
+        <Self as MACLike>::verify_cwt_token_with_custom_claims::<CustomClaims>(self, token, options)
     }
 
     pub fn generate_with_salt() -> Self {

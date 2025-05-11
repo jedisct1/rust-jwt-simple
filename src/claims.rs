@@ -528,6 +528,24 @@ impl<CustomClaims: std::fmt::Debug> std::fmt::Debug for JWTClaims<CustomClaims> 
 }
 
 impl<CustomClaims> JWTClaims<CustomClaims> {
+    /// Create a new empty JWTClaims instance with default values
+    pub fn new() -> Self
+    where
+        CustomClaims: Default,
+    {
+        JWTClaims {
+            issued_at: None,
+            expires_at: None,
+            invalid_before: None,
+            audiences: None,
+            issuer: None,
+            subject: None,
+            jwt_id: None,
+            nonce: None,
+            custom: CustomClaims::default(),
+        }
+    }
+
     /// Validates the claims against the provided verification options.
     ///
     /// This method performs a thorough validation of all standard JWT claims according to

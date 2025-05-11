@@ -233,10 +233,9 @@ pub trait RSAPublicKeyLike {
                 let pkey = PKey::from_rsa(self.public_key().as_ref().clone())?;
                 let mut verifier = Verifier::new(digest, &pkey)?;
                 verifier.update(authenticated.as_bytes())?;
-                if verifier
-                    .verify(&signature)
-                    .map_err(|_| JWTError::InvalidSignature)?
-                    == false
+                if !(verifier
+                    .verify(signature)
+                    .map_err(|_| JWTError::InvalidSignature)?)
                 {
                     bail!(JWTError::InvalidSignature);
                 }

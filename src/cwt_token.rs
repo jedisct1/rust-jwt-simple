@@ -1,11 +1,13 @@
 use std::convert::TryInto;
 use std::io::Cursor;
 
+use anyhow::ensure;
 use binstring::*;
 use ciborium::de::from_reader as from_cbor;
 use ciborium::ser::into_writer as to_cbor;
 use ciborium::value::Value as CBORValue;
 use coarsetime::Duration;
+use serde::de::DeserializeOwned;
 
 use crate::claims::*;
 use crate::common::*;
@@ -14,6 +16,8 @@ use crate::jwt_header::*;
 use crate::token::TokenMetadata;
 
 pub const MAX_CWT_HEADER_LENGTH: usize = 4096;
+pub const MAX_CUSTOM_CLAIMS_COUNT: usize = 64;
+pub const MAX_CUSTOM_CLAIMS_SIZE: usize = 16384;
 
 /// Utilities to get information about a CWT token
 pub struct CWTToken;
@@ -82,13 +86,14 @@ impl CWTToken {
         Ok(TokenMetadata { jwt_header })
     }
 
-    pub(crate) fn verify<AuthenticationOrSignatureFn>(
+    pub(crate) fn verify<CustomClaims, AuthenticationOrSignatureFn>(
         jwt_alg_name: &'static str,
         token: impl AsRef<[u8]>,
         options: Option<VerificationOptions>,
         authentication_or_signature_fn: AuthenticationOrSignatureFn,
-    ) -> Result<JWTClaims<NoCustomClaims>, Error>
+    ) -> Result<JWTClaims<CustomClaims>, Error>
     where
+        CustomClaims: DeserializeOwned + Default + 'static,
         AuthenticationOrSignatureFn: FnOnce(&str, &[u8]) -> Result<(), Error>,
     {
         let options = options.unwrap_or_default();
@@ -145,7 +150,7 @@ impl CWTToken {
         ensure!(header_len > 0 && header_len <= MAX_CWT_HEADER_LENGTH);
 
         let mut jwt_header = JWTHeader::default();
-        let mut claims: JWTClaims<NoCustomClaims> = Default::default();
+        let mut claims = JWTClaims::<CustomClaims>::new();
 
         let mut protected_reader =
             Cursor::new(parts_cbor[0].as_bytes().ok_or(JWTError::CWTDecodingError)?);
@@ -210,78 +215,169 @@ impl CWTToken {
             Cursor::new(parts_cbor[2].as_bytes().ok_or(JWTError::CWTDecodingError)?);
         let claims_cbor: CBORValue = from_cbor(&mut claims_reader)?;
         let claims_ = claims_cbor.as_map().ok_or(JWTError::CWTDecodingError)?;
-        claims.mix_cwt(claims_)?;
+        claims.mix_cwt::<CustomClaims>(claims_)?;
 
         claims.validate(&options)?;
         Ok(claims)
     }
 }
 
-impl<CustomClaims> JWTClaims<CustomClaims> {
-    fn mix_cwt(&mut self, cwt: &[(CBORValue, CBORValue)]) -> Result<(), Error> {
+// Helper function to deserialize custom claims
+fn deserialize_custom_claims<T: DeserializeOwned + Default>(
+    custom_claims: &std::collections::HashMap<String, CBORValue>,
+) -> Result<T, Error> {
+    // Add size limits
+    if custom_claims.len() > MAX_CUSTOM_CLAIMS_COUNT {
+        bail!(JWTError::CWTDecodingError);
+    }
+
+    // Create a CBOR map value from the custom claims
+    let custom_cbor = CBORValue::Map(
+        custom_claims
+            .iter()
+            .map(|(k, v)| (CBORValue::Text(k.clone()), v.clone()))
+            .collect(),
+    );
+
+    // Serialize to bytes
+    let mut bytes = Vec::new();
+    to_cbor(&custom_cbor, &mut bytes).map_err(|_| JWTError::CWTDecodingError)?;
+
+    // Check size limits for serialized data
+    if bytes.len() > MAX_CUSTOM_CLAIMS_SIZE {
+        bail!(JWTError::CWTDecodingError);
+    }
+
+    // Deserialize into the custom type
+    let result = from_cbor::<T, _>(std::io::Cursor::new(bytes));
+    match result {
+        Ok(custom) => Ok(custom),
+        Err(_) => Ok(T::default()), // Fall back to default on deserialization errors
+    }
+}
+
+impl<CustomClaims> JWTClaims<CustomClaims>
+where
+    CustomClaims: DeserializeOwned + Default,
+{
+    fn mix_cwt<T: DeserializeOwned + Default + 'static>(
+        &mut self,
+        cwt: &[(CBORValue, CBORValue)],
+    ) -> Result<(), Error>
+    where
+        CustomClaims: 'static,
+    {
+        // Collection for non-standard claims
+        let mut custom_claims_map = std::collections::HashMap::new();
+
         for (key, value) in cwt {
-            let key_id: i32 = key
-                .as_integer()
-                .ok_or(JWTError::CWTDecodingError)?
-                .try_into()
-                .map_err(|_| JWTError::CWTDecodingError)?;
-            match key_id {
-                I_IAT => {
-                    let ts: u64 = if let Some(ts) = value.as_integer() {
-                        ts.try_into().map_err(|_| JWTError::CWTDecodingError)?
-                    } else if let Some(ts) = value.as_float() {
-                        let f: f64 = ts.try_into().map_err(|_| JWTError::CWTDecodingError)?;
-                        f.round() as _
-                    } else {
-                        bail!(JWTError::CWTDecodingError)
-                    };
-                    self.issued_at = Some(Duration::from_secs(ts));
+            if let Some(key_int) = key.as_integer() {
+                // Try converting to i32 to match against known claim IDs
+                if let Ok(key_id) = TryInto::<i32>::try_into(key_int) {
+                    match key_id {
+                        I_IAT => {
+                            let ts: u64 = if let Some(ts) = value.as_integer() {
+                                ts.try_into().map_err(|_| JWTError::CWTDecodingError)?
+                            } else if let Some(ts) = value.as_float() {
+                                let f: f64 =
+                                    ts.try_into().map_err(|_| JWTError::CWTDecodingError)?;
+                                f.round() as _
+                            } else {
+                                bail!(JWTError::CWTDecodingError)
+                            };
+                            self.issued_at = Some(Duration::from_secs(ts));
+                        }
+                        I_EXP => {
+                            let ts: u64 = if let Some(ts) = value.as_integer() {
+                                ts.try_into().map_err(|_| JWTError::CWTDecodingError)?
+                            } else if let Some(ts) = value.as_float() {
+                                let f: f64 =
+                                    ts.try_into().map_err(|_| JWTError::CWTDecodingError)?;
+                                f.round() as _
+                            } else {
+                                bail!(JWTError::CWTDecodingError)
+                            };
+                            self.expires_at = Some(Duration::from_secs(ts));
+                        }
+                        I_NBF => {
+                            let ts: u64 = if let Some(ts) = value.as_integer() {
+                                ts.try_into().map_err(|_| JWTError::CWTDecodingError)?
+                            } else if let Some(ts) = value.as_float() {
+                                let f: f64 =
+                                    ts.try_into().map_err(|_| JWTError::CWTDecodingError)?;
+                                f.round() as _
+                            } else {
+                                bail!(JWTError::CWTDecodingError)
+                            };
+                            self.invalid_before = Some(Duration::from_secs(ts));
+                        }
+                        I_ISS => {
+                            self.issuer =
+                                Some(value.as_text().ok_or(JWTError::CWTDecodingError)?.into());
+                        }
+                        I_SUB => {
+                            self.subject =
+                                Some(value.as_text().ok_or(JWTError::CWTDecodingError)?.into());
+                        }
+                        I_AUD => {
+                            let audiences =
+                                value.as_text().ok_or(JWTError::CWTDecodingError)?.into();
+                            self.audiences = Some(Audiences::AsString(audiences));
+                        }
+                        I_CTI => {
+                            let v = value.as_bytes().ok_or(JWTError::CWTDecodingError)?;
+                            let v = BinString::from(v).into();
+                            self.jwt_id = Some(v);
+                        }
+                        I_NONCE => {
+                            let v = value.as_bytes().ok_or(JWTError::CWTDecodingError)?;
+                            let v = BinString::from(v).into();
+                            self.nonce = Some(v);
+                        }
+                        _ => {
+                            // This is a custom claim with integer key, store it
+                            let claim_key = format!("{}", key_id);
+                            if custom_claims_map.contains_key(&claim_key) {
+                                bail!(JWTError::DuplicateCWTClaimKey(claim_key));
+                            }
+                            custom_claims_map.insert(claim_key, value.clone());
+                        }
+                    }
+                } else {
+                    // Integer that couldn't fit in i32 - treat as custom claim
+                    // Convert Integer to string representation
+                    let key_str = format!("int_{:?}", key_int);
+                    if custom_claims_map.contains_key(&key_str) {
+                        bail!(JWTError::DuplicateCWTClaimKey(key_str));
+                    }
+                    custom_claims_map.insert(key_str, value.clone());
                 }
-                I_EXP => {
-                    let ts: u64 = if let Some(ts) = value.as_integer() {
-                        ts.try_into().map_err(|_| JWTError::CWTDecodingError)?
-                    } else if let Some(ts) = value.as_float() {
-                        let f: f64 = ts.try_into().map_err(|_| JWTError::CWTDecodingError)?;
-                        f.round() as _
-                    } else {
-                        bail!(JWTError::CWTDecodingError)
-                    };
-                    self.expires_at = Some(Duration::from_secs(ts));
+            } else if let Some(key_text) = key.as_text() {
+                // Custom claim with text key
+                let key_str = key_text.to_string();
+                if custom_claims_map.contains_key(&key_str) {
+                    bail!(JWTError::DuplicateCWTClaimKey(key_str));
                 }
-                I_NBF => {
-                    let ts: u64 = if let Some(ts) = value.as_integer() {
-                        ts.try_into().map_err(|_| JWTError::CWTDecodingError)?
-                    } else if let Some(ts) = value.as_float() {
-                        let f: f64 = ts.try_into().map_err(|_| JWTError::CWTDecodingError)?;
-                        f.round() as _
-                    } else {
-                        bail!(JWTError::CWTDecodingError)
-                    };
-                    self.invalid_before = Some(Duration::from_secs(ts));
+                custom_claims_map.insert(key_str, value.clone());
+            } else {
+                // Non-integer/text key - treat as custom claim with a special prefix
+                let key_str = format!("custom_{}", custom_claims_map.len());
+                if custom_claims_map.contains_key(&key_str) {
+                    bail!(JWTError::DuplicateCWTClaimKey(key_str));
                 }
-                I_ISS => {
-                    self.issuer = Some(value.as_text().ok_or(JWTError::CWTDecodingError)?.into());
-                }
-                I_SUB => {
-                    self.subject = Some(value.as_text().ok_or(JWTError::CWTDecodingError)?.into());
-                }
-                I_AUD => {
-                    let audiences = value.as_text().ok_or(JWTError::CWTDecodingError)?.into();
-                    self.audiences = Some(Audiences::AsString(audiences));
-                }
-                I_CTI => {
-                    let v = value.as_bytes().ok_or(JWTError::CWTDecodingError)?;
-                    let v = BinString::from(v).into();
-                    self.jwt_id = Some(v);
-                }
-                I_NONCE => {
-                    let v = value.as_bytes().ok_or(JWTError::CWTDecodingError)?;
-                    let v = BinString::from(v).into();
-                    self.nonce = Some(v);
-                }
-                _ => {}
+                custom_claims_map.insert(key_str, value.clone());
             }
         }
+
+        // Process custom claims if any were found
+        if !custom_claims_map.is_empty()
+            && std::any::TypeId::of::<T>() == std::any::TypeId::of::<CustomClaims>()
+        {
+            // Only set custom claims if the type parameter matches
+            let custom: CustomClaims = deserialize_custom_claims(&custom_claims_map)?;
+            self.custom = custom;
+        }
+
         Ok(())
     }
 }
@@ -484,4 +580,137 @@ fn decode_cwt_metadata() {
     // Test metadata extraction for tag 61 wrapped token
     let metadata = key.decode_cwt_metadata(token).unwrap();
     assert_eq!(metadata.algorithm(), "HS256");
+}
+
+#[test]
+fn verify_cwt_with_custom_claims() {
+    use ct_codecs::{Decoder, Hex};
+    use serde::{Deserialize, Serialize};
+
+    use crate::prelude::*;
+
+    // Define a custom claims structure that matches what's in our test token
+    #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
+    struct CustomData {
+        // We'll define fields that might match custom claims in our test token
+        // In a real case, you'd define fields that match your application's custom claims
+        #[serde(skip_serializing_if = "Option::is_none")]
+        coap_uri: Option<String>,
+    }
+
+    let k_hex = "e176d07d2a9f8b73553487d0b41ef9294873512c62a0471439a758420097e589";
+    let k = Hex::decode_to_vec(k_hex, None).unwrap();
+    let key = HS256Key::from_bytes(&k);
+
+    // Use an existing test token
+    let token_hex = "d18443a10105a05835a60172636f6170733a2f2f61732e6578616d706c65026764616a69616a690743313233041a6296121f051a6296040f061a6296040f58206b310798de7f6b2aeff832344c2ea37674807b72a8a2cc263f1d31b1eb86139b";
+    let token = Hex::decode_to_vec(token_hex, None).unwrap();
+
+    let mut options = VerificationOptions::default();
+    options.time_tolerance = Some(Duration::from_days(20000));
+
+    // Verify with custom claims
+    let claims = key
+        .verify_cwt_token_with_custom_claims::<CustomData>(token.clone(), Some(options.clone()))
+        .unwrap();
+
+    // Check standard claims
+    assert!(claims.issuer.is_some());
+
+    // The standard claims should be there
+    assert_eq!(claims.issuer.unwrap(), "coaps://as.example");
+
+    // HS384 verification
+    let key384 = HS384Key::from_bytes(&k);
+    let claims384 = key384
+        .verify_cwt_token_with_custom_claims::<CustomData>(token.clone(), Some(options.clone()));
+    // This should fail since token was created with HS256, not HS384
+    assert!(claims384.is_err());
+
+    // Test with other algorithms
+    let key512 = HS512Key::from_bytes(&k);
+    let claims512 = key512
+        .verify_cwt_token_with_custom_claims::<CustomData>(token.clone(), Some(options.clone()));
+    // This should fail since token was created with HS256, not HS512
+    assert!(claims512.is_err());
+
+    // Test with Blake2b
+    let blake2b = Blake2bKey::from_bytes(&k);
+    let claims_blake = blake2b
+        .verify_cwt_token_with_custom_claims::<CustomData>(token.clone(), Some(options.clone()));
+    // This should fail since token was created with HS256, not Blake2b
+    assert!(claims_blake.is_err());
+
+    // Create a more complex custom claims type that should fail
+    #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
+    struct ComplexCustomData {
+        required_field: String,
+    }
+
+    // Trying to parse as a different custom claims type should give default values (fail gracefully)
+    let complex_claims = key
+        .verify_cwt_token_with_custom_claims::<ComplexCustomData>(token, Some(options))
+        .unwrap();
+    assert_eq!(complex_claims.custom, ComplexCustomData::default());
+}
+
+#[test]
+fn test_duplicate_cwt_claim_key() {
+    use ciborium::value::Value as CBORValue;
+
+    // Create duplicate keys in the CBOR map
+    let mut claims = JWTClaims::<NoCustomClaims>::new();
+
+    // Create a CBOR map with duplicate keys
+    let mut cwt = Vec::new();
+
+    // Standard claim key
+    cwt.push((CBORValue::Integer(123.into()), CBORValue::Text("value1".into())));
+
+    // Duplicate claim key (same integer key)
+    cwt.push((CBORValue::Integer(123.into()), CBORValue::Text("value2".into())));
+
+    // Attempt to mix the claims - should return a DuplicateCWTClaimKey error
+    let result = claims.mix_cwt::<NoCustomClaims>(&cwt);
+
+    assert!(result.is_err());
+    match result.unwrap_err().downcast::<JWTError>() {
+        Ok(jwt_error) => {
+            match jwt_error {
+                JWTError::DuplicateCWTClaimKey(key) => {
+                    assert_eq!(key, "123");
+                },
+                err => panic!("Expected DuplicateCWTClaimKey error, got: {:?}", err),
+            }
+        },
+        Err(err) => panic!("Expected JWTError, got: {:?}", err),
+    }
+
+    // Test with duplicate text keys
+    let mut cwt = Vec::new();
+    cwt.push((CBORValue::Text("test_key".into()), CBORValue::Text("value1".into())));
+    cwt.push((CBORValue::Text("test_key".into()), CBORValue::Text("value2".into())));
+
+    let result = claims.mix_cwt::<NoCustomClaims>(&cwt);
+
+    assert!(result.is_err());
+    match result.unwrap_err().downcast::<JWTError>() {
+        Ok(jwt_error) => {
+            match jwt_error {
+                JWTError::DuplicateCWTClaimKey(key) => {
+                    assert_eq!(key, "test_key");
+                },
+                err => panic!("Expected DuplicateCWTClaimKey error, got: {:?}", err),
+            }
+        },
+        Err(err) => panic!("Expected JWTError, got: {:?}", err),
+    }
+
+    // Test with non-duplicate keys (should succeed)
+    let mut cwt = Vec::new();
+    cwt.push((CBORValue::Integer(123.into()), CBORValue::Text("value1".into())));
+    cwt.push((CBORValue::Integer(124.into()), CBORValue::Text("value2".into())));
+
+    let result = claims.mix_cwt::<NoCustomClaims>(&cwt);
+    assert!(result.is_ok());
 }

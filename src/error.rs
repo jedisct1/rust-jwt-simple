@@ -73,6 +73,8 @@ pub enum JWTError {
     TokenTooLong,
     #[error("Missing salt")]
     MissingSalt,
+    #[error("Duplicate claim key in CWT: {0}")]
+    DuplicateCWTClaimKey(String),
 }
 
 impl From<&str> for JWTError {
