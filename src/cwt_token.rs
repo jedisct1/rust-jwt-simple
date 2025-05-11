@@ -20,6 +20,44 @@ pub const MAX_CUSTOM_CLAIMS_COUNT: usize = 64;
 pub const MAX_CUSTOM_CLAIMS_SIZE: usize = 16384;
 
 /// Utilities to get information about a CWT token
+///
+/// This struct provides functionality for working with CBOR Web Tokens (CWT),
+/// including decoding metadata and verifying tokens.
+///
+/// CWT tokens use CBOR (Concise Binary Object Representation) instead of JSON,
+/// making them more compact than JWTs, which is beneficial for constrained environments.
+///
+/// # Custom Claims in CWT
+///
+/// CWT differs from JWT in several ways, including how claims are represented.
+/// Most notably, CWT uses integer claim keys instead of string keys. When working
+/// with custom claims in CWT, you need to account for this difference.
+///
+/// ## Integer Keys in Custom Claims
+///
+/// When the library processes CWT tokens with custom claims that have integer keys:
+///
+/// 1. Integer keys within the i32 range are converted to string representations
+///    (e.g., integer `123` becomes string `"123"`)
+/// 2. Integer keys outside the i32 range have the prefix "int_" added
+///    (e.g., large integer becomes `"int_<value>"`)
+///
+/// To define a custom claims struct that properly maps these keys:
+///
+/// ```
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
+/// struct CustomCWTClaims {
+///     // For claim with key "123" (integer 123 in CWT)
+///     #[serde(rename = "123")]
+///     claim_123: Option<String>,
+///
+///     // For claim with key "456" (integer 456 in CWT)
+///     #[serde(rename = "456")]
+///     claim_456: Option<u64>
+/// }
+/// ```
 pub struct CWTToken;
 
 impl CWTToken {
@@ -222,7 +260,45 @@ impl CWTToken {
     }
 }
 
-// Helper function to deserialize custom claims
+/// Helper function to deserialize custom claims
+///
+/// This function converts a map of custom claims from the CWT token into the custom claims type.
+///
+/// # Integer-based Claim Keys in CWT
+///
+/// In CWT, claim keys can be integers rather than strings (unlike in JWT which uses string keys).
+/// When a CWT token has integer keys for custom claims, they are converted to strings in the following way:
+///
+/// 1. Regular integer claim IDs (i32 values) are converted to their string representation (e.g., `123` becomes `"123"`)
+/// 2. Large integers that can't fit in i32 are prefixed with "int_" (e.g., a larger integer becomes `"int_<value>"`)
+///
+/// ## Defining Custom Claims Struct for CWT Integer Keys
+///
+/// When creating a custom claims struct for CWT tokens with integer keys, you should:
+///
+/// ```
+/// use serde::{Deserialize, Serialize};
+///
+/// #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
+/// struct CustomCWTClaims {
+///     // For claim with key "123" (integer 123 in CWT)
+///     #[serde(rename = "123")]
+///     claim_123: Option<String>,
+///
+///     // For claim with key "456" (integer 456 in CWT)
+///     #[serde(rename = "456")]
+///     claim_456: Option<u64>,
+///
+///     // For large integers beyond i32 range with prefix
+///     #[serde(rename = "int_79228162514264337593543950336")]
+///     large_int_claim: Option<bool>,
+/// }
+/// ```
+///
+/// # Handling Duplicate Keys
+///
+/// Since CWT 1.0, the library will return a `DuplicateCWTClaimKey` error if a claim with the same key
+/// is encountered more than once in a token.
 fn deserialize_custom_claims<T: DeserializeOwned + Default>(
     custom_claims: &std::collections::HashMap<String, CBORValue>,
 ) -> Result<T, Error> {
