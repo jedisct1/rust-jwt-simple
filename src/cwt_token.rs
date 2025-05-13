@@ -908,10 +908,82 @@ mod cwt_catu_tests {
         extension: Option<CATMatch>,
     }
 
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    enum RenewalType {
+        Automatic = 0,
+        Cookie = 1,
+        Header = 2,
+        Redirect = 3,
+    }
+
+    // Rust enums are not constants. If we want to use them like regular
+    // values, a custom deserializer needs to be registered.
+    // Custom deserializer for RenewalType
+    fn deserialize_renewal_type<'de, D>(deserializer: D) -> Result<Option<RenewalType>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde::de::Error;
+
+        // First try to deserialize as u64
+        let value_opt: Option<u64> = Option::deserialize(deserializer)?;
+
+        match value_opt {
+            None => Ok(None),
+            Some(value) => match value {
+                0 => Ok(Some(RenewalType::Automatic)),
+                1 => Ok(Some(RenewalType::Cookie)),
+                2 => Ok(Some(RenewalType::Header)),
+                3 => Ok(Some(RenewalType::Redirect)),
+                _ => Err(D::Error::custom(format!(
+                    "Invalid RenewalType value: {}",
+                    value
+                ))),
+            },
+        }
+    }
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    enum RenewalCodeLabel {
+        RenewalType = 0,
+        ExpirationExtension = 1,
+        RenewalDeadline = 2,
+        NameForCookie = 3,
+        NameForHeader = 4,
+        AdditionalCookieParameters = 5,
+        AdditionalHeaderParameters = 6,
+        StatusCodeForRedirects = 7,
+    }
+
+    #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
+    struct CATRClaims {
+        #[serde(rename = "0")]
+        #[serde(deserialize_with = "deserialize_renewal_type")]
+        renewal_type: Option<RenewalType>, // Using RenewalType enum instead of directly a u64 requires a custom deserializer. It would probably easier to just use Option<u64>, but this is for the example.
+        #[serde(rename = "1")]
+        renewal_expadd: Option<u64>, // Value is 900 in the CBOR data
+        #[serde(rename = "4")]
+        header_name: Option<String>, // Value is "X-PV-CDN-Access-Token" in the CBOR data
+
+        // These fields are not present in the actual CBOR data, but keep them as Optional
+        #[serde(rename = "2")]
+        renewal_deadline: Option<u64>,
+        #[serde(rename = "3")]
+        renewal_cookie_name: Option<String>,
+        #[serde(rename = "5")]
+        renewal_cookie_params: Option<Vec<String>>,
+        #[serde(rename = "6")]
+        renewal_header_params: Option<Vec<String>>,
+        #[serde(rename = "7")]
+        renewal_code_label: Option<RenewalCodeLabel>,
+    }
+
     #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
     struct ZonRefreshTokenClaims {
         #[serde(rename = "312")]
         catu: Option<CATUClaims>,
+        #[serde(rename = "323")]
+        catr: Option<CATRClaims>,
     }
 
     /// Test that verifies proper deserialization of CWT tokens with nested CBOR structures
