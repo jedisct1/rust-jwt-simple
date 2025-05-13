@@ -741,52 +741,169 @@ fn test_duplicate_cwt_claim_key() {
     let mut cwt = Vec::new();
 
     // Standard claim key
-    cwt.push((CBORValue::Integer(123.into()), CBORValue::Text("value1".into())));
+    cwt.push((
+        CBORValue::Integer(123.into()),
+        CBORValue::Text("value1".into()),
+    ));
 
     // Duplicate claim key (same integer key)
-    cwt.push((CBORValue::Integer(123.into()), CBORValue::Text("value2".into())));
+    cwt.push((
+        CBORValue::Integer(123.into()),
+        CBORValue::Text("value2".into()),
+    ));
 
     // Attempt to mix the claims - should return a DuplicateCWTClaimKey error
     let result = claims.mix_cwt::<NoCustomClaims>(&cwt);
 
     assert!(result.is_err());
     match result.unwrap_err().downcast::<JWTError>() {
-        Ok(jwt_error) => {
-            match jwt_error {
-                JWTError::DuplicateCWTClaimKey(key) => {
-                    assert_eq!(key, "123");
-                },
-                err => panic!("Expected DuplicateCWTClaimKey error, got: {:?}", err),
+        Ok(jwt_error) => match jwt_error {
+            JWTError::DuplicateCWTClaimKey(key) => {
+                assert_eq!(key, "123");
             }
+            err => panic!("Expected DuplicateCWTClaimKey error, got: {:?}", err),
         },
         Err(err) => panic!("Expected JWTError, got: {:?}", err),
     }
 
     // Test with duplicate text keys
     let mut cwt = Vec::new();
-    cwt.push((CBORValue::Text("test_key".into()), CBORValue::Text("value1".into())));
-    cwt.push((CBORValue::Text("test_key".into()), CBORValue::Text("value2".into())));
+    cwt.push((
+        CBORValue::Text("test_key".into()),
+        CBORValue::Text("value1".into()),
+    ));
+    cwt.push((
+        CBORValue::Text("test_key".into()),
+        CBORValue::Text("value2".into()),
+    ));
 
     let result = claims.mix_cwt::<NoCustomClaims>(&cwt);
 
     assert!(result.is_err());
     match result.unwrap_err().downcast::<JWTError>() {
-        Ok(jwt_error) => {
-            match jwt_error {
-                JWTError::DuplicateCWTClaimKey(key) => {
-                    assert_eq!(key, "test_key");
-                },
-                err => panic!("Expected DuplicateCWTClaimKey error, got: {:?}", err),
+        Ok(jwt_error) => match jwt_error {
+            JWTError::DuplicateCWTClaimKey(key) => {
+                assert_eq!(key, "test_key");
             }
+            err => panic!("Expected DuplicateCWTClaimKey error, got: {:?}", err),
         },
         Err(err) => panic!("Expected JWTError, got: {:?}", err),
     }
 
     // Test with non-duplicate keys (should succeed)
     let mut cwt = Vec::new();
-    cwt.push((CBORValue::Integer(123.into()), CBORValue::Text("value1".into())));
-    cwt.push((CBORValue::Integer(124.into()), CBORValue::Text("value2".into())));
+    cwt.push((
+        CBORValue::Integer(123.into()),
+        CBORValue::Text("value1".into()),
+    ));
+    cwt.push((
+        CBORValue::Integer(124.into()),
+        CBORValue::Text("value2".into()),
+    ));
 
     let result = claims.mix_cwt::<NoCustomClaims>(&cwt);
     assert!(result.is_ok());
+}
+
+#[cfg(test)]
+mod cwt_catu_tests {
+    use super::*;
+    use crate::prelude::HS256Key;
+    use ct_codecs::{Base64, Decoder};
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
+    struct CATMatch {
+        #[serde(rename = "0")]
+        exact: Option<String>,
+        #[serde(rename = "1")]
+        prefix: Option<String>,
+        #[serde(rename = "2")]
+        suffix: Option<String>,
+        #[serde(rename = "3")]
+        contains: Option<String>,
+        #[serde(rename = "4")]
+        regular_expression: Option<String>,
+        #[serde(rename = "-1")]
+        sha_256: Option<String>,
+        #[serde(rename = "-2")]
+        sha_512_256: Option<String>,
+    }
+
+    #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
+    struct CATUClaims {
+        #[serde(rename = "0")]
+        scheme: Option<CATMatch>,
+        #[serde(rename = "1")]
+        host: Option<CATMatch>,
+        #[serde(rename = "2")]
+        port: Option<CATMatch>,
+        #[serde(rename = "3")]
+        path: Option<CATMatch>,
+        #[serde(rename = "4")]
+        query: Option<CATMatch>,
+        #[serde(rename = "5")]
+        parent_path: Option<CATMatch>,
+        #[serde(rename = "6")]
+        filename: Option<CATMatch>,
+        #[serde(rename = "7")]
+        stem: Option<CATMatch>,
+        #[serde(rename = "8")]
+        extension: Option<CATMatch>,
+    }
+
+    #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
+    struct ZonRefreshTokenClaims {
+        #[serde(rename = "312")]
+        catu: Option<CATUClaims>,
+    }
+
+    #[test]
+    fn test_direct_custom_claims() {
+        // Create custom claims directly with the right format
+        let mut custom_claims_map = std::collections::HashMap::new();
+
+        // Create a simplified version of the CATU claim with proper structure
+        let mut catu_map = Vec::new();
+        let mut path_map = Vec::new();
+        path_map.push((
+            CBORValue::Text("0".to_string()),
+            CBORValue::Text("/test/path".to_string()),
+        ));
+        catu_map.push((CBORValue::Text("3".to_string()), CBORValue::Map(path_map)));
+        custom_claims_map.insert("312".to_string(), CBORValue::Map(catu_map));
+
+        // Try to deserialize this into our custom struct
+        let custom_claims =
+            deserialize_custom_claims::<ZonRefreshTokenClaims>(&custom_claims_map).unwrap();
+
+        // Verify that we successfully deserialized the structure
+        assert!(custom_claims.catu.is_some());
+        assert!(custom_claims.catu.unwrap().path.is_some());
+    }
+
+    #[test]
+    fn test_cwt_token_Zon() {
+        let raw_key = "testKey";
+        let raw_key_bytes = raw_key.as_bytes();
+        let key = HS256Key::from_bytes(raw_key_bytes);
+
+        let base64_token_str = "2D3RhEOhAQWhBExTeW1tZXRyaWMyNTZYzqYBanByaW1ldmlkZW8CeCxBNXMyRnptNUI5UG5EVEVmS3VybGxMdnJUelJLSWl4ZERsMWI0TEZzZlB3PQQaaIqyAAdQc0VLLhieQT2r7LtqnxPAihkBOKIFoQJ4Ji9lMDU5Lzc4MTEvMTY0MC80N2UxLTk5MzAtMmE0MzQxZWE4YjEwBqEBeCUvMWJkMWUyNmUtMzQwNy00ODA1LWI4MDYtMTMyMTZiMzRkNGJmGQFDowACARkDhAR1WC1QVi1DRE4tQWNjZXNzLVRva2VuWCDi3PwND2KOvk+NJYX7lCptByJDuRIft1DZ3zPtybqLOw==";
+        let input = Base64::decode_to_vec(base64_token_str, None).unwrap();
+
+        let metadata = CWTToken::decode_metadata(&input).unwrap();
+        assert_eq!(metadata.algorithm(), "HS256");
+        assert_eq!(metadata.key_id(), Some("Symmetric256"));
+
+        // This shows that the token is valid and we're correctly extracting standard claims
+        let claims = key
+            .verify_cwt_token_with_custom_claims::<ZonRefreshTokenClaims>(&input, None)
+            .unwrap();
+
+        // Verify standard claims are extracted correctly
+        assert!(claims.issuer.is_some());
+        assert_eq!(claims.issuer.unwrap(), "primevideo");
+        assert!(claims.subject.is_some());
+        assert!(claims.jwt_id.is_some());
+    }
 }
