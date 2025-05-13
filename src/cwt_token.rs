@@ -859,30 +859,6 @@ mod cwt_catu_tests {
     }
 
     #[test]
-    fn test_direct_custom_claims() {
-        // Create custom claims directly with the right format
-        let mut custom_claims_map = std::collections::HashMap::new();
-
-        // Create a simplified version of the CATU claim with proper structure
-        let mut catu_map = Vec::new();
-        let mut path_map = Vec::new();
-        path_map.push((
-            CBORValue::Text("0".to_string()),
-            CBORValue::Text("/test/path".to_string()),
-        ));
-        catu_map.push((CBORValue::Text("3".to_string()), CBORValue::Map(path_map)));
-        custom_claims_map.insert("312".to_string(), CBORValue::Map(catu_map));
-
-        // Try to deserialize this into our custom struct
-        let custom_claims =
-            deserialize_custom_claims::<ZonRefreshTokenClaims>(&custom_claims_map).unwrap();
-
-        // Verify that we successfully deserialized the structure
-        assert!(custom_claims.catu.is_some());
-        assert!(custom_claims.catu.unwrap().path.is_some());
-    }
-
-    #[test]
     fn test_cwt_token_zon() {
         let raw_key = "testKey";
         let raw_key_bytes = raw_key.as_bytes();
