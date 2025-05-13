@@ -883,7 +883,7 @@ mod cwt_catu_tests {
     }
 
     #[test]
-    fn test_cwt_token_Zon() {
+    fn test_cwt_token_zon() {
         let raw_key = "testKey";
         let raw_key_bytes = raw_key.as_bytes();
         let key = HS256Key::from_bytes(raw_key_bytes);
