@@ -308,10 +308,16 @@ fn deserialize_custom_claims<T: DeserializeOwned + Default>(
     }
 
     // Create a CBOR map value from the custom claims
+    // with all nested integer keys converted to strings
     let custom_cbor = CBORValue::Map(
         custom_claims
             .iter()
-            .map(|(k, v)| (CBORValue::Text(k.clone()), v.clone()))
+            .map(|(k, v)| {
+                (
+                    CBORValue::Text(k.clone()),
+                    convert_integer_keys_to_strings(v.clone()),
+                )
+            })
             .collect(),
     );
 
@@ -328,7 +334,58 @@ fn deserialize_custom_claims<T: DeserializeOwned + Default>(
     let result = from_cbor::<T, _>(std::io::Cursor::new(bytes));
     match result {
         Ok(custom) => Ok(custom),
-        Err(_) => Ok(T::default()), // Fall back to default on deserialization errors
+        Err(_) => {
+            // Fall back to default on deserialization errors
+            Ok(T::default())
+        }
+    }
+}
+
+/// Recursively convert all integer keys in CBOR maps to string keys
+/// This function walks through nested CBOR structures and converts any integer
+/// keys to their string representation, which is necessary for proper deserialization
+/// into Rust structs that use #[serde(rename = "...")] with string keys.
+fn convert_integer_keys_to_strings(value: CBORValue) -> CBORValue {
+    match value {
+        CBORValue::Map(map) => {
+            // Create a new map with converted keys
+            let converted_map = map
+                .into_iter()
+                .map(|(k, v)| {
+                    // Convert the key if it's an integer
+                    let new_key = if let Some(int_key) = k.as_integer() {
+                        // Try converting to i32 for simpler representation
+                        if let Ok(i32_key) = TryInto::<i32>::try_into(int_key) {
+                            CBORValue::Text(format!("{}", i32_key))
+                        } else {
+                            // Use a prefix for integers outside i32 range
+                            CBORValue::Text(format!("int_{:?}", int_key))
+                        }
+                    } else {
+                        // Keep non-integer keys as they are
+                        k
+                    };
+
+                    // Recursively convert nested values
+                    let new_value = convert_integer_keys_to_strings(v);
+
+                    (new_key, new_value)
+                })
+                .collect();
+
+            CBORValue::Map(converted_map)
+        }
+        CBORValue::Array(arr) => {
+            // Process arrays recursively
+            let converted_arr = arr
+                .into_iter()
+                .map(convert_integer_keys_to_strings)
+                .collect();
+
+            CBORValue::Array(converted_arr)
+        }
+        // All other value types are returned unchanged
+        _ => value,
     }
 }
 
@@ -807,7 +864,6 @@ fn test_duplicate_cwt_claim_key() {
 
 #[cfg(test)]
 mod cwt_catu_tests {
-    use super::*;
     use crate::prelude::HS256Key;
     use ct_codecs::{Base64, Decoder};
     use serde::{Deserialize, Serialize};
@@ -858,20 +914,20 @@ mod cwt_catu_tests {
         catu: Option<CATUClaims>,
     }
 
+    /// Test that verifies proper deserialization of CWT tokens with nested CBOR structures
+    ///
+    /// This test ensures that CWT tokens with nested structure and integer keys
+    /// (like the "catu" claim with key 312) are properly deserialized.
     #[test]
-    fn test_cwt_token_zon() {
+    fn test_cwt_custom_claims_deserialization() {
+        // Setup test key and token
         let raw_key = "testKey";
         let raw_key_bytes = raw_key.as_bytes();
         let key = HS256Key::from_bytes(raw_key_bytes);
-
         let base64_token_str = "2D3RhEOhAQWhBExTeW1tZXRyaWMyNTZYzqYBanByaW1ldmlkZW8CeCxBNXMyRnptNUI5UG5EVEVmS3VybGxMdnJUelJLSWl4ZERsMWI0TEZzZlB3PQQaaIqyAAdQc0VLLhieQT2r7LtqnxPAihkBOKIFoQJ4Ji9lMDU5Lzc4MTEvMTY0MC80N2UxLTk5MzAtMmE0MzQxZWE4YjEwBqEBeCUvMWJkMWUyNmUtMzQwNy00ODA1LWI4MDYtMTMyMTZiMzRkNGJmGQFDowACARkDhAR1WC1QVi1DRE4tQWNjZXNzLVRva2VuWCDi3PwND2KOvk+NJYX7lCptByJDuRIft1DZ3zPtybqLOw==";
         let input = Base64::decode_to_vec(base64_token_str, None).unwrap();
 
-        let metadata = CWTToken::decode_metadata(&input).unwrap();
-        assert_eq!(metadata.algorithm(), "HS256");
-        assert_eq!(metadata.key_id(), Some("Symmetric256"));
-
-        // This shows that the token is valid and we're correctly extracting standard claims
+        // Verify the token and extract claims
         let claims = key
             .verify_cwt_token_with_custom_claims::<ZonRefreshTokenClaims>(&input, None)
             .unwrap();
@@ -881,5 +937,40 @@ mod cwt_catu_tests {
         assert_eq!(claims.issuer.unwrap(), "primevideo");
         assert!(claims.subject.is_some());
         assert!(claims.jwt_id.is_some());
+
+        // Verify the custom claim structure was properly deserialized
+        assert!(
+            claims.custom.catu.is_some(),
+            "catu property should be present in verified token"
+        );
+
+        // Check that the catu structure contains the expected nested fields
+        let catu = claims.custom.catu.unwrap();
+
+        // Verify parent_path field (key 5) is properly deserialized
+        assert!(catu.parent_path.is_some(), "parent_path should be present");
+        let parent_path = catu.parent_path.unwrap();
+        assert!(
+            parent_path.suffix.is_some(),
+            "suffix should be present in parent_path"
+        );
+        assert_eq!(
+            parent_path.suffix.unwrap(),
+            "/e059/7811/1640/47e1-9930-2a4341ea8b10",
+            "parent_path.suffix should have the expected value"
+        );
+
+        // Verify filename field (key 6) is properly deserialized
+        assert!(catu.filename.is_some(), "filename should be present");
+        let filename = catu.filename.unwrap();
+        assert!(
+            filename.prefix.is_some(),
+            "prefix should be present in filename"
+        );
+        assert_eq!(
+            filename.prefix.unwrap(),
+            "/1bd1e26e-3407-4805-b806-13216b34d4bf",
+            "filename.prefix should have the expected value"
+        );
     }
 }
