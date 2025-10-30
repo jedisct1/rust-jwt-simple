@@ -221,7 +221,7 @@ impl Token {
         Ok(claims)
     }
 
-    /// Decode token information that can be usedful prior to signature/tag
+    /// Decode token information that can be useful prior to signature/tag
     /// verification
     pub fn decode_metadata(token: &str) -> Result<TokenMetadata, Error> {
         let mut parts = token.split('.');
