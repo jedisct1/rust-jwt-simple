@@ -116,7 +116,7 @@ pub trait MACLike {
             salt,
             ..Default::default()
         };
-        self.attach_metadata(metadata).unwrap();
+        self.attach_metadata(metadata)?;
         Ok(())
     }
 
