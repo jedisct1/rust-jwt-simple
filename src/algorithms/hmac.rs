@@ -260,7 +260,7 @@ pub trait MACLike {
         options: Option<VerificationOptions>,
     ) -> Result<JWTClaims<CustomClaims>, Error>
     where
-        CustomClaims: DeserializeOwned + Default + 'static,
+        CustomClaims: DeserializeOwned + Default,
     {
         CWTToken::verify(
             Self::jwt_alg_name(),
@@ -418,7 +418,7 @@ impl HS256Key {
         options: Option<VerificationOptions>,
     ) -> Result<JWTClaims<CustomClaims>, Error>
     where
-        CustomClaims: DeserializeOwned + Default + 'static,
+        CustomClaims: DeserializeOwned + Default,
     {
         <Self as MACLike>::verify_cwt_token_with_custom_claims::<CustomClaims>(self, token, options)
     }
@@ -517,7 +517,7 @@ impl HS512Key {
         options: Option<VerificationOptions>,
     ) -> Result<JWTClaims<CustomClaims>, Error>
     where
-        CustomClaims: DeserializeOwned + Default + 'static,
+        CustomClaims: DeserializeOwned + Default,
     {
         <Self as MACLike>::verify_cwt_token_with_custom_claims::<CustomClaims>(self, token, options)
     }
@@ -616,7 +616,7 @@ impl HS384Key {
         options: Option<VerificationOptions>,
     ) -> Result<JWTClaims<CustomClaims>, Error>
     where
-        CustomClaims: DeserializeOwned + Default + 'static,
+        CustomClaims: DeserializeOwned + Default,
     {
         <Self as MACLike>::verify_cwt_token_with_custom_claims::<CustomClaims>(self, token, options)
     }
@@ -712,7 +712,7 @@ impl Blake2bKey {
         options: Option<VerificationOptions>,
     ) -> Result<JWTClaims<CustomClaims>, Error>
     where
-        CustomClaims: DeserializeOwned + Default + 'static,
+        CustomClaims: DeserializeOwned + Default,
     {
         <Self as MACLike>::verify_cwt_token_with_custom_claims::<CustomClaims>(self, token, options)
     }

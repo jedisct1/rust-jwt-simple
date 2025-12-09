@@ -131,7 +131,7 @@ impl CWTToken {
         authentication_or_signature_fn: AuthenticationOrSignatureFn,
     ) -> Result<JWTClaims<CustomClaims>, Error>
     where
-        CustomClaims: DeserializeOwned + Default + 'static,
+        CustomClaims: DeserializeOwned + Default,
         AuthenticationOrSignatureFn: FnOnce(&str, &[u8]) -> Result<(), Error>,
     {
         let options = options.unwrap_or_default();
@@ -253,7 +253,7 @@ impl CWTToken {
             Cursor::new(parts_cbor[2].as_bytes().ok_or(JWTError::CWTDecodingError)?);
         let claims_cbor: CBORValue = from_cbor(&mut claims_reader)?;
         let claims_ = claims_cbor.as_map().ok_or(JWTError::CWTDecodingError)?;
-        claims.mix_cwt::<CustomClaims>(claims_)?;
+        claims.mix_cwt(claims_)?;
 
         claims.validate(&options)?;
         Ok(claims)
@@ -393,13 +393,7 @@ impl<CustomClaims> JWTClaims<CustomClaims>
 where
     CustomClaims: DeserializeOwned + Default,
 {
-    fn mix_cwt<T: DeserializeOwned + Default + 'static>(
-        &mut self,
-        cwt: &[(CBORValue, CBORValue)],
-    ) -> Result<(), Error>
-    where
-        CustomClaims: 'static,
-    {
+    fn mix_cwt(&mut self, cwt: &[(CBORValue, CBORValue)]) -> Result<(), Error> {
         // Collection for non-standard claims
         let mut custom_claims_map = std::collections::HashMap::new();
 
@@ -503,10 +497,7 @@ where
         }
 
         // Process custom claims if any were found
-        if !custom_claims_map.is_empty()
-            && std::any::TypeId::of::<T>() == std::any::TypeId::of::<CustomClaims>()
-        {
-            // Only set custom claims if the type parameter matches
+        if !custom_claims_map.is_empty() {
             let custom: CustomClaims = deserialize_custom_claims(&custom_claims_map)?;
             self.custom = custom;
         }
@@ -810,7 +801,7 @@ fn test_duplicate_cwt_claim_key() {
     ));
 
     // Attempt to mix the claims - should return a DuplicateCWTClaimKey error
-    let result = claims.mix_cwt::<NoCustomClaims>(&cwt);
+    let result = claims.mix_cwt(&cwt);
 
     assert!(result.is_err());
     match result.unwrap_err().downcast::<JWTError>() {
@@ -834,7 +825,7 @@ fn test_duplicate_cwt_claim_key() {
         CBORValue::Text("value2".into()),
     ));
 
-    let result = claims.mix_cwt::<NoCustomClaims>(&cwt);
+    let result = claims.mix_cwt(&cwt);
 
     assert!(result.is_err());
     match result.unwrap_err().downcast::<JWTError>() {
@@ -858,7 +849,7 @@ fn test_duplicate_cwt_claim_key() {
         CBORValue::Text("value2".into()),
     ));
 
-    let result = claims.mix_cwt::<NoCustomClaims>(&cwt);
+    let result = claims.mix_cwt(&cwt);
     assert!(result.is_ok());
 }
 
