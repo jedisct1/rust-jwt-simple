@@ -121,14 +121,14 @@ pub trait MACLike {
     }
 
     /// Authenticate a token.
-    fn authenticate<CustomClaims: Serialize + DeserializeOwned>(
+    fn authenticate<CustomClaims: Serialize>(
         &self,
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
         self.authenticate_with_options(claims, &Default::default())
     }
 
-    fn authenticate_with_options<CustomClaims: Serialize + DeserializeOwned>(
+    fn authenticate_with_options<CustomClaims: Serialize>(
         &self,
         claims: JWTClaims<CustomClaims>,
         options: &HeaderOptions,
@@ -142,7 +142,7 @@ pub trait MACLike {
     }
 
     /// Verify a token.
-    fn verify_token<CustomClaims: Serialize + DeserializeOwned>(
+    fn verify_token<CustomClaims: DeserializeOwned>(
         &self,
         token: &str,
         options: Option<VerificationOptions>,

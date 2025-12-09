@@ -106,7 +106,7 @@ impl TokenMetadata {
 }
 
 impl Token {
-    pub(crate) fn build<AuthenticationOrSignatureFn, CustomClaims: Serialize + DeserializeOwned>(
+    pub(crate) fn build<AuthenticationOrSignatureFn, CustomClaims: Serialize>(
         jwt_header: &JWTHeader,
         claims: JWTClaims<CustomClaims>,
         authentication_or_signature_fn: AuthenticationOrSignatureFn,
@@ -130,11 +130,7 @@ impl Token {
         Ok(token)
     }
 
-    pub(crate) fn verify<
-        AuthenticationOrSignatureFn,
-        SaltCheckFn,
-        CustomClaims: Serialize + DeserializeOwned,
-    >(
+    pub(crate) fn verify<AuthenticationOrSignatureFn, SaltCheckFn, CustomClaims: DeserializeOwned>(
         jwt_alg_name: &'static str,
         token: &str,
         options: Option<VerificationOptions>,

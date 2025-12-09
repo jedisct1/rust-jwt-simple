@@ -161,14 +161,14 @@ pub trait ECDSAP256KeyPairLike {
     fn metadata(&self) -> &Option<KeyMetadata>;
     fn attach_metadata(&mut self, metadata: KeyMetadata) -> Result<(), Error>;
 
-    fn sign<CustomClaims: Serialize + DeserializeOwned>(
+    fn sign<CustomClaims: Serialize>(
         &self,
         claims: JWTClaims<CustomClaims>,
     ) -> Result<String, Error> {
         self.sign_with_options(claims, &Default::default())
     }
 
-    fn sign_with_options<CustomClaims: Serialize + DeserializeOwned>(
+    fn sign_with_options<CustomClaims: Serialize>(
         &self,
         claims: JWTClaims<CustomClaims>,
         opts: &HeaderOptions,
@@ -195,7 +195,7 @@ pub trait ECDSAP256PublicKeyLike {
     fn key_id(&self) -> &Option<String>;
     fn set_key_id(&mut self, key_id: String);
 
-    fn verify_token<CustomClaims: Serialize + DeserializeOwned>(
+    fn verify_token<CustomClaims: DeserializeOwned>(
         &self,
         token: &str,
         options: Option<VerificationOptions>,
@@ -220,7 +220,7 @@ pub trait ECDSAP256PublicKeyLike {
     }
 
     #[cfg(feature = "cwt")]
-    fn verify_cwt_token<CustomClaims: Serialize + DeserializeOwned>(
+    fn verify_cwt_token<CustomClaims: DeserializeOwned>(
         &self,
         token: &str,
         options: Option<VerificationOptions>,

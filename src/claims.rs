@@ -4,7 +4,7 @@ use std::convert::TryInto;
 use coarsetime::{Clock, Duration, UnixTimeStamp};
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder, Hex};
 use rand::RngCore;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::common::VerificationOptions;
 use crate::error::*;
@@ -950,7 +950,7 @@ impl Claims {
     ///
     /// # Type Parameters
     ///
-    /// * `CustomClaims` - A type that implements `Serialize` and `DeserializeOwned` for custom application data
+    /// * `CustomClaims` - A type that implements `Serialize` for custom application data
     ///
     /// # Arguments
     ///
@@ -989,7 +989,7 @@ impl Claims {
     /// let key_pair = ES256KeyPair::generate();
     /// let token = key_pair.sign(claims).unwrap();
     /// ```
-    pub fn with_custom_claims<CustomClaims: Serialize + DeserializeOwned>(
+    pub fn with_custom_claims<CustomClaims: Serialize>(
         custom_claims: CustomClaims,
         valid_for: Duration,
     ) -> JWTClaims<CustomClaims> {
