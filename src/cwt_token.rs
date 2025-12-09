@@ -864,7 +864,7 @@ fn test_duplicate_cwt_claim_key() {
 
 #[cfg(test)]
 mod cwt_catu_tests {
-    use crate::prelude::HS256Key;
+    use crate::prelude::{Duration, HS256Key, VerificationOptions};
     use ct_codecs::{Base64, Decoder};
     use serde::{Deserialize, Serialize};
 
@@ -999,9 +999,12 @@ mod cwt_catu_tests {
         let base64_token_str = "2D3RhEOhAQWhBExTeW1tZXRyaWMyNTZYzqYBanByaW1ldmlkZW8CeCxBNXMyRnptNUI5UG5EVEVmS3VybGxMdnJUelJLSWl4ZERsMWI0TEZzZlB3PQQaaIqyAAdQc0VLLhieQT2r7LtqnxPAihkBOKIFoQJ4Ji9lMDU5Lzc4MTEvMTY0MC80N2UxLTk5MzAtMmE0MzQxZWE4YjEwBqEBeCUvMWJkMWUyNmUtMzQwNy00ODA1LWI4MDYtMTMyMTZiMzRkNGJmGQFDowACARkDhAR1WC1QVi1DRE4tQWNjZXNzLVRva2VuWCDi3PwND2KOvk+NJYX7lCptByJDuRIft1DZ3zPtybqLOw==";
         let input = Base64::decode_to_vec(base64_token_str, None).unwrap();
 
+        let mut options = VerificationOptions::default();
+        options.time_tolerance = Some(Duration::from_days(20000));
+
         // Verify the token and extract claims
         let claims = key
-            .verify_cwt_token_with_custom_claims::<ZonRefreshTokenClaims>(&input, None)
+            .verify_cwt_token_with_custom_claims::<ZonRefreshTokenClaims>(&input, Some(options))
             .unwrap();
 
         // Verify standard claims are extracted correctly
