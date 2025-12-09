@@ -598,7 +598,8 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
         let time_tolerance = options.time_tolerance.unwrap_or_default();
 
         if let Some(reject_before) = options.reject_before {
-            ensure!(now >= reject_before, JWTError::OldTokenReused);
+            let issued_at = self.issued_at.ok_or(JWTError::OldTokenReused)?;
+            ensure!(issued_at >= reject_before, JWTError::OldTokenReused);
         }
         if let Some(time_issued) = self.issued_at {
             ensure!(time_issued <= now + time_tolerance, JWTError::ClockDrift);
