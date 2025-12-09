@@ -95,13 +95,10 @@ impl TokenMetadata {
 
     /// Salt
     pub fn salt(&self) -> Option<Vec<u8>> {
-        match self.jwt_header.salt {
-            Some(ref salt) => {
-                let salt = Base64UrlSafeNoPadding::decode_to_vec(salt, None).unwrap();
-                Some(salt)
-            }
-            None => None,
-        }
+        self.jwt_header
+            .salt
+            .as_ref()
+            .and_then(|salt| Base64UrlSafeNoPadding::decode_to_vec(salt, None).ok())
     }
 }
 
@@ -387,4 +384,66 @@ fn signature_type() {
     key.public_key()
         .verify_token::<NoCustomClaims>(&token, Some(options.clone()))
         .unwrap();
+}
+
+#[test]
+fn reject_before_uses_issued_at() {
+    use crate::{prelude::*, JWTError};
+
+    let key = HS256Key::generate();
+    let base_time = Clock::now_since_epoch();
+
+    let mut stale_claims = Claims::create(Duration::from_mins(10));
+    let stale_issued_at = base_time - Duration::from_secs(30);
+    stale_claims.issued_at = Some(stale_issued_at);
+    stale_claims.invalid_before = Some(stale_issued_at);
+    stale_claims.expires_at = Some(base_time + Duration::from_mins(10));
+    let stale_token = key.authenticate(stale_claims).unwrap();
+
+    let mut options = VerificationOptions::default();
+    options.reject_before = Some(base_time);
+    options.artificial_time = Some(base_time);
+
+    let err = key
+        .verify_token::<NoCustomClaims>(&stale_token, Some(options.clone()))
+        .unwrap_err();
+    assert!(matches!(
+        err.downcast_ref::<JWTError>(),
+        Some(JWTError::OldTokenReused)
+    ));
+
+    let mut fresh_claims = Claims::create(Duration::from_mins(10));
+    let fresh_issued_at = base_time + Duration::from_secs(1);
+    fresh_claims.issued_at = Some(fresh_issued_at);
+    fresh_claims.invalid_before = Some(fresh_issued_at);
+    fresh_claims.expires_at = Some(base_time + Duration::from_mins(10));
+    let fresh_token = key.authenticate(fresh_claims).unwrap();
+
+    key.verify_token::<NoCustomClaims>(&fresh_token, Some(options))
+        .unwrap();
+}
+
+#[test]
+fn token_metadata_salt_handles_invalid_input() {
+    use crate::jwt_header::JWTHeader;
+
+    let metadata = TokenMetadata {
+        jwt_header: JWTHeader {
+            algorithm: "HS256".into(),
+            salt: Some("%%%not_base64%%%".into()),
+            ..Default::default()
+        },
+    };
+    assert!(metadata.salt().is_none());
+
+    let salt_bytes = b"salty";
+    let salt_b64 = Base64UrlSafeNoPadding::encode_to_string(salt_bytes).unwrap();
+    let metadata = TokenMetadata {
+        jwt_header: JWTHeader {
+            algorithm: "HS256".into(),
+            salt: Some(salt_b64),
+            ..Default::default()
+        },
+    };
+    assert_eq!(metadata.salt(), Some(salt_bytes.to_vec()));
 }
