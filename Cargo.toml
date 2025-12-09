@@ -18,7 +18,7 @@ binstring = "0.1.7"
 ciborium = { version = "0.2.2", optional = true }
 coarsetime = "0.1.36"
 ct-codecs = "1.1.6"
-ed25519-compact = { version = "2.1.1", features = ["pem"] }
+ed25519-compact = { version = "2.2.0", features = ["pem"] }
 hmac-sha1-compact = "1.1.5"
 hmac-sha256 = { version = "1.1.12", features = ["traits010"] }
 hmac-sha512 = { version = "1.1.7", features = ["traits010", "sha384"] }
