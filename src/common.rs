@@ -12,11 +12,16 @@ pub const DEFAULT_MAX_TOKEN_LENGTH: usize = 1_000_000;
 /// Signatures and token expiration are already automatically verified.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VerificationOptions {
-    /// Reject tokens created before the given date
+    /// Reject tokens created before the given date.
     ///
     /// For a given user, the time of the last successful authentication can be
     /// kept in a database, and `reject_before` can then be used to reject
     /// older (replayed) tokens.
+    ///
+    /// Note: validation compares `reject_before` to the token’s
+    /// `issued_at` claim. Tokens without `issued_at` are rejected when
+    /// `reject_before` is set, so be sure the issuer populates it
+    /// (automatically done by constructing claims with `Claims::create()`).
     pub reject_before: Option<UnixTimeStamp>,
 
     /// Accept tokens created with a date in the future
