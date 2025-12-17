@@ -521,7 +521,9 @@ pub mod claims;
 pub mod common;
 #[cfg(feature = "cwt")]
 pub mod cwt_token;
+#[cfg(feature = "jwe")]
 pub mod jwe_header;
+#[cfg(feature = "jwe")]
 pub mod jwe_token;
 pub mod token;
 
@@ -556,6 +558,7 @@ pub mod prelude {
     pub use crate::common::*;
     #[cfg(feature = "cwt")]
     pub use crate::cwt_token::*;
+    #[cfg(feature = "jwe")]
     pub use crate::jwe_token::{DecryptionOptions, EncryptionOptions, JWEToken, JWETokenMetadata};
     pub use crate::token::*;
 
@@ -931,6 +934,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         assert!(key.authenticate(claims).is_err());
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_rsa_oaep() {
         let decryption_key = RsaOaepDecryptionKey::generate(2048).unwrap();
@@ -945,6 +949,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         assert_eq!(claims.issuer, Some("test issuer".to_string()));
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_a256kw() {
         let key = A256KWKey::generate();
@@ -957,6 +962,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         assert_eq!(claims.issuer, Some("test issuer".to_string()));
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_a256kw_from_bytes() {
         let raw_key = [0u8; 32];
@@ -969,6 +975,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         let _claims: JWTClaims<NoCustomClaims> = key2.decrypt_token(&token, None).unwrap();
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_a128kw() {
         let key = A128KWKey::generate();
@@ -981,6 +988,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         assert_eq!(claims.issuer, Some("test issuer".to_string()));
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_a128kw_from_bytes() {
         let raw_key = [0u8; 16];
@@ -993,6 +1001,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         let _claims: JWTClaims<NoCustomClaims> = key2.decrypt_token(&token, None).unwrap();
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_ecdh_es_a256kw() {
         let decryption_key = EcdhEsA256KWDecryptionKey::generate();
@@ -1008,6 +1017,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         assert_eq!(claims.issuer, Some("test issuer".to_string()));
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_ecdh_es_a128kw() {
         let decryption_key = EcdhEsA128KWDecryptionKey::generate();
@@ -1022,6 +1032,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         assert_eq!(claims.issuer, Some("test issuer".to_string()));
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_custom_claims() {
         #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -1046,6 +1057,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         assert_eq!(claims.custom.role, "admin");
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_with_content_encryption_a128gcm() {
         let key = A256KWKey::generate();
@@ -1063,6 +1075,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         let _claims: JWTClaims<NoCustomClaims> = key.decrypt_token(&token, None).unwrap();
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_metadata_decode() {
         let key = A256KWKey::generate().with_key_id("my-key");
@@ -1081,6 +1094,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         assert_eq!(metadata.content_type(), Some("JWT"));
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_wrong_key_fails() {
         let key1 = A256KWKey::generate();
@@ -1093,24 +1107,28 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         assert!(result.is_err());
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_invalid_key_size_a256kw() {
         let result = A256KWKey::from_bytes(&[0u8; 16]);
         assert!(result.is_err());
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_invalid_key_size_a128kw() {
         let result = A128KWKey::from_bytes(&[0u8; 32]);
         assert!(result.is_err());
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_rsa_key_too_small() {
         let result = RsaOaepDecryptionKey::generate(1024);
         assert!(result.is_err());
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_critical_header_rejected() {
         use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
@@ -1137,6 +1155,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         assert!(result.is_err());
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_malformed_inputs_no_panic() {
         let key = A256KWKey::generate();
@@ -1181,6 +1200,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         }
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_truncated_token_no_panic() {
         let key = A256KWKey::generate();
@@ -1195,6 +1215,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         }
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_corrupted_parts_no_panic() {
         let key = A256KWKey::generate();
@@ -1221,6 +1242,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         }
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_rsa_malformed_inputs_no_panic() {
         let key = RsaOaepDecryptionKey::generate(2048).unwrap();
@@ -1238,6 +1260,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         }
     }
 
+    #[cfg(feature = "jwe")]
     #[test]
     fn jwe_ecdh_malformed_inputs_no_panic() {
         let key = EcdhEsA256KWDecryptionKey::generate();
