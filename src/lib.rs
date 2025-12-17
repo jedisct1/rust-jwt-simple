@@ -877,4 +877,54 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         let res = key.verify_token::<NoCustomClaims>(&token, None);
         assert!(res.is_err());
     }
+
+    #[test]
+    fn weak_key_rejected_on_authenticate() {
+        let key = HS256Key::from_bytes(b"short");
+        let claims = Claims::create(Duration::from_secs(86400));
+        let res = key.authenticate(claims);
+        assert!(res.is_err());
+        assert!(res.unwrap_err().to_string().contains("Weak key"));
+    }
+
+    #[test]
+    fn weak_key_rejected_on_verify() {
+        let valid_key = HS256Key::generate();
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = valid_key.authenticate(claims).unwrap();
+
+        let weak_key = HS256Key::from_bytes(b"11-bytes..");
+        let res = weak_key.verify_token::<NoCustomClaims>(&token, None);
+        assert!(res.is_err());
+        assert!(res.unwrap_err().to_string().contains("Weak key"));
+    }
+
+    #[test]
+    fn min_key_length_accepted() {
+        let key = HS256Key::from_bytes(b"12-bytes...!");
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key.authenticate(claims).unwrap();
+        key.verify_token::<NoCustomClaims>(&token, None).unwrap();
+    }
+
+    #[test]
+    fn weak_key_rejected_hs384() {
+        let key = HS384Key::from_bytes(b"short");
+        let claims = Claims::create(Duration::from_secs(86400));
+        assert!(key.authenticate(claims).is_err());
+    }
+
+    #[test]
+    fn weak_key_rejected_hs512() {
+        let key = HS512Key::from_bytes(b"short");
+        let claims = Claims::create(Duration::from_secs(86400));
+        assert!(key.authenticate(claims).is_err());
+    }
+
+    #[test]
+    fn weak_key_rejected_blake2b() {
+        let key = Blake2bKey::from_bytes(b"short");
+        let claims = Claims::create(Duration::from_secs(86400));
+        assert!(key.authenticate(claims).is_err());
+    }
 }

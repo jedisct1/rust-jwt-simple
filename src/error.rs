@@ -75,6 +75,8 @@ pub enum JWTError {
     MissingSalt,
     #[error("Duplicate claim key in CWT: {0}")]
     DuplicateCWTClaimKey(String),
+    #[error("Weak key (must be at least 96 bits)")]
+    WeakKey,
 }
 
 impl From<&str> for JWTError {

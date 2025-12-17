@@ -133,6 +133,7 @@ pub trait MACLike {
         claims: JWTClaims<CustomClaims>,
         options: &HeaderOptions,
     ) -> Result<String, Error> {
+        ensure!(self.key().as_ref().len() >= 12, JWTError::WeakKey);
         let jwt_header = JWTHeader::new(Self::jwt_alg_name().to_string(), self.key_id().clone())
             .with_key_metadata(self.metadata())
             .with_options(options);
@@ -147,6 +148,7 @@ pub trait MACLike {
         token: &str,
         options: Option<VerificationOptions>,
     ) -> Result<JWTClaims<CustomClaims>, Error> {
+        ensure!(self.key().as_ref().len() >= 12, JWTError::WeakKey);
         Token::verify(
             Self::jwt_alg_name(),
             token,
@@ -189,6 +191,7 @@ pub trait MACLike {
         token: impl AsRef<[u8]>,
         options: Option<VerificationOptions>,
     ) -> Result<JWTClaims<NoCustomClaims>, Error> {
+        ensure!(self.key().as_ref().len() >= 12, JWTError::WeakKey);
         CWTToken::verify(
             Self::jwt_alg_name(),
             token,
@@ -262,6 +265,7 @@ pub trait MACLike {
     where
         CustomClaims: DeserializeOwned + Default,
     {
+        ensure!(self.key().as_ref().len() >= 12, JWTError::WeakKey);
         CWTToken::verify(
             Self::jwt_alg_name(),
             token,
