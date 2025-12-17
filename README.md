@@ -59,13 +59,13 @@ A new JWT (JSON Web Tokens) implementation for Rust that focuses on simplicity, 
 
 JWE (JSON Web Encryption) is also supported with the following key management algorithms:
 
-| JWE algorithm name | Description                              |
-| ------------------ | ---------------------------------------- |
-| `RSA-OAEP`         | RSA with OAEP using SHA-1                |
-| `A256KW`           | AES-256 Key Wrap (recommended)           |
-| `A128KW`           | AES-128 Key Wrap                         |
-| `ECDH-ES+A256KW`   | ECDH with AES-256 Key Wrap (recommended) |
-| `ECDH-ES+A128KW`   | ECDH with AES-128 Key Wrap               |
+| JWE algorithm name | Description                                 |
+| ------------------ | ------------------------------------------- |
+| `RSA-OAEP`         | RSA with OAEP using SHA-1 (not recommended) |
+| `A256KW`           | AES-256 Key Wrap                            |
+| `A128KW`           | AES-128 Key Wrap                            |
+| `ECDH-ES+A256KW`   | ECDH with AES-256 Key Wrap                  |
+| `ECDH-ES+A128KW`   | ECDH with AES-128 Key Wrap                  |
 
 Content encryption uses AES-GCM (A256GCM or A128GCM).
 
