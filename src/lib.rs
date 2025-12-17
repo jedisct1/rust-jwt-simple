@@ -521,6 +521,8 @@ pub mod claims;
 pub mod common;
 #[cfg(feature = "cwt")]
 pub mod cwt_token;
+pub mod jwe_header;
+pub mod jwe_token;
 pub mod token;
 
 mod jwt_header;
@@ -554,6 +556,7 @@ pub mod prelude {
     pub use crate::common::*;
     #[cfg(feature = "cwt")]
     pub use crate::cwt_token::*;
+    pub use crate::jwe_token::{DecryptionOptions, EncryptionOptions, JWEToken, JWETokenMetadata};
     pub use crate::token::*;
 
     mod hashset_from_strings {
@@ -926,5 +929,331 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         let key = Blake2bKey::from_bytes(b"short");
         let claims = Claims::create(Duration::from_secs(86400));
         assert!(key.authenticate(claims).is_err());
+    }
+
+    #[test]
+    fn jwe_rsa_oaep() {
+        let decryption_key = RsaOaepDecryptionKey::generate(2048).unwrap();
+        let encryption_key = decryption_key.encryption_key();
+
+        let claims = Claims::create(Duration::from_secs(86400))
+            .with_issuer("test issuer");
+        let token = encryption_key.encrypt(claims).unwrap();
+
+        let claims: JWTClaims<NoCustomClaims> =
+            decryption_key.decrypt_token(&token, None).unwrap();
+        assert_eq!(claims.issuer, Some("test issuer".to_string()));
+    }
+
+    #[test]
+    fn jwe_a256kw() {
+        let key = A256KWKey::generate();
+
+        let claims = Claims::create(Duration::from_secs(86400))
+            .with_issuer("test issuer");
+        let token = key.encrypt(claims).unwrap();
+
+        let claims: JWTClaims<NoCustomClaims> = key.decrypt_token(&token, None).unwrap();
+        assert_eq!(claims.issuer, Some("test issuer".to_string()));
+    }
+
+    #[test]
+    fn jwe_a256kw_from_bytes() {
+        let raw_key = [0u8; 32];
+        let key = A256KWKey::from_bytes(&raw_key).unwrap();
+
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key.encrypt(claims).unwrap();
+
+        let key2 = A256KWKey::from_bytes(&raw_key).unwrap();
+        let _claims: JWTClaims<NoCustomClaims> = key2.decrypt_token(&token, None).unwrap();
+    }
+
+    #[test]
+    fn jwe_a128kw() {
+        let key = A128KWKey::generate();
+
+        let claims = Claims::create(Duration::from_secs(86400))
+            .with_issuer("test issuer");
+        let token = key.encrypt(claims).unwrap();
+
+        let claims: JWTClaims<NoCustomClaims> = key.decrypt_token(&token, None).unwrap();
+        assert_eq!(claims.issuer, Some("test issuer".to_string()));
+    }
+
+    #[test]
+    fn jwe_a128kw_from_bytes() {
+        let raw_key = [0u8; 16];
+        let key = A128KWKey::from_bytes(&raw_key).unwrap();
+
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key.encrypt(claims).unwrap();
+
+        let key2 = A128KWKey::from_bytes(&raw_key).unwrap();
+        let _claims: JWTClaims<NoCustomClaims> = key2.decrypt_token(&token, None).unwrap();
+    }
+
+    #[test]
+    fn jwe_ecdh_es_a256kw() {
+        let decryption_key = EcdhEsA256KWDecryptionKey::generate();
+        let encryption_key = decryption_key.encryption_key();
+
+        let claims = Claims::create(Duration::from_secs(86400))
+            .with_issuer("test issuer")
+            .with_audience("test audience");
+        let token = encryption_key.encrypt(claims).unwrap();
+
+        let claims: JWTClaims<NoCustomClaims> =
+            decryption_key.decrypt_token(&token, None).unwrap();
+        assert_eq!(claims.issuer, Some("test issuer".to_string()));
+    }
+
+    #[test]
+    fn jwe_ecdh_es_a128kw() {
+        let decryption_key = EcdhEsA128KWDecryptionKey::generate();
+        let encryption_key = decryption_key.encryption_key();
+
+        let claims = Claims::create(Duration::from_secs(86400))
+            .with_issuer("test issuer");
+        let token = encryption_key.encrypt(claims).unwrap();
+
+        let claims: JWTClaims<NoCustomClaims> =
+            decryption_key.decrypt_token(&token, None).unwrap();
+        assert_eq!(claims.issuer, Some("test issuer".to_string()));
+    }
+
+    #[test]
+    fn jwe_custom_claims() {
+        #[derive(Serialize, Deserialize, Debug, PartialEq)]
+        struct CustomClaims {
+            user_id: u64,
+            role: String,
+        }
+
+        let key = A256KWKey::generate();
+
+        let custom = CustomClaims {
+            user_id: 12345,
+            role: "admin".to_string(),
+        };
+        let claims = Claims::with_custom_claims(custom, Duration::from_secs(86400))
+            .with_issuer("test issuer");
+        let token = key.encrypt(claims).unwrap();
+
+        let claims: JWTClaims<CustomClaims> = key.decrypt_token(&token, None).unwrap();
+        assert_eq!(claims.issuer, Some("test issuer".to_string()));
+        assert_eq!(claims.custom.user_id, 12345);
+        assert_eq!(claims.custom.role, "admin");
+    }
+
+    #[test]
+    fn jwe_with_content_encryption_a128gcm() {
+        let key = A256KWKey::generate();
+
+        let claims = Claims::create(Duration::from_secs(86400));
+        let options = EncryptionOptions {
+            content_encryption: ContentEncryption::A128GCM,
+            ..Default::default()
+        };
+        let token = key.encrypt_with_options(claims, &options).unwrap();
+
+        let metadata = A256KWKey::decode_metadata(&token).unwrap();
+        assert_eq!(metadata.encryption(), "A128GCM");
+
+        let _claims: JWTClaims<NoCustomClaims> = key.decrypt_token(&token, None).unwrap();
+    }
+
+    #[test]
+    fn jwe_metadata_decode() {
+        let key = A256KWKey::generate().with_key_id("my-key");
+
+        let claims = Claims::create(Duration::from_secs(86400));
+        let options = EncryptionOptions {
+            content_type: Some("JWT".to_string()),
+            ..Default::default()
+        };
+        let token = key.encrypt_with_options(claims, &options).unwrap();
+
+        let metadata = A256KWKey::decode_metadata(&token).unwrap();
+        assert_eq!(metadata.algorithm(), "A256KW");
+        assert_eq!(metadata.encryption(), "A256GCM");
+        assert_eq!(metadata.key_id(), Some("my-key"));
+        assert_eq!(metadata.content_type(), Some("JWT"));
+    }
+
+    #[test]
+    fn jwe_wrong_key_fails() {
+        let key1 = A256KWKey::generate();
+        let key2 = A256KWKey::generate();
+
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key1.encrypt(claims).unwrap();
+
+        let result: Result<JWTClaims<NoCustomClaims>, _> = key2.decrypt_token(&token, None);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn jwe_invalid_key_size_a256kw() {
+        let result = A256KWKey::from_bytes(&[0u8; 16]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn jwe_invalid_key_size_a128kw() {
+        let result = A128KWKey::from_bytes(&[0u8; 32]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn jwe_rsa_key_too_small() {
+        let result = RsaOaepDecryptionKey::generate(1024);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn jwe_critical_header_rejected() {
+        use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
+
+        let key = A256KWKey::generate();
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key.encrypt(claims).unwrap();
+
+        let parts: Vec<&str> = token.split('.').collect();
+        let header_bytes =
+            ct_codecs::Base64UrlSafeNoPadding::decode_to_vec(parts[0], None).unwrap();
+        let mut header: serde_json::Value = serde_json::from_slice(&header_bytes).unwrap();
+        header["crit"] = serde_json::json!(["unknown-extension"]);
+        let modified_header = serde_json::to_string(&header).unwrap();
+        let modified_header_b64 =
+            Base64UrlSafeNoPadding::encode_to_string(&modified_header).unwrap();
+
+        let modified_token = format!(
+            "{}.{}.{}.{}.{}",
+            modified_header_b64, parts[1], parts[2], parts[3], parts[4]
+        );
+
+        let result: Result<JWTClaims<NoCustomClaims>, _> = key.decrypt_token(&modified_token, None);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn jwe_malformed_inputs_no_panic() {
+        let key = A256KWKey::generate();
+
+        let malformed_inputs = [
+            "",
+            ".",
+            "..",
+            "...",
+            "....",
+            ".....",
+            "a]]]]]",
+            "a.b.c.d.e",
+            "?????.?????.?????.?????.?????",
+            "eyJhbGciOiJBMjU2S1ciLCJlbmMiOiJBMjU2R0NNIn0",
+            "eyJhbGciOiJBMjU2S1ciLCJlbmMiOiJBMjU2R0NNIn0.",
+            "eyJhbGciOiJBMjU2S1ciLCJlbmMiOiJBMjU2R0NNIn0..",
+            "eyJhbGciOiJBMjU2S1ciLCJlbmMiOiJBMjU2R0NNIn0...",
+            "eyJhbGciOiJBMjU2S1ciLCJlbmMiOiJBMjU2R0NNIn0....",
+            "eyJhbGciOiJBMjU2S1ciLCJlbmMiOiJBMjU2R0NNIn0.a.b.c.d",
+            "not-base64!@#$.valid.valid.valid.valid",
+            "eyJhbGciOiJBMjU2S1cifQ.a.b.c.d",
+            "eyJ9.a.b.c.d",
+            "e30.a.b.c.d",
+            &"a".repeat(100000),
+            &format!("{}.{}.{}.{}.{}", "a".repeat(10000), "b", "c", "d", "e"),
+            "eyJhbGciOiJXUk9ORyIsImVuYyI6IkEyNTZHQ00ifQ.a.b.c.d",
+            "eyJhbGciOiJBMjU2S1ciLCJlbmMiOiJXUk9ORyJ9.a.b.c.d",
+            "\0\0\0\0.\0\0\0\0.\0\0\0\0.\0\0\0\0.\0\0\0\0",
+            "eyJhbGciOiJBMjU2S1ciLCJlbmMiOiJBMjU2R0NNIn0.AAAA.AAAA.AAAA.AAAA",
+            "eyJhbGciOiJBMjU2S1ciLCJlbmMiOiJBMjU2R0NNIn0.....AAAA",
+        ];
+
+        for input in &malformed_inputs {
+            let result: Result<JWTClaims<NoCustomClaims>, _> = key.decrypt_token(input, None);
+            assert!(result.is_err(), "Expected error for input: {}", input);
+        }
+
+        // Also test decode_metadata with malformed inputs
+        for input in &malformed_inputs {
+            let _ = A256KWKey::decode_metadata(input);
+        }
+    }
+
+    #[test]
+    fn jwe_truncated_token_no_panic() {
+        let key = A256KWKey::generate();
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key.encrypt(claims).unwrap();
+
+        // Test progressively truncated tokens
+        for i in 0..token.len() {
+            let truncated = &token[..i];
+            let result: Result<JWTClaims<NoCustomClaims>, _> = key.decrypt_token(truncated, None);
+            assert!(result.is_err());
+        }
+    }
+
+    #[test]
+    fn jwe_corrupted_parts_no_panic() {
+        let key = A256KWKey::generate();
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key.encrypt(claims).unwrap();
+        let parts: Vec<&str> = token.split('.').collect();
+
+        // Corrupt each part individually
+        for i in 0..5 {
+            let mut modified_parts: Vec<String> = parts.iter().map(|s| s.to_string()).collect();
+            modified_parts[i] = "AAAA".to_string();
+            let modified = modified_parts.join(".");
+            let result: Result<JWTClaims<NoCustomClaims>, _> = key.decrypt_token(&modified, None);
+            assert!(result.is_err());
+        }
+
+        // Empty each part individually
+        for i in 0..5 {
+            let mut modified_parts: Vec<String> = parts.iter().map(|s| s.to_string()).collect();
+            modified_parts[i] = "".to_string();
+            let modified = modified_parts.join(".");
+            let result: Result<JWTClaims<NoCustomClaims>, _> = key.decrypt_token(&modified, None);
+            assert!(result.is_err());
+        }
+    }
+
+    #[test]
+    fn jwe_rsa_malformed_inputs_no_panic() {
+        let key = RsaOaepDecryptionKey::generate(2048).unwrap();
+
+        let malformed_inputs = [
+            "",
+            ".....",
+            "a.b.c.d.e",
+            "eyJhbGciOiJSU0EtT0FFUCIsImVuYyI6IkEyNTZHQ00ifQ.a.b.c.d",
+        ];
+
+        for input in &malformed_inputs {
+            let result: Result<JWTClaims<NoCustomClaims>, _> = key.decrypt_token(input, None);
+            assert!(result.is_err());
+        }
+    }
+
+    #[test]
+    fn jwe_ecdh_malformed_inputs_no_panic() {
+        let key = EcdhEsA256KWDecryptionKey::generate();
+
+        let malformed_inputs = [
+            "",
+            ".....",
+            "a.b.c.d.e",
+            "eyJhbGciOiJFQ0RILUVTK0EyNTZLVyIsImVuYyI6IkEyNTZHQ00ifQ.a.b.c.d",
+            // Valid header but missing epk
+            "eyJhbGciOiJFQ0RILUVTK0EyNTZLVyIsImVuYyI6IkEyNTZHQ00ifQ.AAAA.AAAA.AAAA.AAAA",
+        ];
+
+        for input in &malformed_inputs {
+            let result: Result<JWTClaims<NoCustomClaims>, _> = key.decrypt_token(input, None);
+            assert!(result.is_err());
+        }
     }
 }

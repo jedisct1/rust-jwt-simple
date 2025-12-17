@@ -77,6 +77,28 @@ pub enum JWTError {
     DuplicateCWTClaimKey(String),
     #[error("Weak key (must be at least 96 bits)")]
     WeakKey,
+    #[error("JWE decryption failed")]
+    DecryptionFailed,
+    #[error("JWE key unwrap failed")]
+    KeyUnwrapFailed,
+    #[error("Unsupported JWE algorithm: {0}")]
+    UnsupportedJWEAlgorithm(String),
+    #[error("Unsupported content encryption: {0}")]
+    UnsupportedContentEncryption(String),
+    #[error("Invalid JWE format")]
+    InvalidJWEFormat,
+    #[error("Missing ephemeral public key")]
+    MissingEphemeralKey,
+    #[error("Invalid ephemeral public key")]
+    InvalidEphemeralKey,
+    #[error("Invalid encryption key")]
+    InvalidEncryptionKey,
+    #[error("Invalid initialization vector")]
+    InvalidIV,
+    #[error("Invalid authentication tag")]
+    InvalidJWEAuthTag,
+    #[error("Unknown critical extension in JWE header")]
+    UnknownCriticalExtension,
 }
 
 impl From<&str> for JWTError {

@@ -15,6 +15,10 @@
     - [Key pairs and tokens creation](#key-pairs-and-tokens-creation)
       - [ES256](#es256)
       - [ES384](#es384)
+  - [JWE (Encrypted tokens)](#jwe-encrypted-tokens)
+    - [RSA-OAEP key management](#rsa-oaep-key-management)
+    - [AES Key Wrap](#aes-key-wrap)
+    - [ECDH-ES key agreement](#ecdh-es-key-agreement)
   - [Advanced usage](#advanced-usage)
     - [Custom claims](#custom-claims)
     - [Peeking at metadata before verification](#peeking-at-metadata-before-verification)
@@ -52,6 +56,18 @@ A new JWT (JSON Web Tokens) implementation for Rust that focuses on simplicity, 
 | `ES384`            | ECDSA over p384 / SHA-384             |
 | `ES256K`           | ECDSA over secp256k1 / SHA-256        |
 | `EdDSA`            | Ed25519                               |
+
+JWE (JSON Web Encryption) is also supported with the following key management algorithms:
+
+| JWE algorithm name | Description                              |
+| ------------------ | ---------------------------------------- |
+| `RSA-OAEP`         | RSA with OAEP using SHA-1                |
+| `A256KW`           | AES-256 Key Wrap (recommended)           |
+| `A128KW`           | AES-128 Key Wrap                         |
+| `ECDH-ES+A256KW`   | ECDH with AES-256 Key Wrap (recommended) |
+| `ECDH-ES+A128KW`   | ECDH with AES-128 Key Wrap               |
+
+Content encryption uses AES-GCM (A256GCM or A128GCM).
 
 `jwt-simple` can be compiled out of the box to WebAssembly/WASI. It is fully compatible with Fastly _Compute_ service.
 
@@ -200,6 +216,76 @@ let claims = public_key.verify_token::<NoCustomClaims>(&token, None)?;
 ```
 
 Available verification options are identical to the ones used with symmetric algorithms.
+
+## JWE (Encrypted tokens)
+
+While JWT signatures provide authenticity (verifying who created the token), JWE provides confidentiality by encrypting the token content. Use JWE when the claims contain sensitive data that should not be visible to intermediaries.
+
+### RSA-OAEP key management
+
+RSA-OAEP uses asymmetric encryption: anyone with the public key can encrypt tokens, but only the private key holder can decrypt them.
+
+```rust
+use jwt_simple::prelude::*;
+
+// Generate a key pair (2048 bits minimum, 4096 recommended for high security)
+let decryption_key = RsaOaepDecryptionKey::generate(2048)?;
+let encryption_key = decryption_key.encryption_key();
+
+// Encrypt a token
+let claims = Claims::create(Duration::from_hours(1))
+    .with_subject("user@example.com");
+let token = encryption_key.encrypt(claims)?;
+
+// Decrypt the token
+let claims: JWTClaims<NoCustomClaims> = decryption_key.decrypt_token(&token, None)?;
+```
+
+Keys can be exported and imported using PEM or DER formats, similar to RSA signature keys.
+
+### AES Key Wrap
+
+For symmetric encryption where the same key is used for both encryption and decryption:
+
+```rust
+use jwt_simple::prelude::*;
+
+// Generate a 256-bit key
+let key = A256KWKey::generate();
+
+// Or create from existing bytes
+let key = A256KWKey::from_bytes(&raw_key_bytes)?;
+
+// Encrypt
+let claims = Claims::create(Duration::from_hours(1));
+let token = key.encrypt(claims)?;
+
+// Decrypt
+let claims: JWTClaims<NoCustomClaims> = key.decrypt_token(&token, None)?;
+```
+
+`A128KWKey` is also available for 128-bit keys.
+
+### ECDH-ES key agreement
+
+ECDH-ES uses elliptic curve Diffie-Hellman for key agreement. Like RSA-OAEP, it uses asymmetric keys but is more efficient:
+
+```rust
+use jwt_simple::prelude::*;
+
+// Generate a key pair
+let decryption_key = EcdhEsA256KWDecryptionKey::generate();
+let encryption_key = decryption_key.encryption_key();
+
+// Encrypt
+let claims = Claims::create(Duration::from_hours(1));
+let token = encryption_key.encrypt(claims)?;
+
+// Decrypt
+let claims: JWTClaims<NoCustomClaims> = decryption_key.decrypt_token(&token, None)?;
+```
+
+JWE tokens support the same claim types and custom claims as JWT signatures. Decryption options allow validating claims, requiring specific key IDs, and limiting token size.
 
 ## Advanced usage
 
