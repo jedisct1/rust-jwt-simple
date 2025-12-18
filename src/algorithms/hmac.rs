@@ -155,7 +155,7 @@ pub trait MACLike {
             options,
             |authenticated, authentication_tag| {
                 ensure!(
-                    timingsafe_eq(
+                    ct_codecs::verify(
                         &self.authentication_tag(authenticated.as_bytes()),
                         authentication_tag
                     ),
@@ -172,7 +172,7 @@ pub trait MACLike {
                         Some(salt) => {
                             let expected_authenticated_tag = self.authentication_tag(salt);
                             ensure!(
-                                timingsafe_eq(authenticated_salt, &expected_authenticated_tag),
+                                ct_codecs::verify(authenticated_salt, &expected_authenticated_tag),
                                 JWTError::InvalidAuthenticationTag
                             );
                         }
@@ -198,7 +198,7 @@ pub trait MACLike {
             options,
             |authenticated, authentication_tag| {
                 ensure!(
-                    timingsafe_eq(
+                    ct_codecs::verify(
                         &self.authentication_tag(authenticated.as_bytes()),
                         authentication_tag
                     ),
@@ -272,7 +272,7 @@ pub trait MACLike {
             options,
             |authenticated, authentication_tag| {
                 ensure!(
-                    timingsafe_eq(
+                    ct_codecs::verify(
                         &self.authentication_tag(authenticated.as_bytes()),
                         authentication_tag
                     ),
