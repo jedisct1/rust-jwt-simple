@@ -940,12 +940,10 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         let decryption_key = RsaOaepDecryptionKey::generate(2048).unwrap();
         let encryption_key = decryption_key.encryption_key();
 
-        let claims = Claims::create(Duration::from_secs(86400))
-            .with_issuer("test issuer");
+        let claims = Claims::create(Duration::from_secs(86400)).with_issuer("test issuer");
         let token = encryption_key.encrypt(claims).unwrap();
 
-        let claims: JWTClaims<NoCustomClaims> =
-            decryption_key.decrypt_token(&token, None).unwrap();
+        let claims: JWTClaims<NoCustomClaims> = decryption_key.decrypt_token(&token, None).unwrap();
         assert_eq!(claims.issuer, Some("test issuer".to_string()));
     }
 
@@ -954,8 +952,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
     fn jwe_a256kw() {
         let key = A256KWKey::generate();
 
-        let claims = Claims::create(Duration::from_secs(86400))
-            .with_issuer("test issuer");
+        let claims = Claims::create(Duration::from_secs(86400)).with_issuer("test issuer");
         let token = key.encrypt(claims).unwrap();
 
         let claims: JWTClaims<NoCustomClaims> = key.decrypt_token(&token, None).unwrap();
@@ -980,8 +977,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
     fn jwe_a128kw() {
         let key = A128KWKey::generate();
 
-        let claims = Claims::create(Duration::from_secs(86400))
-            .with_issuer("test issuer");
+        let claims = Claims::create(Duration::from_secs(86400)).with_issuer("test issuer");
         let token = key.encrypt(claims).unwrap();
 
         let claims: JWTClaims<NoCustomClaims> = key.decrypt_token(&token, None).unwrap();
@@ -1012,8 +1008,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
             .with_audience("test audience");
         let token = encryption_key.encrypt(claims).unwrap();
 
-        let claims: JWTClaims<NoCustomClaims> =
-            decryption_key.decrypt_token(&token, None).unwrap();
+        let claims: JWTClaims<NoCustomClaims> = decryption_key.decrypt_token(&token, None).unwrap();
         assert_eq!(claims.issuer, Some("test issuer".to_string()));
     }
 
@@ -1023,12 +1018,10 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
         let decryption_key = EcdhEsA128KWDecryptionKey::generate();
         let encryption_key = decryption_key.encryption_key();
 
-        let claims = Claims::create(Duration::from_secs(86400))
-            .with_issuer("test issuer");
+        let claims = Claims::create(Duration::from_secs(86400)).with_issuer("test issuer");
         let token = encryption_key.encrypt(claims).unwrap();
 
-        let claims: JWTClaims<NoCustomClaims> =
-            decryption_key.decrypt_token(&token, None).unwrap();
+        let claims: JWTClaims<NoCustomClaims> = decryption_key.decrypt_token(&token, None).unwrap();
         assert_eq!(claims.issuer, Some("test issuer".to_string()));
     }
 

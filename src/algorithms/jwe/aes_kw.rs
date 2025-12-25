@@ -77,8 +77,7 @@ impl A256KWKey {
     }
 
     pub(crate) fn wrap_key(&self, cek: &[u8]) -> Result<Vec<u8>, Error> {
-        let aes_key =
-            AesKey::new_encrypt(&self.key).map_err(|_| JWTError::InvalidEncryptionKey)?;
+        let aes_key = AesKey::new_encrypt(&self.key).map_err(|_| JWTError::InvalidEncryptionKey)?;
 
         // Output is 8 bytes larger than input (for IV)
         let mut wrapped = vec![0u8; cek.len() + 8];
@@ -90,8 +89,7 @@ impl A256KWKey {
     pub(crate) fn unwrap_key(&self, wrapped: &[u8]) -> Result<Vec<u8>, Error> {
         ensure!(wrapped.len() >= 16, JWTError::KeyUnwrapFailed);
 
-        let aes_key =
-            AesKey::new_decrypt(&self.key).map_err(|_| JWTError::InvalidEncryptionKey)?;
+        let aes_key = AesKey::new_decrypt(&self.key).map_err(|_| JWTError::InvalidEncryptionKey)?;
 
         // Output is 8 bytes smaller than input
         let mut cek = vec![0u8; wrapped.len() - 8];
@@ -212,8 +210,7 @@ impl A128KWKey {
     }
 
     pub(crate) fn wrap_key(&self, cek: &[u8]) -> Result<Vec<u8>, Error> {
-        let aes_key =
-            AesKey::new_encrypt(&self.key).map_err(|_| JWTError::InvalidEncryptionKey)?;
+        let aes_key = AesKey::new_encrypt(&self.key).map_err(|_| JWTError::InvalidEncryptionKey)?;
 
         // Output is 8 bytes larger than input (for IV)
         let mut wrapped = vec![0u8; cek.len() + 8];
@@ -225,8 +222,7 @@ impl A128KWKey {
     pub(crate) fn unwrap_key(&self, wrapped: &[u8]) -> Result<Vec<u8>, Error> {
         ensure!(wrapped.len() >= 16, JWTError::KeyUnwrapFailed);
 
-        let aes_key =
-            AesKey::new_decrypt(&self.key).map_err(|_| JWTError::InvalidEncryptionKey)?;
+        let aes_key = AesKey::new_decrypt(&self.key).map_err(|_| JWTError::InvalidEncryptionKey)?;
 
         // Output is 8 bytes smaller than input
         let mut cek = vec![0u8; wrapped.len() - 8];

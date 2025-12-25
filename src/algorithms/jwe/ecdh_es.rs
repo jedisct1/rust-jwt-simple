@@ -315,10 +315,10 @@ impl EcdhEsA256KWDecryptionKey {
             .and_then(|v| v.as_str())
             .ok_or(JWTError::InvalidEphemeralKey)?;
 
-        let x_bytes =
-            Base64UrlSafeNoPadding::decode_to_vec(x, None).map_err(|_| JWTError::InvalidEphemeralKey)?;
-        let y_bytes =
-            Base64UrlSafeNoPadding::decode_to_vec(y, None).map_err(|_| JWTError::InvalidEphemeralKey)?;
+        let x_bytes = Base64UrlSafeNoPadding::decode_to_vec(x, None)
+            .map_err(|_| JWTError::InvalidEphemeralKey)?;
+        let y_bytes = Base64UrlSafeNoPadding::decode_to_vec(y, None)
+            .map_err(|_| JWTError::InvalidEphemeralKey)?;
 
         // Build uncompressed point: 0x04 || x || y
         let mut point_bytes = vec![0x04];
@@ -365,10 +365,8 @@ impl EcdhEsA256KWDecryptionKey {
                 .ok_or(JWTError::MissingEphemeralKey)?;
             let ephemeral_pk = Self::parse_epk(epk)?;
 
-            let shared_secret = p256::ecdh::diffie_hellman(
-                self.sk.to_nonzero_scalar(),
-                ephemeral_pk.as_affine(),
-            );
+            let shared_secret =
+                p256::ecdh::diffie_hellman(self.sk.to_nonzero_scalar(), ephemeral_pk.as_affine());
 
             let mut kek = concat_kdf(
                 shared_secret.raw_secret_bytes(),
@@ -633,10 +631,10 @@ impl EcdhEsA128KWDecryptionKey {
             .and_then(|v| v.as_str())
             .ok_or(JWTError::InvalidEphemeralKey)?;
 
-        let x_bytes =
-            Base64UrlSafeNoPadding::decode_to_vec(x, None).map_err(|_| JWTError::InvalidEphemeralKey)?;
-        let y_bytes =
-            Base64UrlSafeNoPadding::decode_to_vec(y, None).map_err(|_| JWTError::InvalidEphemeralKey)?;
+        let x_bytes = Base64UrlSafeNoPadding::decode_to_vec(x, None)
+            .map_err(|_| JWTError::InvalidEphemeralKey)?;
+        let y_bytes = Base64UrlSafeNoPadding::decode_to_vec(y, None)
+            .map_err(|_| JWTError::InvalidEphemeralKey)?;
 
         // Build uncompressed point: 0x04 || x || y
         let mut point_bytes = vec![0x04];
@@ -683,10 +681,8 @@ impl EcdhEsA128KWDecryptionKey {
                 .ok_or(JWTError::MissingEphemeralKey)?;
             let ephemeral_pk = Self::parse_epk(epk)?;
 
-            let shared_secret = p256::ecdh::diffie_hellman(
-                self.sk.to_nonzero_scalar(),
-                ephemeral_pk.as_affine(),
-            );
+            let shared_secret =
+                p256::ecdh::diffie_hellman(self.sk.to_nonzero_scalar(), ephemeral_pk.as_affine());
 
             let mut kek = concat_kdf(
                 shared_secret.raw_secret_bytes(),
