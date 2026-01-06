@@ -88,7 +88,7 @@ Rust:
 use jwt_simple::prelude::*;
 ```
 
-Errors are returned as `jwt_simple::Error` values (alias for the `Error` type of the `thiserror` crate).
+Errors are returned as `jwt_simple::Error` values (alias for the `Error` type of the `anyhow` crate).
 
 ## Authentication (symmetric, `HS*` JWT algorithms) example
 
