@@ -129,7 +129,7 @@ Key expiration, start time, authentication tags, etc. are automatically verified
 
 The full set of claims can be inspected in the `claims` object if necessary. `NoCustomClaims` means that only the standard set of claims is used by the application, but application-defined claims can also be supported.
 
-Extra verification steps can optionally be enabled via the `ValidationOptions` structure:
+Extra verification steps can optionally be enabled via the `VerificationOptions` structure:
 
 ```rust
 let mut options = VerificationOptions::default();
