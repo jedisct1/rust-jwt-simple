@@ -1126,7 +1126,10 @@ mod tests {
 
         options.accept_future = false;
         assert!(matches!(
-            claims.validate(&options).unwrap_err().downcast_ref::<crate::JWTError>(),
+            claims
+                .validate(&options)
+                .unwrap_err()
+                .downcast_ref::<crate::JWTError>(),
             Some(crate::JWTError::ClockDrift)
         ));
     }
