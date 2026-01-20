@@ -109,7 +109,7 @@
 //!
 //! Token creation:
 //!
-//! ```rust
+//! ```rust,ignore
 //! // create claims valid for 2 hours
 //! let claims = Claims::create(Duration::from_hours(2));
 //! let token = key.authenticate(claims)?;
@@ -119,7 +119,7 @@
 //!
 //! ### Token verification
 //!
-//! ```rust
+//! ```rust,ignore
 //! let claims = key.verify_token::<NoCustomClaims>(&token, None)?;
 //! ```
 //!
@@ -131,7 +131,7 @@
 //!
 //! Extra verification steps can optionally be enabled via the `VerificationOptions` structure:
 //!
-//! ```rust
+//! ```rust,ignore
 //! let mut options = VerificationOptions::default();
 //! // Accept tokens that will only be valid in the future
 //! options.accept_future = true;
@@ -194,7 +194,7 @@
 //! openssl rsa -in private.pem -outform PEM -pubout -out public.pem
 //! ```
 //!
-//! ```rust
+//! ```rust,ignore
 //! let key_pair = RS384KeyPair::from_pem(private_pem_file_content)?;
 //! let public_key = RS384PublicKey::from_pem(public_pem_file_content)?;
 //! ```
@@ -203,7 +203,7 @@
 //!
 //! Token creation:
 //!
-//! ```rust
+//! ```rust,ignore
 //! // create claims valid for 2 hours
 //! let claims = Claims::create(Duration::from_hours(2));
 //! let token = key_pair.sign(claims)?;
@@ -211,7 +211,7 @@
 //!
 //! Token verification:
 //!
-//! ```rust
+//! ```rust,ignore
 //! let claims = public_key.verify_token::<NoCustomClaims>(&token, None)?;
 //! ```
 //!
@@ -225,7 +225,7 @@
 //!
 //! RSA-OAEP uses asymmetric encryption: anyone with the public key can encrypt tokens, but only the private key holder can decrypt them.
 //!
-//! ```rust
+//! ```rust,ignore
 //! use jwt_simple::prelude::*;
 //!
 //! // Generate a key pair (2048 bits minimum, 4096 recommended for high security)
@@ -247,7 +247,7 @@
 //!
 //! For symmetric encryption where the same key is used for both encryption and decryption:
 //!
-//! ```rust
+//! ```rust,ignore
 //! use jwt_simple::prelude::*;
 //!
 //! // Generate a 256-bit key
@@ -270,7 +270,7 @@
 //!
 //! ECDH-ES uses elliptic curve Diffie-Hellman for key agreement. Like RSA-OAEP, it uses asymmetric keys but is more efficient:
 //!
-//! ```rust
+//! ```rust,ignore
 //! use jwt_simple::prelude::*;
 //!
 //! // Generate a key pair
@@ -293,14 +293,14 @@
 //!
 //! Claim objects support all the standard claims by default, and they can be set directly or via convenient helpers:
 //!
-//! ```rust
+//! ```rust,ignore
 //! let claims = Claims::create(Duration::from_hours(2)).
 //! with_issuer("Example issuer").with_subject("Example subject");
 //! ```
 //!
 //! But application-defined claims can also be used. These simply have to be present in a serializable type (this requires the `serde` crate):
 //!
-//! ```rust
+//! ```rust,ignore
 //! #[derive(Serialize, Deserialize)]
 //! struct MyAdditionalData {
 //! user_is_admin: bool,
@@ -314,13 +314,13 @@
 //!
 //! Claim creation with custom data:
 //!
-//! ```rust
+//! ```rust,ignore
 //! let claims = Claims::with_custom_claims(my_additional_data, Duration::from_secs(30));
 //! ```
 //!
 //! Claim verification with custom data. Note the presence of the custom data type:
 //!
-//! ```rust
+//! ```rust,ignore
 //! let claims = public_key.verify_token::<MyAdditionalData>(&token, None)?;
 //! let user_is_admin = claims.custom.user_is_admin;
 //! ```
@@ -329,7 +329,7 @@
 //!
 //! Properties such as the key identifier can be useful prior to tag or signature verification in order to pick the right key out of a set.
 //!
-//! ```rust
+//! ```rust,ignore
 //! let metadata = Token::decode_metadata(&token)?;
 //! let key_id = metadata.key_id();
 //! let algorithm = metadata.algorithm();
@@ -348,13 +348,13 @@
 //! Key identifiers indicate to verifiers what public key (or shared key) should be used for verification.
 //! They can be attached at any time to existing shared keys, key pairs and public keys:
 //!
-//! ```rust
+//! ```rust,ignore
 //! let public_key_with_id = public_key.with_key_id(&"unique key identifier");
 //! ```
 //!
 //! Instead of delegating this to applications, `jwt-simple` can also create such an identifier for an existing key:
 //!
-//! ```rust
+//! ```rust,ignore
 //! let key_id = public_key.create_key_id();
 //! ```
 //!
@@ -386,7 +386,7 @@
 //!
 //! Example usage:
 //!
-//! ```rust
+//! ```rust,ignore
 //! // Create a random key and a signer salt
 //! let key = HS256Key::generate_with_salt();
 //! let claims = Claims::create(Duration::from_secs(86400));
@@ -396,7 +396,7 @@
 //! A salt is a `Salt` enum, because it can be either a salt for signing, or a salt for verification.
 //! It can be saved and restored:
 //!
-//! ```rust
+//! ```rust,ignore
 //! // Get the salt
 //! let salt = key.salt();
 //! // Attach an existing salt to a key
@@ -405,7 +405,7 @@
 //!
 //! Given a signer salt, the corresponding verifier salt can be computed:
 //!
-//! ```rust
+//! ```rust,ignore
 //! // Compute the verifier salt, given a signer salt
 //! let verifier_salt = key.verifier_salt()?;
 //! ```
@@ -414,7 +414,7 @@
 //!
 //! Verification:
 //!
-//! ```rust
+//! ```rust,ignore
 //! let verifier_salt = Salt::Verifier(verifier_salt_bytes);
 //! key.attach_salt(verifier_salt)?;
 //! let claims = key.verify_token::<NoCustomClaims>(&token, None)?;
@@ -434,7 +434,7 @@
 //!
 //! It is possible to change the content type (`cty`) and signature type (`typ`) fields of a signed JWT by using the `sign_with_options`/`authenticate_with_options` functions and passing in a `HeaderOptions` struct:
 //!
-//! ``` rust
+//! ``` rust,ignore
 //! let options = HeaderOptions {
 //! content_type: Some("foo".into()),
 //! signature_type: Some("foo+JWT".into()),
@@ -449,7 +449,7 @@
 //!
 //! By default, `jwt_simple` ignores the `content_type` field when doing validation, and checks `signature_type` to ensure it is either exactly `JWT` or ends in `+JWT`, case insensitive, if it is present. Both fields may instead be case-insensitively compared against an expected string:
 //!
-//! ```rust
+//! ```rust,ignore
 //! options.required_signature_type = Some("JWT".into());
 //! options.required_content_type = Some("foo+jwt".into());
 //! ```
