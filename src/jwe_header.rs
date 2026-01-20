@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 /// the content encryption key (CEK) and the plaintext.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JWEHeader {
-    /// Key management algorithm (e.g., "RSA-OAEP-256", "A256KW", "ECDH-ES+A256KW")
+    /// Key management algorithm (e.g., "RSA-OAEP", "A256KW", "ECDH-ES+A256KW")
     #[serde(rename = "alg")]
     pub algorithm: String,
 
@@ -130,6 +130,6 @@ impl JWEHeader {
 
 impl Default for JWEHeader {
     fn default() -> Self {
-        JWEHeader::new("RSA-OAEP-256", "A256GCM")
+        JWEHeader::new("RSA-OAEP", "A256GCM")
     }
 }
