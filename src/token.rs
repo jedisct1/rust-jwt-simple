@@ -86,7 +86,7 @@ impl TokenMetadata {
     }
 
     /// URLsafe-base64-encoded SHA256 hash of the X.509 certificate for this
-    /// token ("x5t#256") In practice, it can also be any string
+    /// token ("x5t#S256") In practice, it can also be any string
     /// representing the public key. This information should not be trusted:
     /// it is unprotected and can be freely modified by a third party.
     pub fn certificate_sha256_thumbprint(&self) -> Option<&str> {

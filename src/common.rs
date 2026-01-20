@@ -205,7 +205,7 @@ impl KeyMetadata {
         Ok(self)
     }
 
-    /// Add a certificate SHA-256 thumbprint to the metadata ("x5t#256")
+    /// Add a certificate SHA-256 thumbprint to the metadata ("x5t#S256")
     pub fn with_certificate_sha256_thumbprint(
         mut self,
         certificate_sha256_thumbprint: impl ToString,
