@@ -13,10 +13,10 @@ readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.100"
-blake2b_simd = "1.0.3"
+blake2b_simd = "1.0.4"
 binstring = "0.1.7"
 ciborium = { version = "0.2.2", optional = true }
-coarsetime = "0.1.36"
+coarsetime = "0.1.37"
 ct-codecs = "1.1.6"
 ed25519-compact = { version = "2.2.0", features = ["pem"] }
 hmac-sha1-compact = "1.1.6"
@@ -28,11 +28,11 @@ p384 = { version = "0.13.1", features = ["ecdsa", "std", "pkcs8", "pem"] }
 rand = "=0.8.5"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
-thiserror = "2.0.17"
+thiserror = "2.0.18"
 zeroize = "1.8.2"
 
 [target.'cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))'.dependencies]
-boring = { version = "4.19.0", optional = true }
+boring = { version = "4.20.0", optional = true }
 superboring = { version = "0.1.6", optional = true }
 
 [target.'cfg(any(target_arch = "wasm32", target_arch = "wasm64"))'.dependencies]
