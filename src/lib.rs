@@ -15,12 +15,19 @@
 //! - [Key pairs and tokens creation](#key-pairs-and-tokens-creation)
 //! - [ES256](#es256)
 //! - [ES384](#es384)
+//! - [JWE (Encrypted tokens)](#jwe-encrypted-tokens)
+//! - [RSA-OAEP key management](#rsa-oaep-key-management)
+//! - [AES Key Wrap](#aes-key-wrap)
+//! - [ECDH-ES key agreement](#ecdh-es-key-agreement)
 //! - [Advanced usage](#advanced-usage)
 //! - [Custom claims](#custom-claims)
 //! - [Peeking at metadata before verification](#peeking-at-metadata-before-verification)
 //! - [Creating and attaching key identifiers](#creating-and-attaching-key-identifiers)
 //! - [Mitigations against replay attacks](#mitigations-against-replay-attacks)
+//! - [Salted keys](#salted-keys)
 //! - [CWT (CBOR) support](#cwt-cbor-support)
+//! - [Specifying header options](#specifying-header-options)
+//! - [Validating content and signature types](#validating-content-and-signature-types)
 //! - [Working around compilation issues with the `boring` crate](#working-around-compilation-issues-with-the-boring-crate)
 //! - [Usage in Web browsers](#usage-in-web-browsers)
 //! - [Why yet another JWT crate](#why-yet-another-jwt-crate)
@@ -50,9 +57,21 @@
 //! | `ES256K`           | ECDSA over secp256k1 / SHA-256        |
 //! | `EdDSA`            | Ed25519                               |
 //!
+//! JWE (JSON Web Encryption) is also supported with the following key management algorithms:
+//!
+//! | JWE algorithm name | Description                                 |
+//! | ------------------ | ------------------------------------------- |
+//! | `RSA-OAEP`         | RSA with OAEP using SHA-1 (not recommended) |
+//! | `A256KW`           | AES-256 Key Wrap                            |
+//! | `A128KW`           | AES-128 Key Wrap                            |
+//! | `ECDH-ES+A256KW`   | ECDH with AES-256 Key Wrap                  |
+//! | `ECDH-ES+A128KW`   | ECDH with AES-128 Key Wrap                  |
+//!
+//! Content encryption uses AES-GCM (A256GCM or A128GCM).
+//!
 //! `jwt-simple` can be compiled out of the box to WebAssembly/WASI. It is fully compatible with Fastly _Compute_ service.
 //!
-//! Important: JWT's purpose is to verify that data has been created by a party knowing a secret key. It does not provide any kind of confidentiality: JWT data is simply encoded as BASE64, and is not encrypted.
+//! Important: JWT's purpose is to verify that data has been created by a party knowing a secret key. It does not provide any kind of confidentiality: JWT data is simply encoded as Base64, and is not encrypted.
 //!
 //! ## Usage
 //!
@@ -91,14 +110,9 @@
 //! Token creation:
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # fn main() -> Result<(), jwt_simple::Error> {
-//! # let key = HS256Key::generate();
-//! /// create claims valid for 2 hours
+//! // create claims valid for 2 hours
 //! let claims = Claims::create(Duration::from_hours(2));
 //! let token = key.authenticate(claims)?;
-//! # Ok(())
-//! # }
 //! ```
 //!
 //! -> Done!
@@ -106,14 +120,7 @@
 //! ### Token verification
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # fn main() -> Result<(), jwt_simple::Error> {
-//! # let key = HS256Key::generate();
-//! # let claims = Claims::create(Duration::from_hours(2));
-//! # let token = key.authenticate(claims)?;
 //! let claims = key.verify_token::<NoCustomClaims>(&token, None)?;
-//! # Ok(())
-//! # }
 //! ```
 //!
 //! -> Done! No additional steps required.
@@ -125,11 +132,6 @@
 //! Extra verification steps can optionally be enabled via the `VerificationOptions` structure:
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # fn xmain() -> Result<(), jwt_simple::Error> {
-//! # let key = HS256Key::generate();
-//! # let claims = Claims::create(Duration::from_hours(2));
-//! # let token = key.authenticate(claims)?;
 //! let mut options = VerificationOptions::default();
 //! // Accept tokens that will only be valid in the future
 //! options.accept_future = true;
@@ -145,12 +147,9 @@
 //! // see the documentation for the full list of available options
 //!
 //! let claims = key.verify_token::<NoCustomClaims>(&token, Some(options))?;
-//! # Ok(())
-//! # }
-//! # fn main() { xmain().ok(); }
 //! ```
 //!
-//! Note that `allowed_issuers` and `allowed_audiences` are not strings, but sets of strings (using the `HashSet` type from the Rust standard library), as the application can allow multiple return values.
+//! Note that `allowed_issuers` and `allowed_audiences` are not strings, but sets of strings (using the `HashSet` type from the Rust standard library), as the application can allow multiple values.
 //!
 //! ## Signatures (asymmetric, `RS*`, `PS*`, `ES*` and `EdDSA` algorithms) example
 //!
@@ -196,15 +195,8 @@
 //! ```
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # fn xmain() -> Result<(), jwt_simple::Error> {
-//! # let private_pem_file_content = "test";
-//! # let public_pem_file_content = "test";
 //! let key_pair = RS384KeyPair::from_pem(private_pem_file_content)?;
 //! let public_key = RS384PublicKey::from_pem(public_pem_file_content)?;
-//! # Ok(())
-//! # }
-//! # fn main() { xmain().ok(); }
 //! ```
 //!
 //! Token creation and verification work the same way as with `HS*` algorithms, except that tokens are created with a key pair, and verified using the corresponding public key.
@@ -212,36 +204,88 @@
 //! Token creation:
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # fn xmain() -> Result<(), jwt_simple::Error> {
-//! # let private_pem_file_content = "test";
-//! # let key_pair = RS384KeyPair::from_pem(private_pem_file_content)?;
-//! /// create claims valid for 2 hours
+//! // create claims valid for 2 hours
 //! let claims = Claims::create(Duration::from_hours(2));
 //! let token = key_pair.sign(claims)?;
-//! # Ok(())
-//! # }
-//! # fn main() { xmain().ok(); }
 //! ```
 //!
 //! Token verification:
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # fn xmain() -> Result<(), jwt_simple::Error> {
-//! # let private_pem_file_content = "test";
-//! # let public_pem_file_content = "test";
-//! # let key_pair = RS384KeyPair::from_pem(private_pem_file_content)?;
-//! # let public_key = RS384PublicKey::from_pem(public_pem_file_content)?;
-//! # let claims = Claims::create(Duration::from_hours(2));
-//! # let token = key_pair.sign(claims)?;
 //! let claims = public_key.verify_token::<NoCustomClaims>(&token, None)?;
-//! # Ok(())
-//! # }
-//! # fn main() { xmain().ok(); }
 //! ```
 //!
 //! Available verification options are identical to the ones used with symmetric algorithms.
+//!
+//! ## JWE (Encrypted tokens)
+//!
+//! While JWT signatures provide authenticity (verifying who created the token), JWE provides confidentiality by encrypting the token content. Use JWE when the claims contain sensitive data that should not be visible to intermediaries.
+//!
+//! ### RSA-OAEP key management
+//!
+//! RSA-OAEP uses asymmetric encryption: anyone with the public key can encrypt tokens, but only the private key holder can decrypt them.
+//!
+//! ```rust
+//! use jwt_simple::prelude::*;
+//!
+//! // Generate a key pair (2048 bits minimum, 4096 recommended for high security)
+//! let decryption_key = RsaOaepDecryptionKey::generate(2048)?;
+//! let encryption_key = decryption_key.encryption_key();
+//!
+//! // Encrypt a token
+//! let claims = Claims::create(Duration::from_hours(1))
+//! .with_subject("user@example.com");
+//! let token = encryption_key.encrypt(claims)?;
+//!
+//! // Decrypt the token
+//! let claims: JWTClaims<NoCustomClaims> = decryption_key.decrypt_token(&token, None)?;
+//! ```
+//!
+//! Keys can be exported and imported using PEM or DER formats, similar to RSA signature keys.
+//!
+//! ### AES Key Wrap
+//!
+//! For symmetric encryption where the same key is used for both encryption and decryption:
+//!
+//! ```rust
+//! use jwt_simple::prelude::*;
+//!
+//! // Generate a 256-bit key
+//! let key = A256KWKey::generate();
+//!
+//! // Or create from existing bytes
+//! let key = A256KWKey::from_bytes(&raw_key_bytes)?;
+//!
+//! // Encrypt
+//! let claims = Claims::create(Duration::from_hours(1));
+//! let token = key.encrypt(claims)?;
+//!
+//! // Decrypt
+//! let claims: JWTClaims<NoCustomClaims> = key.decrypt_token(&token, None)?;
+//! ```
+//!
+//! `A128KWKey` is also available for 128-bit keys.
+//!
+//! ### ECDH-ES key agreement
+//!
+//! ECDH-ES uses elliptic curve Diffie-Hellman for key agreement. Like RSA-OAEP, it uses asymmetric keys but is more efficient:
+//!
+//! ```rust
+//! use jwt_simple::prelude::*;
+//!
+//! // Generate a key pair
+//! let decryption_key = EcdhEsA256KWDecryptionKey::generate();
+//! let encryption_key = decryption_key.encryption_key();
+//!
+//! // Encrypt
+//! let claims = Claims::create(Duration::from_hours(1));
+//! let token = encryption_key.encrypt(claims)?;
+//!
+//! // Decrypt
+//! let claims: JWTClaims<NoCustomClaims> = decryption_key.decrypt_token(&token, None)?;
+//! ```
+//!
+//! JWE tokens support the same claim types and custom claims as JWT signatures. Decryption options allow validating claims, requiring specific key IDs, and limiting token size.
 //!
 //! ## Advanced usage
 //!
@@ -250,16 +294,13 @@
 //! Claim objects support all the standard claims by default, and they can be set directly or via convenient helpers:
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
 //! let claims = Claims::create(Duration::from_hours(2)).
 //! with_issuer("Example issuer").with_subject("Example subject");
 //! ```
 //!
-//! But application-defined claims can also be defined. These simply have to be present in a serializable type (this requires the `serde` crate):
+//! But application-defined claims can also be used. These simply have to be present in a serializable type (this requires the `serde` crate):
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # use serde::{de::DeserializeOwned, Serialize};
 //! #[derive(Serialize, Deserialize)]
 //! struct MyAdditionalData {
 //! user_is_admin: bool,
@@ -274,34 +315,14 @@
 //! Claim creation with custom data:
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # use serde::{de::DeserializeOwned, Serialize};
-//! # #[derive(Serialize, Deserialize)]
-//! # struct MyAdditionalData {user_is_admin: bool}
-//! # fn main() -> Result<(), jwt_simple::Error> {
-//! # let my_additional_data = MyAdditionalData {user_is_admin: false};
 //! let claims = Claims::with_custom_claims(my_additional_data, Duration::from_secs(30));
-//! # Ok(())
-//! # }
 //! ```
 //!
 //! Claim verification with custom data. Note the presence of the custom data type:
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # use serde::{de::DeserializeOwned, Serialize};
-//! # #[derive(Serialize, Deserialize)]
-//! # struct MyAdditionalData {user_is_admin: bool}
-//! # fn xmain() -> Result<(), jwt_simple::Error> {
-//! # let kp = Ed25519KeyPair::generate();
-//! # let claims = Claims::create(Duration::from_secs(86400));
-//! # let token = kp.sign(claims)?;
-//! # let public_key = kp.public_key();
 //! let claims = public_key.verify_token::<MyAdditionalData>(&token, None)?;
 //! let user_is_admin = claims.custom.user_is_admin;
-//! # Ok(())
-//! # }
-//! # fn main() { xmain().ok(); }
 //! ```
 //!
 //! ### Peeking at metadata before verification
@@ -309,17 +330,10 @@
 //! Properties such as the key identifier can be useful prior to tag or signature verification in order to pick the right key out of a set.
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # fn main() -> Result<(), jwt_simple::Error> {
-//! # let key = RS384KeyPair::generate(3072)?;
-//! # let claims = Claims::create(Duration::from_secs(86400));
-//! # let token = key.sign(claims)?;
 //! let metadata = Token::decode_metadata(&token)?;
 //! let key_id = metadata.key_id();
 //! let algorithm = metadata.algorithm();
 //! // all other standard properties are also accessible
-//! # Ok(())
-//! # }
 //! ```
 //!
 //! **IMPORTANT:** neither the key ID nor the algorithm can be trusted. This is an unfixable design flaw of the JWT standard.
@@ -335,16 +349,12 @@
 //! They can be attached at any time to existing shared keys, key pairs and public keys:
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # let public_key = Ed25519KeyPair::generate().public_key();
 //! let public_key_with_id = public_key.with_key_id(&"unique key identifier");
 //! ```
 //!
 //! Instead of delegating this to applications, `jwt-simple` can also create such an identifier for an existing key:
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # let mut public_key = Ed25519KeyPair::generate().public_key();
 //! let key_id = public_key.create_key_id();
 //! ```
 //!
@@ -377,41 +387,27 @@
 //! Example usage:
 //!
 //! ```rust
-//! /// Create a random key and a signer salt
-//! # use jwt_simple::prelude::*;
-//! # fn main() -> Result<(), jwt_simple::Error> {
+//! // Create a random key and a signer salt
 //! let key = HS256Key::generate_with_salt();
 //! let claims = Claims::create(Duration::from_secs(86400));
 //! let token = key.authenticate(claims).unwrap();
-//! # Ok(())
-//! # }
 //! ```
 //!
 //! A salt is a `Salt` enum, because it can be either a salt for signing, or a salt for verification.
 //! It can be saved and restored:
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # fn main() -> Result<(), jwt_simple::Error> {
-//! let mut key = HS256Key::generate_with_salt();
-//! /// Get the salt
+//! // Get the salt
 //! let salt = key.salt();
-//! /// Attach an existing salt to a key
+//! // Attach an existing salt to a key
 //! key.attach_salt(salt)?;
-//! # Ok(())
-//! # }
 //! ```
 //!
 //! Given a signer salt, the corresponding verifier salt can be computed:
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # fn main() -> Result<(), jwt_simple::Error> {
-//! # let key = HS256Key::generate_with_salt();
-//! /// Compute the verifier salt, given a signer salt
+//! // Compute the verifier salt, given a signer salt
 //! let verifier_salt = key.verifier_salt()?;
-//! # Ok(())
-//! # }
 //! ```
 //!
 //! The verifier salt doesn't have to be secret, and can even be hard-coded in the verification code.
@@ -419,18 +415,9 @@
 //! Verification:
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # fn xmain() -> Result<(), jwt_simple::Error> {
-//! # let verifier_salt_bytes = b"verifier salt".to_vec();
-//! # let mut key = HS256Key::generate_with_salt();
-//! # let claims = Claims::create(Duration::from_secs(86400));
-//! # let token = key.authenticate(claims)?;
 //! let verifier_salt = Salt::Verifier(verifier_salt_bytes);
 //! key.attach_salt(verifier_salt)?;
 //! let claims = key.verify_token::<NoCustomClaims>(&token, None)?;
-//! # Ok(())
-//! # }
-//! # fn main() { xmain().ok(); }
 //! ```
 //!
 //! ### CWT (CBOR) support
@@ -439,26 +426,23 @@
 //!
 //! Please note that CWT doesn't support custom claims. The required identifiers [haven't been standardized yet](https://www.iana.org/assignments/cwt/cwt.xhtml).
 //!
-//! Also, the existing Rust crates for JSON and CBOR deserialization are not safe. An untrusted party can send a serialized object that requires a lot of memory and CPU to deserialize. Band-aids have been added for JSON, but with the current Rust tooling, it would be tricky to do for CBOR.
+//! Also, the existing Rust crates for JSON and CBOR deserialization are not safe. An untrusted party can send a serialized object that requires a lot of memory and CPU to deserialize. Band-aids have been added for JSON, but with the current Rust tooling, it would be tricky to implement for CBOR.
 //!
-//! As a mitigation, we highly recommend rejecting tokens that would be too large in the context of your application. That can be done by with the `max_token_length` verification option.
-//!
+//! As a mitigation, we highly recommend rejecting tokens that would be too large in the context of your application. That can be done with the `max_token_length` verification option.
 //!
 //! ### Specifying header options
 //!
-//! It is possible to change the content type (`cty`) and signature type (`typ`) fields of a signed JWT by using the `sign_with_options`/`authenticate_with_options` functions, passing in a `HeaderOptions` struct:
+//! It is possible to change the content type (`cty`) and signature type (`typ`) fields of a signed JWT by using the `sign_with_options`/`authenticate_with_options` functions and passing in a `HeaderOptions` struct:
 //!
-//! ```rust
-//! # use jwt_simple::prelude::*;
-//! # let mut key_pair = Ed25519KeyPair::generate();
-//! # let claims = Claims::create(Duration::from_secs(86400));
+//! ``` rust
 //! let options = HeaderOptions {
-//!    content_type: Some("foo".into()),
-//!    signature_type: Some("foo+JWT".into()),
-//!    ..Default::default()
+//! content_type: Some("foo".into()),
+//! signature_type: Some("foo+JWT".into()),
+//! ..Default::default()
 //! };
 //! key_pair.sign_with_options(claims, &options).unwrap();
 //! ```
+//!
 //! By default, generated JWTs will have a signature type field containing the string "JWT", and the content type field will not be present.
 //!
 //! ### Validating content and signature types
@@ -466,19 +450,18 @@
 //! By default, `jwt_simple` ignores the `content_type` field when doing validation, and checks `signature_type` to ensure it is either exactly `JWT` or ends in `+JWT`, case insensitive, if it is present. Both fields may instead be case-insensitively compared against an expected string:
 //!
 //! ```rust
-//! # use jwt_simple::prelude::*;
-//! # let mut options = VerificationOptions::default();
 //! options.required_signature_type = Some("JWT".into());
 //! options.required_content_type = Some("foo+jwt".into());
 //! ```
 //!
 //! When validating CWTs, note that CWTs do not have a `content_type` field in their header, and therefore attempting to match a specific one by setting `required_content_type` during validation will **always result in an error**.
 //!
+//!
 //! ## Working around compilation issues with the `boring` crate
 //!
 //! As a temporary workaround for portability issues with one of the dependencies (the `boring` crate), this library can be compiled to use only Rust implementations.
 //!
-//! In order to do so, import the crate with `default-features=false, features=["pure-rust"]` in your Cargo configuration.
+//! In order to do so, import the crate with `default-features = false, features = ["pure-rust"]` in your Cargo configuration.
 //!
 //! Do not do it unconditionally. This is only required for very specific setups and targets, and only until issues with the `boring` crate have been solved. The way to configure this in Cargo may also change in future versions.
 //!
@@ -500,14 +483,13 @@
 //!
 //! This crate was designed to:
 //!
-//! - Be simple to use, even to people who are new to Rust
+//! - Be simple to use, even for people who are new to Rust
 //! - Avoid common JWT API pitfalls
-//! - Support features widely in use. I'd love to limit the algorithm choices to Ed25519, but other methods are required to connect to existing APIs, so just provide them (with the exception of the `None` signature method for obvious reasons).
+//! - Support features widely in use. I'd love to limit the algorithm choices to Ed25519, but other methods are required to connect to existing APIs, so we provide them (with the exception of the `None` signature method for obvious reasons).
 //! - Minimize code complexity and external dependencies
 //! - Automatically perform common tasks to prevent misuse. Signature verification and claims validation happen automatically instead of relying on applications.
 //! - Still allow power users to access everything JWT tokens include if they really need to
 //! - Work out of the box in a WebAssembly environment, so that it can be used in function-as-a-service platforms.
-
 #![forbid(unsafe_code)]
 
 #[cfg(all(feature = "pure-rust", feature = "optimal"))]
@@ -760,10 +742,12 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
     fn eddsa_pem() {
         let sk_pem = "-----BEGIN PRIVATE KEY-----
 MC4CAQAwBQYDK2VwBCIEIMXY1NUbUe/3dW2YUoKW5evsnCJPMfj60/q0RzGne3gg
------END PRIVATE KEY-----\n";
+-----END PRIVATE KEY-----
+";
         let pk_pem = "-----BEGIN PUBLIC KEY-----
 MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
------END PUBLIC KEY-----\n";
+-----END PUBLIC KEY-----
+";
         let kp = Ed25519KeyPair::from_pem(sk_pem).unwrap();
         assert_eq!(kp.public_key().to_pem(), pk_pem);
     }
@@ -1177,7 +1161,7 @@ MCowBQYDK2VwAyEAyrRjJfTnhMcW5igzYvPirFW5eUgMdKeClGzQhd4qw+Y=
             &format!("{}.{}.{}.{}.{}", "a".repeat(10000), "b", "c", "d", "e"),
             "eyJhbGciOiJXUk9ORyIsImVuYyI6IkEyNTZHQ00ifQ.a.b.c.d",
             "eyJhbGciOiJBMjU2S1ciLCJlbmMiOiJXUk9ORyJ9.a.b.c.d",
-            "\0\0\0\0.\0\0\0\0.\0\0\0\0.\0\0\0\0.\0\0\0\0",
+            "    .    .    .    .    ",
             "eyJhbGciOiJBMjU2S1ciLCJlbmMiOiJBMjU2R0NNIn0.AAAA.AAAA.AAAA.AAAA",
             "eyJhbGciOiJBMjU2S1ciLCJlbmMiOiJBMjU2R0NNIn0.....AAAA",
         ];
