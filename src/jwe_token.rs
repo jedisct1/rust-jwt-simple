@@ -2,9 +2,8 @@
 
 use ct_codecs::{Base64UrlSafeNoPadding, Decoder, Encoder};
 use serde::{de::DeserializeOwned, Serialize};
-use zeroize::Zeroize;
 
-use crate::algorithms::jwe::content::ContentEncryption;
+use crate::algorithms::jwe::content::{ContentEncryption, CEK};
 use crate::claims::*;
 use crate::common::VerificationOptions;
 use crate::error::*;
@@ -121,11 +120,11 @@ impl JWEToken {
         let plaintext = claims_json.as_bytes();
 
         // Generate CEK and IV
-        let mut cek = content_encryption.generate_cek();
+        let cek = CEK::new(content_encryption.generate_cek());
         let iv = content_encryption.generate_iv();
 
         // Wrap the CEK
-        let encrypted_key = key_wrap_fn(&cek)?;
+        let encrypted_key = key_wrap_fn(cek.as_bytes())?;
 
         // Build the AAD (ASCII bytes of the base64url-encoded header)
         let header_json = serde_json::to_string(header)?;
@@ -133,12 +132,8 @@ impl JWEToken {
         let aad = header_b64.as_bytes();
 
         // Encrypt the plaintext
-        let result = content_encryption.encrypt(&cek, &iv, aad, plaintext);
-
-        // Zeroize the CEK immediately after use
-        cek.zeroize();
-
-        let (ciphertext, tag) = result?;
+        let (ciphertext, tag) = content_encryption.encrypt(cek.as_bytes(), &iv, aad, plaintext)?;
+        drop(cek); // Zeroize CEK immediately after use
 
         // Build the final token
         let encrypted_key_b64 = Base64UrlSafeNoPadding::encode_to_string(&encrypted_key)?;
@@ -224,18 +219,14 @@ impl JWEToken {
         let content_encryption = ContentEncryption::from_alg_name(&header.encryption)?;
 
         // Unwrap the CEK
-        let mut cek = key_unwrap_fn(&header, &encrypted_key)?;
+        let cek = CEK::new(key_unwrap_fn(&header, &encrypted_key)?);
 
         // The AAD is the ASCII bytes of the base64url-encoded header
         let aad = header_b64.as_bytes();
 
         // Decrypt the ciphertext
-        let result = content_encryption.decrypt(&cek, &iv, aad, &ciphertext, &tag);
-
-        // Zeroize the CEK immediately after use
-        cek.zeroize();
-
-        let plaintext = result?;
+        let plaintext = content_encryption.decrypt(cek.as_bytes(), &iv, aad, &ciphertext, &tag)?;
+        drop(cek); // Zeroize CEK immediately after use
 
         // Parse the claims
         let claims: JWTClaims<CustomClaims> = serde_json::from_slice(&plaintext)?;
