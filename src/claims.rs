@@ -602,7 +602,9 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
             ensure!(issued_at >= reject_before, JWTError::OldTokenReused);
         }
         if let Some(time_issued) = self.issued_at {
-            ensure!(time_issued <= now + time_tolerance, JWTError::ClockDrift);
+            if !options.accept_future {
+                ensure!(time_issued <= now + time_tolerance, JWTError::ClockDrift);
+            }
             if let Some(max_validity) = options.max_validity {
                 ensure!(
                     now <= time_issued || now - time_issued <= max_validity,
@@ -1105,6 +1107,28 @@ mod tests {
         options.artificial_time = Some(claims.issued_at.unwrap() - drift);
         options.time_tolerance = Some(Duration::from_mins(2));
         claims.validate(&options).unwrap();
+    }
+
+    #[test]
+    fn accept_future_allows_issued_at_in_future() {
+        let mut claims = Claims::create(Duration::from_mins(30));
+        let now = claims.issued_at.unwrap();
+        let future = now + Duration::from_mins(10);
+        claims.issued_at = Some(future);
+        claims.invalid_before = Some(now);
+
+        let mut options = VerificationOptions::default();
+        options.artificial_time = Some(now);
+        options.time_tolerance = Some(Duration::from_secs(0));
+
+        options.accept_future = true;
+        claims.validate(&options).unwrap();
+
+        options.accept_future = false;
+        assert!(matches!(
+            claims.validate(&options).unwrap_err().downcast_ref::<crate::JWTError>(),
+            Some(crate::JWTError::ClockDrift)
+        ));
     }
 
     #[test]
