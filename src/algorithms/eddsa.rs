@@ -54,6 +54,10 @@ impl Edwards25519PublicKey {
     pub fn to_pem(&self) -> String {
         self.0.to_pem()
     }
+
+    fn thumbprint(&self, hash: impl Fn(&[u8]) -> Vec<u8>) -> String {
+        Base64UrlSafeNoPadding::encode_to_string(hash(&self.to_der())).unwrap()
+    }
 }
 
 #[doc(hidden)]
@@ -372,10 +376,10 @@ impl Ed25519PublicKey {
     }
 
     pub fn sha1_thumbprint(&self) -> String {
-        Base64UrlSafeNoPadding::encode_to_string(SHA1::hash(&self.pk.to_der())).unwrap()
+        self.pk.thumbprint(|data| SHA1::hash(data).to_vec())
     }
 
     pub fn sha256_thumbprint(&self) -> String {
-        Base64UrlSafeNoPadding::encode_to_string(SHA256::hash(&self.pk.to_der())).unwrap()
+        self.pk.thumbprint(|data| SHA256::hash(data).to_vec())
     }
 }

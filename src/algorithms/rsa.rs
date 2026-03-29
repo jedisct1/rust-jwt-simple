@@ -60,15 +60,18 @@ impl RSAPublicKey {
     }
 
     pub fn to_pem(&self) -> Result<String, Error> {
-        let bytes = self.0.public_key_to_pem()?;
-        let pem = String::from_utf8(bytes)?;
-        Ok(pem)
+        Ok(String::from_utf8(self.0.public_key_to_pem()?)?)
     }
 
     pub fn to_components(&self) -> RSAPublicKeyComponents {
-        let n = self.0.n().to_vec();
-        let e = self.0.e().to_vec();
-        RSAPublicKeyComponents { n, e }
+        RSAPublicKeyComponents {
+            n: self.0.n().to_vec(),
+            e: self.0.e().to_vec(),
+        }
+    }
+
+    fn thumbprint(&self, hash: impl Fn(&[u8]) -> Vec<u8>) -> String {
+        Base64UrlSafeNoPadding::encode_to_string(hash(&self.to_der().unwrap())).unwrap()
     }
 }
 
@@ -404,11 +407,11 @@ impl RS256PublicKey {
     }
 
     pub fn sha1_thumbprint(&self) -> String {
-        Base64UrlSafeNoPadding::encode_to_string(SHA1::hash(&self.pk.to_der().unwrap())).unwrap()
+        self.pk.thumbprint(|data| SHA1::hash(data).to_vec())
     }
 
     pub fn sha256_thumbprint(&self) -> String {
-        Base64UrlSafeNoPadding::encode_to_string(SHA256::hash(&self.pk.to_der().unwrap())).unwrap()
+        self.pk.thumbprint(|data| SHA256::hash(data).to_vec())
     }
 }
 
@@ -566,11 +569,11 @@ impl RS512PublicKey {
     }
 
     pub fn sha1_thumbprint(&self) -> String {
-        Base64UrlSafeNoPadding::encode_to_string(SHA1::hash(&self.pk.to_der().unwrap())).unwrap()
+        self.pk.thumbprint(|data| SHA1::hash(data).to_vec())
     }
 
     pub fn sha256_thumbprint(&self) -> String {
-        Base64UrlSafeNoPadding::encode_to_string(SHA256::hash(&self.pk.to_der().unwrap())).unwrap()
+        self.pk.thumbprint(|data| SHA256::hash(data).to_vec())
     }
 }
 
@@ -728,11 +731,11 @@ impl RS384PublicKey {
     }
 
     pub fn sha1_thumbprint(&self) -> String {
-        Base64UrlSafeNoPadding::encode_to_string(SHA1::hash(&self.pk.to_der().unwrap())).unwrap()
+        self.pk.thumbprint(|data| SHA1::hash(data).to_vec())
     }
 
     pub fn sha256_thumbprint(&self) -> String {
-        Base64UrlSafeNoPadding::encode_to_string(SHA256::hash(&self.pk.to_der().unwrap())).unwrap()
+        self.pk.thumbprint(|data| SHA256::hash(data).to_vec())
     }
 }
 
@@ -1044,11 +1047,11 @@ impl PS512PublicKey {
     }
 
     pub fn sha1_thumbprint(&self) -> String {
-        Base64UrlSafeNoPadding::encode_to_string(SHA1::hash(&self.pk.to_der().unwrap())).unwrap()
+        self.pk.thumbprint(|data| SHA1::hash(data).to_vec())
     }
 
     pub fn sha256_thumbprint(&self) -> String {
-        Base64UrlSafeNoPadding::encode_to_string(SHA256::hash(&self.pk.to_der().unwrap())).unwrap()
+        self.pk.thumbprint(|data| SHA256::hash(data).to_vec())
     }
 }
 
@@ -1206,10 +1209,10 @@ impl PS384PublicKey {
     }
 
     pub fn sha1_thumbprint(&self) -> String {
-        Base64UrlSafeNoPadding::encode_to_string(SHA1::hash(&self.pk.to_der().unwrap())).unwrap()
+        self.pk.thumbprint(|data| SHA1::hash(data).to_vec())
     }
 
     pub fn sha256_thumbprint(&self) -> String {
-        Base64UrlSafeNoPadding::encode_to_string(SHA256::hash(&self.pk.to_der().unwrap())).unwrap()
+        self.pk.thumbprint(|data| SHA256::hash(data).to_vec())
     }
 }
