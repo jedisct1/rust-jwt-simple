@@ -76,10 +76,16 @@ impl RSAPublicKey {
 }
 
 #[doc(hidden)]
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct RSAKeyPair {
     rsa_sk: Rsa<Private>,
     metadata: Option<KeyMetadata>,
+}
+
+impl std::fmt::Debug for RSAKeyPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Rsa")
+    }
 }
 
 impl AsRef<Rsa<Private>> for RSAKeyPair {
@@ -255,10 +261,16 @@ pub trait RSAPublicKeyLike {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct RS256KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
+}
+
+impl std::fmt::Debug for RS256KeyPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Rsa")
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -417,10 +429,16 @@ impl RS256PublicKey {
 
 //
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct RS512KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
+}
+
+impl std::fmt::Debug for RS512KeyPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Rsa")
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -579,10 +597,16 @@ impl RS512PublicKey {
 
 //
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct RS384KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
+}
+
+impl std::fmt::Debug for RS384KeyPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Rsa")
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -741,10 +765,16 @@ impl RS384PublicKey {
 
 //
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct PS256KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
+}
+
+impl std::fmt::Debug for PS256KeyPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Rsa")
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -895,10 +925,16 @@ impl PS256PublicKey {
 
 //
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct PS512KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
+}
+
+impl std::fmt::Debug for PS512KeyPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Rsa")
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -1057,10 +1093,16 @@ impl PS512PublicKey {
 
 //
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct PS384KeyPair {
     key_pair: RSAKeyPair,
     key_id: Option<String>,
+}
+
+impl std::fmt::Debug for PS384KeyPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Rsa")
+    }
 }
 
 #[derive(Debug, Clone)]

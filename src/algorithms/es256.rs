@@ -74,6 +74,12 @@ pub struct P256KeyPair {
     metadata: Option<KeyMetadata>,
 }
 
+impl std::fmt::Debug for P256KeyPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EcKey")
+    }
+}
+
 impl AsRef<ecdsa::SigningKey> for P256KeyPair {
     fn as_ref(&self) -> &ecdsa::SigningKey {
         &self.p256_sk
@@ -263,6 +269,12 @@ pub trait ECDSAP256PublicKeyLike {
 pub struct ES256KeyPair {
     key_pair: P256KeyPair,
     key_id: Option<String>,
+}
+
+impl std::fmt::Debug for ES256KeyPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EcKey")
+    }
 }
 
 #[derive(Debug, Clone)]

@@ -67,6 +67,12 @@ pub struct Edwards25519KeyPair {
     metadata: Option<KeyMetadata>,
 }
 
+impl std::fmt::Debug for Edwards25519KeyPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PKey").field("algorithm", &"Ed25519").finish()
+    }
+}
+
 impl AsRef<ed25519_compact::KeyPair> for Edwards25519KeyPair {
     fn as_ref(&self) -> &ed25519_compact::KeyPair {
         &self.ed25519_kp
@@ -233,6 +239,12 @@ pub trait EdDSAPublicKeyLike {
 pub struct Ed25519KeyPair {
     key_pair: Edwards25519KeyPair,
     key_id: Option<String>,
+}
+
+impl std::fmt::Debug for Ed25519KeyPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PKey").field("algorithm", &"Ed25519").finish()
+    }
 }
 
 #[derive(Debug, Clone)]

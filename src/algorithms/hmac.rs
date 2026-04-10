@@ -13,10 +13,16 @@ use crate::jwt_header::*;
 use crate::token::*;
 
 #[doc(hidden)]
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct HMACKey {
     raw_key: Vec<u8>,
     metadata: Option<KeyMetadata>,
+}
+
+impl std::fmt::Debug for HMACKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "HMACKey")
+    }
 }
 
 impl Drop for HMACKey {

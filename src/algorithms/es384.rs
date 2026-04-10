@@ -74,6 +74,12 @@ pub struct P384KeyPair {
     metadata: Option<KeyMetadata>,
 }
 
+impl std::fmt::Debug for P384KeyPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EcKey")
+    }
+}
+
 impl AsRef<ecdsa::SigningKey> for P384KeyPair {
     fn as_ref(&self) -> &ecdsa::SigningKey {
         &self.p384_sk
@@ -263,6 +269,12 @@ pub trait ECDSAP384PublicKeyLike {
 pub struct ES384KeyPair {
     key_pair: P384KeyPair,
     key_id: Option<String>,
+}
+
+impl std::fmt::Debug for ES384KeyPair {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "EcKey")
+    }
 }
 
 #[derive(Debug, Clone)]
