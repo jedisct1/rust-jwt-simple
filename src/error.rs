@@ -97,7 +97,7 @@ pub enum JWTError {
     InvalidIV,
     #[error("Invalid authentication tag")]
     InvalidJWEAuthTag,
-    #[error("Unknown critical extension in JWE header")]
+    #[error("Unknown critical extension in token header")]
     UnknownCriticalExtension,
 }
 

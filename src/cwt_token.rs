@@ -199,6 +199,13 @@ impl CWTToken {
         let unprotected = parts_cbor[1].as_map().ok_or(JWTError::CWTDecodingError)?;
         jwt_header.mix_cwt(unprotected)?;
 
+        // Reject unsupported critical header extensions before accepting the token.
+        if let Some(ref crit) = jwt_header.critical {
+            if !crit.is_empty() {
+                bail!(JWTError::UnknownCriticalExtension);
+            }
+        }
+
         ensure!(
             jwt_header.algorithm == jwt_alg_name,
             JWTError::AlgorithmMismatch

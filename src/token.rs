@@ -157,6 +157,13 @@ impl Token {
             &Base64UrlSafeNoPadding::decode_to_vec(jwt_header_b64, None)?,
         )?;
 
+        // Reject unsupported critical header extensions before accepting the token.
+        if let Some(ref crit) = jwt_header.critical {
+            if !crit.is_empty() {
+                bail!(JWTError::UnknownCriticalExtension);
+            }
+        }
+
         if let Some(expected_signature_type) = &options.required_signature_type {
             let expected_signature_type_uc = expected_signature_type.to_uppercase();
             let signature_type_uc = jwt_header
