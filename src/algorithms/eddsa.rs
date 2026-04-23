@@ -69,7 +69,9 @@ pub struct Edwards25519KeyPair {
 
 impl std::fmt::Debug for Edwards25519KeyPair {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("PKey").field("algorithm", &"Ed25519").finish()
+        f.debug_struct("PKey")
+            .field("algorithm", &"Ed25519")
+            .finish()
     }
 }
 
@@ -243,7 +245,9 @@ pub struct Ed25519KeyPair {
 
 impl std::fmt::Debug for Ed25519KeyPair {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("PKey").field("algorithm", &"Ed25519").finish()
+        f.debug_struct("PKey")
+            .field("algorithm", &"Ed25519")
+            .finish()
     }
 }
 
