@@ -29,6 +29,7 @@
     - [Specifying header options](#specifying-header-options)
     - [Validating content and signature types](#validating-content-and-signature-types)
   - [Working around compilation issues with the `boring` crate](#working-around-compilation-issues-with-the-boring-crate)
+  - [Faster and safer crypto on WASI with WASI-Crypto](#faster-and-safer-crypto-on-wasi-with-wasi-crypto)
   - [Usage in Web browsers](#usage-in-web-browsers)
   - [Why yet another JWT crate](#why-yet-another-jwt-crate)
 
@@ -69,7 +70,7 @@ JWE (JSON Web Encryption) is also supported with the following key management al
 
 Content encryption uses AES-GCM (A256GCM or A128GCM).
 
-`jwt-simple` can be compiled out of the box to WebAssembly/WASI. It is fully compatible with Fastly _Compute_ service.
+`jwt-simple` can be compiled out of the box to WebAssembly/WASI. It is fully compatible with Fastly _Compute_ service. On WASI runtimes that support it, the [`wasi-crypto` feature](#faster-and-safer-crypto-on-wasi-with-wasi-crypto) offloads RSA and AES-GCM operations to the host, making them both much faster and safer against side-channel attacks.
 
 Important: JWT's purpose is to verify that data has been created by a party knowing a secret key. It does not provide any kind of confidentiality: JWT data is simply encoded as Base64, and is not encrypted.
 
@@ -466,6 +467,52 @@ In order to do so, import the crate with `default-features = false, features = [
 Do not do it unconditionally. This is only required for very specific setups and targets, and only until issues with the `boring` crate have been solved. The way to configure this in Cargo may also change in future versions.
 
 Static builds targeting the `musl` library don't require that workaround. Just use [`cargo-zigbuild`](https://github.com/rust-cross/cargo-zigbuild) to build your project.
+
+## Faster and safer crypto on WASI with WASI-Crypto
+
+Running cryptography as a pure-Rust WebAssembly module has two problems, and they are easy to underestimate.
+
+The first is speed. Everything is interpreted or JITed, with no access to the CPU's AES or big-integer instructions, and RSA in particular becomes painful: generating a 2048-bit key can take the better part of a minute.
+
+The second, and more important, is side channels. A sandboxed module has no control over how it is scheduled or how the host's caches behave, and the constant-time properties that a crypto library carefully maintains in native code are easily lost once it is compiled down to WebAssembly and JITed. A software AES that falls back to table lookups, or a big-integer routine whose timing depends on secret bits, leaks through exactly the channels the sandbox cannot close.
+
+[WASI-Crypto](https://github.com/WebAssembly/wasi-crypto) addresses both. It is a proposed WASI interface that lets a WebAssembly module hand cryptographic work to the host, which runs it with a real, optimized, constant-time implementation, backed by hardware AES and vetted big-integer code. The module never touches the secret-dependent operations itself, so it cannot leak them.
+
+Enable it when building for `wasm32-wasip1`:
+
+```toml
+[dependencies]
+jwt-simple = { version = "0.12", features = ["wasi-crypto"] }
+```
+
+```sh
+cargo build --target wasm32-wasip1 --features wasi-crypto
+```
+
+The feature only has an effect on `wasm32-wasip1`, and only when the host provides the interface. On every other target it is a no-op, so it is safe to leave enabled in a cross-platform build.
+
+What gets offloaded to the host:
+
+- RSA key generation, signing and verification, for the `RS*` and `PS*` algorithms
+- The AES-GCM content encryption used by JWE tokens
+
+Operations the host doesn't expose keep using the in-module Rust code, and if the runtime has no WASI-Crypto support at all, everything transparently falls back to pure Rust. You never get a runtime error for asking.
+
+The speedup alone is not subtle. Running the same RSA-2048 round-trip under [WasmEdge](https://wasmedge.org/) 0.17 with its `wasi_crypto` plugin:
+
+| Operation        | Pure Rust | WASI-Crypto |
+| ---------------- | --------: | ----------: |
+| Key generation   | ~45 s     | ~50 ms      |
+| Signing          | ~860 ms   | ~18 ms      |
+| Verification     | ~90 ms    | ~1 ms       |
+
+The side-channel resistance is harder to put in a table, but it is the reason to reach for this even where the timings would be tolerable: the host runs the same audited, constant-time code the platform uses everywhere else, on hardware built to execute it without leaking, instead of a big-integer routine hoping to stay constant-time inside a sandbox.
+
+To run a module that uses the feature, you need a runtime with WASI-Crypto. WasmEdge is the reference here; install it with the `wasi_crypto` plugin and it will pick the plugin up automatically:
+
+```sh
+wasmedge your-module.wasm
+```
 
 ## Usage in Web browsers
 

@@ -33,10 +33,10 @@ zeroize = "1.9.0"
 
 [target.'cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))'.dependencies]
 boring = { version = "5.1.0", optional = true }
-superboring = { version = "0.1.11", optional = true }
+superboring = { version = "0.1.12", optional = true }
 
 [target.'cfg(any(target_arch = "wasm32", target_arch = "wasm64"))'.dependencies]
-superboring = "0.1.11"
+superboring = "0.1.12"
 
 [dev-dependencies]
 benchmark-simple = "0.1.10"
@@ -49,6 +49,7 @@ optimal = ["boring"]
 # Note: to emulate boringssl, "default-features = false" is required in addition to "pure-rust".
 pure-rust = ["superboring"]
 wasi-abi2 = ["coarsetime/wasi-abi2"]
+wasi-crypto = ["superboring?/wasi-crypto"]
 
 [[bench]]
 name = "benchmark"
