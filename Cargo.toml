@@ -10,6 +10,7 @@ homepage = "https://github.com/jedisct1/rust-jwt-simple"
 categories = ["wasm", "api-bindings", "web-programming", "cryptography"]
 keywords = ["jwt", "jws", "authentication", "tokens", "json"]
 readme = "README.md"
+include = ["src/**/*.rs", "benches/**/*.rs", "README.md", "LICENSE", "Cargo.toml"]
 
 [dependencies]
 anyhow = "1.0.103"
