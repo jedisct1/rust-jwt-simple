@@ -990,11 +990,10 @@ mod cwt_catu_tests {
     /// (like the "catu" claim with key 312) are properly deserialized.
     #[test]
     fn test_cwt_custom_claims_deserialization() {
-        // Setup test key and token
-        let raw_key = "testKey";
+        let raw_key = "testKey-cwt-hs256";
         let raw_key_bytes = raw_key.as_bytes();
         let key = HS256Key::from_bytes(raw_key_bytes);
-        let base64_token_str = "2D3RhEOhAQWhBExTeW1tZXRyaWMyNTZYzqYBanByaW1ldmlkZW8CeCxBNXMyRnptNUI5UG5EVEVmS3VybGxMdnJUelJLSWl4ZERsMWI0TEZzZlB3PQQaaIqyAAdQc0VLLhieQT2r7LtqnxPAihkBOKIFoQJ4Ji9lMDU5Lzc4MTEvMTY0MC80N2UxLTk5MzAtMmE0MzQxZWE4YjEwBqEBeCUvMWJkMWUyNmUtMzQwNy00ODA1LWI4MDYtMTMyMTZiMzRkNGJmGQFDowACARkDhAR1WC1QVi1DRE4tQWNjZXNzLVRva2VuWCDi3PwND2KOvk+NJYX7lCptByJDuRIft1DZ3zPtybqLOw==";
+        let base64_token_str = "2D3RhEOhAQWhBExTeW1tZXRyaWMyNTZYzqYBanByaW1ldmlkZW8CeCxBNXMyRnptNUI5UG5EVEVmS3VybGxMdnJUelJLSWl4ZERsMWI0TEZzZlB3PQQaaIqyAAdQc0VLLhieQT2r7LtqnxPAihkBOKIFoQJ4Ji9lMDU5Lzc4MTEvMTY0MC80N2UxLTk5MzAtMmE0MzQxZWE4YjEwBqEBeCUvMWJkMWUyNmUtMzQwNy00ODA1LWI4MDYtMTMyMTZiMzRkNGJmGQFDowACARkDhAR1WC1QVi1DRE4tQWNjZXNzLVRva2VuWCBNrpmVZ6A+aoENB0JxTPRqDRLWewqOapypw99WpP7HMw==";
         let input = Base64::decode_to_vec(base64_token_str, None).unwrap();
 
         let mut options = VerificationOptions::default();
