@@ -50,6 +50,7 @@ optimal = ["boring"]
 # Note: to emulate boringssl, "default-features = false" is required in addition to "pure-rust".
 pure-rust = ["superboring"]
 wasi-abi2 = ["coarsetime/wasi-abi2"]
+wasi-crypto = ["superboring?/wasi-crypto"]
 
 [[bench]]
 name = "benchmark"
