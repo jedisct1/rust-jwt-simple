@@ -498,21 +498,13 @@ What gets offloaded to the host:
 
 Operations the host doesn't expose keep using the in-module Rust code, and if the runtime has no WASI-Crypto support at all, everything transparently falls back to pure Rust. You never get a runtime error for asking.
 
-The speedup alone is not subtle. Running the same RSA-2048 round-trip under [WasmEdge](https://wasmedge.org/) 0.17 with its `wasi_crypto` plugin:
+Median times for the same RSA-2048 (`RS256`) operations, both builds AOT-compiled and run under [WasmEdge](https://wasmedge.org/) 0.17 with its `wasi_crypto` plugin:
 
-| Operation        | Pure Rust | WASI-Crypto |
-| ---------------- | --------: | ----------: |
-| Key generation   | ~45 s     | ~50 ms      |
-| Signing          | ~860 ms   | ~18 ms      |
-| Verification     | ~90 ms    | ~1 ms       |
-
-The side-channel resistance is harder to put in a table, but it is the reason to reach for this even where the timings would be tolerable: the host runs the same audited, constant-time code the platform uses everywhere else, on hardware built to execute it without leaking, instead of a big-integer routine hoping to stay constant-time inside a sandbox.
-
-To run a module that uses the feature, you need a runtime with WASI-Crypto. WasmEdge is the reference here; install it with the `wasi_crypto` plugin and it will pick the plugin up automatically:
-
-```sh
-wasmedge your-module.wasm
-```
+| Operation        | Pure Rust  | WASI-Crypto | Speedup |
+| ---------------- | ---------: | ----------: | ------: |
+| Key generation   | ~45–140 s  | ~80 ms      | ~1000x  |
+| Signing          | ~2.2 s     | ~21 ms      | ~100x   |
+| Verification     | ~240 ms    | ~1.6 ms     | ~150x   |
 
 ## Usage in Web browsers
 
