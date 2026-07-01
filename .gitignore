@@ -3,5 +3,7 @@
 .zig-cache
 *~
 /target
+/tmp
 Cargo.lock
 docupdate.sh
+LOG.md
