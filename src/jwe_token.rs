@@ -229,10 +229,7 @@ impl JWEToken {
         // Parse the claims
         let claims: JWTClaims<CustomClaims> = serde_json::from_slice(&plaintext)?;
 
-        // Validate claims if options provided
-        if let Some(claim_options) = &options.claim_options {
-            claims.validate(claim_options)?;
-        }
+        claims.validate(&options.claim_options.unwrap_or_default())?;
 
         Ok(claims)
     }
