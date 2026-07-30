@@ -204,7 +204,7 @@ let key_pair = MLDSA44KeyPair::generate();
 let public_key = key_pair.public_key();
 ```
 
-`MLDSA65KeyPair` and `MLDSA87KeyPair` are also available, for the `ML-DSA-65` and `ML-DSA-87` algorithms. ML-DSA-44 is the recommended choice: its security level is good enough for all practical purposes, and it is much faster than the other variants. A key pair is serialized as its 32-byte seed (`to_bytes()`/`from_bytes()`), and a public key as its raw byte representation.
+`MLDSA65KeyPair` and `MLDSA87KeyPair` are also available, for the `ML-DSA-65` and `ML-DSA-87` algorithms. ML-DSA-44 is the recommended choice: its security level is good enough for all practical purposes, and it is much faster than the other variants.
 
 Keys can be exported as bytes for later reuse, and imported from bytes or, for RSA, from individual parameters, DER-encoded data or PEM-encoded data.
 
