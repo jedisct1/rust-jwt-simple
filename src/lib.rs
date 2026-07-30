@@ -11,10 +11,11 @@
 //! - [Authentication (symmetric, `HS*` JWT algorithms) example](#authentication-symmetric-hs-jwt-algorithms-example)
 //! - [Keys and tokens creation](#keys-and-tokens-creation)
 //! - [Token verification](#token-verification)
-//! - [Signatures (asymmetric, `RS*`, `PS*`, `ES*` and `EdDSA` algorithms) example](#signatures-asymmetric-rs-ps-es-and-eddsa-algorithms-example)
+//! - [Signatures (asymmetric, `RS*`, `PS*`, `ES*`, `EdDSA` and `ML-DSA` algorithms) example](#signatures-asymmetric-rs-ps-es-eddsa-and-ml-dsa-algorithms-example)
 //! - [Key pairs and tokens creation](#key-pairs-and-tokens-creation)
 //! - [ES256](#es256)
 //! - [ES384](#es384)
+//! - [ML-DSA](#ml-dsa)
 //! - [JWE (Encrypted tokens)](#jwe-encrypted-tokens)
 //! - [RSA-OAEP key management](#rsa-oaep-key-management)
 //! - [AES Key Wrap](#aes-key-wrap)
@@ -56,6 +57,9 @@
 //! | `ES384`            | ECDSA over p384 / SHA-384             |
 //! | `ES256K`           | ECDSA over secp256k1 / SHA-256        |
 //! | `EdDSA`            | Ed25519                               |
+//! | `ML-DSA-44`        | ML-DSA-44 (FIPS 204, post-quantum)    |
+//! | `ML-DSA-65`        | ML-DSA-65 (FIPS 204, post-quantum)    |
+//! | `ML-DSA-87`        | ML-DSA-87 (FIPS 204, post-quantum)    |
 //!
 //! JWE (JSON Web Encryption) is also supported with the following key management algorithms:
 //!
@@ -151,7 +155,7 @@
 //!
 //! Note that `allowed_issuers` and `allowed_audiences` are not strings, but sets of strings (using the `HashSet` type from the Rust standard library), as the application can allow multiple values.
 //!
-//! ## Signatures (asymmetric, `RS*`, `PS*`, `ES*` and `EdDSA` algorithms) example
+//! ## Signatures (asymmetric, `RS*`, `PS*`, `ES*`, `EdDSA` and `ML-DSA` algorithms) example
 //!
 //! A signature requires a key pair: a secret key used to create tokens, and a public key, that can only verify them.
 //!
@@ -184,6 +188,22 @@
 //! // a public key can be extracted from a key pair:
 //! let public_key = key_pair.public_key();
 //! ```
+//!
+//! #### ML-DSA
+//!
+//! ML-DSA is a post-quantum signature scheme (FIPS 204). Signing and verification are fast, but public keys and signatures are much larger than their classical counterparts.
+//!
+//! ```rust
+//! use jwt_simple::prelude::*;
+//!
+//! // create a new key pair for the `ML-DSA-44` JWT algorithm
+//! let key_pair = MLDSA44KeyPair::generate();
+//!
+//! // a public key can be extracted from a key pair:
+//! let public_key = key_pair.public_key();
+//! ```
+//!
+//! `MLDSA65KeyPair` and `MLDSA87KeyPair` are also available, for the `ML-DSA-65` and `ML-DSA-87` algorithms. ML-DSA-44 is the recommended choice: its security level is good enough for all practical purposes, and it is much faster than the other variants. A key pair is serialized as its 32-byte seed (`to_bytes()`/`from_bytes()`), and a public key as its raw byte representation.
 //!
 //! Keys can be exported as bytes for later reuse, and imported from bytes or, for RSA, from individual parameters, DER-encoded data or PEM-encoded data.
 //!
@@ -721,6 +741,63 @@ a3t0cyDKinOY7JGIwh8DWAa4pfEzgg56yLcilYSSohXeaQV0nR8+rm9J8GUYXjPK
         let der = key_pair.to_der();
         let key_pair2 = Ed25519KeyPair::from_der(&der).unwrap();
         assert_eq!(key_pair.to_bytes(), key_pair2.to_bytes());
+    }
+
+    #[test]
+    fn mldsa65() {
+        #[derive(Serialize, Deserialize)]
+        struct CustomClaims {
+            is_custom: bool,
+        }
+
+        let key_pair = MLDSA65KeyPair::generate();
+        let mut pk = key_pair.public_key();
+        let key_id = pk.create_key_id();
+        let key_pair = key_pair.with_key_id(key_id);
+        let public_key = key_pair.public_key();
+        let custom_claims = CustomClaims { is_custom: true };
+        let claims = Claims::with_custom_claims(custom_claims, Duration::from_secs(86400));
+        let token = key_pair.sign(claims).unwrap();
+        let options = VerificationOptions {
+            required_key_id: Some(key_id.to_string()),
+            ..Default::default()
+        };
+        let claims: JWTClaims<CustomClaims> = public_key
+            .verify_token::<CustomClaims>(&token, Some(options))
+            .unwrap();
+        assert!(claims.custom.is_custom);
+    }
+
+    #[test]
+    fn mldsa_key_round_trip() {
+        let key_pair = MLDSA44KeyPair::generate();
+        let key_pair2 = MLDSA44KeyPair::from_bytes(&key_pair.to_bytes()).unwrap();
+        assert_eq!(key_pair.to_bytes(), key_pair2.to_bytes());
+
+        let public_key = key_pair.public_key();
+        let public_key2 = MLDSA44PublicKey::from_bytes(&public_key.to_bytes()).unwrap();
+        assert_eq!(public_key.to_bytes(), public_key2.to_bytes());
+
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key_pair2.sign(claims).unwrap();
+        let _claims = public_key2
+            .verify_token::<NoCustomClaims>(&token, None)
+            .unwrap();
+    }
+
+    #[test]
+    fn mldsa_wrong_key_rejected() {
+        let key_pair = MLDSA87KeyPair::generate();
+        let claims = Claims::create(Duration::from_secs(86400));
+        let token = key_pair.sign(claims).unwrap();
+
+        let other_public_key = MLDSA87KeyPair::generate().public_key();
+        let res = other_public_key.verify_token::<NoCustomClaims>(&token, None);
+        assert!(res.is_err());
+
+        let eddsa_public_key = Ed25519KeyPair::generate().public_key();
+        let res = eddsa_public_key.verify_token::<NoCustomClaims>(&token, None);
+        assert!(res.is_err());
     }
 
     #[test]

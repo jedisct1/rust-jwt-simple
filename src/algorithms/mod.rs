@@ -5,6 +5,7 @@ mod es384;
 mod hmac;
 #[cfg(feature = "jwe")]
 pub mod jwe;
+mod mldsa;
 mod rsa;
 
 pub use self::eddsa::*;
@@ -14,4 +15,5 @@ pub use self::es384::*;
 pub use self::hmac::*;
 #[cfg(feature = "jwe")]
 pub use self::jwe::*;
+pub use self::mldsa::*;
 pub use self::rsa::*;

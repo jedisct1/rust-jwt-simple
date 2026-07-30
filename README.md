@@ -11,10 +11,11 @@
   - [Authentication (symmetric, `HS*` JWT algorithms) example](#authentication-symmetric-hs-jwt-algorithms-example)
     - [Keys and tokens creation](#keys-and-tokens-creation)
     - [Token verification](#token-verification)
-  - [Signatures (asymmetric, `RS*`, `PS*`, `ES*` and `EdDSA` algorithms) example](#signatures-asymmetric-rs-ps-es-and-eddsa-algorithms-example)
+  - [Signatures (asymmetric, `RS*`, `PS*`, `ES*`, `EdDSA` and `ML-DSA` algorithms) example](#signatures-asymmetric-rs-ps-es-eddsa-and-ml-dsa-algorithms-example)
     - [Key pairs and tokens creation](#key-pairs-and-tokens-creation)
       - [ES256](#es256)
       - [ES384](#es384)
+      - [ML-DSA](#ml-dsa)
   - [JWE (Encrypted tokens)](#jwe-encrypted-tokens)
     - [RSA-OAEP key management](#rsa-oaep-key-management)
     - [AES Key Wrap](#aes-key-wrap)
@@ -57,6 +58,9 @@ A new JWT (JSON Web Tokens) implementation for Rust that focuses on simplicity, 
 | `ES384`            | ECDSA over p384 / SHA-384             |
 | `ES256K`           | ECDSA over secp256k1 / SHA-256        |
 | `EdDSA`            | Ed25519                               |
+| `ML-DSA-44`        | ML-DSA-44 (FIPS 204, post-quantum)    |
+| `ML-DSA-65`        | ML-DSA-65 (FIPS 204, post-quantum)    |
+| `ML-DSA-87`        | ML-DSA-87 (FIPS 204, post-quantum)    |
 
 JWE (JSON Web Encryption) is also supported with the following key management algorithms:
 
@@ -152,7 +156,7 @@ let claims = key.verify_token::<NoCustomClaims>(&token, Some(options))?;
 
 Note that `allowed_issuers` and `allowed_audiences` are not strings, but sets of strings (using the `HashSet` type from the Rust standard library), as the application can allow multiple values.
 
-## Signatures (asymmetric, `RS*`, `PS*`, `ES*` and `EdDSA` algorithms) example
+## Signatures (asymmetric, `RS*`, `PS*`, `ES*`, `EdDSA` and `ML-DSA` algorithms) example
 
 A signature requires a key pair: a secret key used to create tokens, and a public key, that can only verify them.
 
@@ -185,6 +189,22 @@ let key_pair = ES384KeyPair::generate();
 // a public key can be extracted from a key pair:
 let public_key = key_pair.public_key();
 ```
+
+#### ML-DSA
+
+ML-DSA is a post-quantum signature scheme (FIPS 204). Signing and verification are fast, but public keys and signatures are much larger than their classical counterparts.
+
+```rust
+use jwt_simple::prelude::*;
+
+// create a new key pair for the `ML-DSA-44` JWT algorithm
+let key_pair = MLDSA44KeyPair::generate();
+
+// a public key can be extracted from a key pair:
+let public_key = key_pair.public_key();
+```
+
+`MLDSA65KeyPair` and `MLDSA87KeyPair` are also available, for the `ML-DSA-65` and `ML-DSA-87` algorithms. ML-DSA-44 is the recommended choice: its security level is good enough for all practical purposes, and it is much faster than the other variants. A key pair is serialized as its 32-byte seed (`to_bytes()`/`from_bytes()`), and a public key as its raw byte representation.
 
 Keys can be exported as bytes for later reuse, and imported from bytes or, for RSA, from individual parameters, DER-encoded data or PEM-encoded data.
 
@@ -500,11 +520,11 @@ Operations the host doesn't expose keep using the in-module Rust code, and if th
 
 Median times for the same RSA-2048 (`RS256`) operations, both builds AOT-compiled and run under [WasmEdge](https://wasmedge.org/) 0.17 with its `wasi_crypto` plugin:
 
-| Operation        | Pure Rust  | WASI-Crypto | Speedup |
-| ---------------- | ---------: | ----------: | ------: |
-| Key generation   | ~45–140 s  | ~80 ms      | ~1000x  |
-| Signing          | ~2.2 s     | ~21 ms      | ~100x   |
-| Verification     | ~240 ms    | ~1.6 ms     | ~150x   |
+| Operation      | Pure Rust | WASI-Crypto | Speedup |
+| -------------- | --------: | ----------: | ------: |
+| Key generation | ~45–140 s |      ~80 ms |  ~1000x |
+| Signing        |    ~2.2 s |      ~21 ms |   ~100x |
+| Verification   |   ~240 ms |     ~1.6 ms |   ~150x |
 
 ## Usage in Web browsers
 

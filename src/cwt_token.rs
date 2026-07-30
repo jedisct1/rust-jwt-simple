@@ -716,6 +716,9 @@ impl JWTHeader {
                         .map_err(|_| JWTError::CWTDecodingError)?;
                     self.algorithm = match alg_id {
                         I_EDDSA => "EdDSA",
+                        I_MLDSA44 => "ML-DSA-44",
+                        I_MLDSA65 => "ML-DSA-65",
+                        I_MLDSA87 => "ML-DSA-87",
                         I_RS512 => "RS512",
                         I_RS384 => "RS384",
                         I_RS256 => "RS256",
@@ -791,6 +794,9 @@ const I_X5U: i32 = 35;
 const I_RS512: i32 = -259;
 const I_RS384: i32 = -258;
 const I_RS256: i32 = -257;
+const I_MLDSA87: i32 = -50;
+const I_MLDSA65: i32 = -49;
+const I_MLDSA44: i32 = -48;
 const I_ES256K: i32 = -47;
 const I_PS512: i32 = -39;
 const I_PS384: i32 = -38;
