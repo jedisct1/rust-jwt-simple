@@ -84,7 +84,7 @@ Important: JWT's purpose is to verify that data has been created by a party know
 
 ```toml
 [dependencies]
-jwt-simple = "0.12"
+jwt-simple = "0.13"
 ```
 
 Rust:
@@ -502,7 +502,7 @@ Enable it when building for `wasm32-wasip1`:
 
 ```toml
 [dependencies]
-jwt-simple = { version = "0.12", features = ["wasi-crypto"] }
+jwt-simple = { version = "0.13", features = ["wasi-crypto"] }
 ```
 
 ```sh

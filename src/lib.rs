@@ -83,7 +83,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! jwt-simple = "0.12"
+//! jwt-simple = "0.13"
 //! ```
 //!
 //! Rust:
