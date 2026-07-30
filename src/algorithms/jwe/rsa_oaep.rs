@@ -17,7 +17,12 @@ use crate::error::*;
 use crate::jwe_header::JWEHeader;
 use crate::jwe_token::{DecryptionOptions, EncryptionOptions, JWEToken, JWETokenMetadata};
 
-const MIN_RSA_MODULUS_BITS: u32 = 2048;
+const MIN_RSA_MODULUS_BITS: i32 = 2048;
+
+fn validate_modulus_bits(bits: i32) -> Result<(), Error> {
+    ensure!(bits >= MIN_RSA_MODULUS_BITS, JWTError::WeakKey);
+    Ok(())
+}
 
 /// RSA public key for encryption (RSA-OAEP with SHA-1).
 #[derive(Debug, Clone)]
@@ -31,7 +36,7 @@ impl RsaOaepEncryptionKey {
     pub fn from_der(der: &[u8]) -> Result<Self, Error> {
         let pk = Rsa::<Public>::public_key_from_der(der)
             .or_else(|_| Rsa::<Public>::public_key_from_der_pkcs1(der))?;
-        Self::validate_key_size(&pk)?;
+        validate_modulus_bits(pk.n().num_bits())?;
         Ok(RsaOaepEncryptionKey { pk, key_id: None })
     }
 
@@ -40,7 +45,7 @@ impl RsaOaepEncryptionKey {
         let pem = pem.trim();
         let pk = Rsa::<Public>::public_key_from_pem(pem.as_bytes())
             .or_else(|_| Rsa::<Public>::public_key_from_pem_pkcs1(pem.as_bytes()))?;
-        Self::validate_key_size(&pk)?;
+        validate_modulus_bits(pk.n().num_bits())?;
         Ok(RsaOaepEncryptionKey { pk, key_id: None })
     }
 
@@ -64,12 +69,6 @@ impl RsaOaepEncryptionKey {
     /// Get the key ID.
     pub fn key_id(&self) -> Option<&str> {
         self.key_id.as_deref()
-    }
-
-    fn validate_key_size(pk: &Rsa<Public>) -> Result<(), Error> {
-        let bits = pk.size() * 8;
-        ensure!(bits >= MIN_RSA_MODULUS_BITS, JWTError::WeakKey);
-        Ok(())
     }
 
     fn wrap_key(&self, cek: &[u8]) -> Result<Vec<u8>, Error> {
@@ -127,7 +126,7 @@ impl std::fmt::Debug for RsaOaepDecryptionKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("RsaOaepDecryptionKey")
             .field("key_id", &self.key_id)
-            .field("modulus_bits", &(self.sk.size() * 8))
+            .field("modulus_bits", &self.sk.n().num_bits())
             .finish_non_exhaustive()
     }
 }
@@ -139,7 +138,7 @@ impl RsaOaepDecryptionKey {
         if !sk.check_key()? {
             bail!(JWTError::InvalidKeyPair);
         }
-        Self::validate_key_size(&sk)?;
+        validate_modulus_bits(sk.n().num_bits())?;
         Ok(RsaOaepDecryptionKey { sk, key_id: None })
     }
 
@@ -150,7 +149,7 @@ impl RsaOaepDecryptionKey {
         if !sk.check_key()? {
             bail!(JWTError::InvalidKeyPair);
         }
-        Self::validate_key_size(&sk)?;
+        validate_modulus_bits(sk.n().num_bits())?;
         Ok(RsaOaepDecryptionKey { sk, key_id: None })
     }
 
@@ -197,12 +196,6 @@ impl RsaOaepDecryptionKey {
     /// Get the key ID.
     pub fn key_id(&self) -> Option<&str> {
         self.key_id.as_deref()
-    }
-
-    fn validate_key_size(sk: &Rsa<Private>) -> Result<(), Error> {
-        let bits = sk.size() * 8;
-        ensure!(bits >= MIN_RSA_MODULUS_BITS, JWTError::WeakKey);
-        Ok(())
     }
 
     fn unwrap_key(&self, encrypted_key: &[u8]) -> Result<Vec<u8>, Error> {

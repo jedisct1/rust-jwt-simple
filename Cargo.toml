@@ -34,10 +34,10 @@ zeroize = "1.9.0"
 
 [target.'cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))'.dependencies]
 boring = { version = "5.1.0", optional = true }
-superboring = { version = "0.1.12", optional = true }
+superboring = { version = "0.1.13", optional = true }
 
 [target.'cfg(any(target_arch = "wasm32", target_arch = "wasm64"))'.dependencies]
-superboring = "0.1.12"
+superboring = "0.1.13"
 
 [dev-dependencies]
 benchmark-simple = "0.1.10"
