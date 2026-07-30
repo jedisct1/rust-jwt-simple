@@ -5,11 +5,15 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use crate::algorithms::jwe::content::{ContentEncryption, CEK};
 use crate::claims::*;
-use crate::common::VerificationOptions;
+use crate::common::{VerificationOptions, DEFAULT_MAX_TOKEN_LENGTH};
 use crate::error::*;
 use crate::jwe_header::JWEHeader;
 
 pub const MAX_JWE_HEADER_LENGTH: usize = 8192;
+
+/// Largest wrapped key a token may carry: an RSA-OAEP key for a 16384-bit modulus.
+/// AES-KW wrapped keys are 40 bytes, and ECDH-ES direct key agreement carries none.
+pub const MAX_JWE_ENCRYPTED_KEY_LENGTH: usize = 2048;
 
 /// Options for JWE encryption.
 #[derive(Clone, Debug, Default)]
@@ -23,9 +27,10 @@ pub struct EncryptionOptions {
 }
 
 /// Options for JWE decryption.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct DecryptionOptions {
-    /// Maximum token length to accept
+    /// Maximum token length to accept.
+    /// Defaults to `DEFAULT_MAX_TOKEN_LENGTH`, as signed tokens do; `None` accepts any size.
     pub max_token_length: Option<usize>,
     /// Maximum header length to accept
     pub max_header_length: Option<usize>,
@@ -33,6 +38,17 @@ pub struct DecryptionOptions {
     pub required_key_id: Option<String>,
     /// Options for validating claims after decryption
     pub claim_options: Option<VerificationOptions>,
+}
+
+impl Default for DecryptionOptions {
+    fn default() -> Self {
+        Self {
+            max_token_length: Some(DEFAULT_MAX_TOKEN_LENGTH),
+            max_header_length: None,
+            required_key_id: None,
+            claim_options: None,
+        }
+    }
 }
 
 /// JWE token metadata extracted from the header (before decryption).
@@ -162,7 +178,6 @@ impl JWEToken {
     {
         let options = options.unwrap_or_default();
 
-        // Check token length
         if let Some(max_len) = options.max_token_length {
             ensure!(token.len() <= max_len, JWTError::TokenTooLong);
         }
@@ -175,30 +190,24 @@ impl JWEToken {
         let tag_b64 = parts.next().ok_or(JWTError::InvalidJWEFormat)?;
         ensure!(parts.next().is_none(), JWTError::InvalidJWEFormat);
 
-        // Check header length
         let max_header_len = options.max_header_length.unwrap_or(MAX_JWE_HEADER_LENGTH);
         ensure!(header_b64.len() <= max_header_len, JWTError::HeaderTooLarge);
 
-        // Decode header
         let header_bytes = Base64UrlSafeNoPadding::decode_to_vec(header_b64, None)?;
         let header: JWEHeader = serde_json::from_slice(&header_bytes)?;
 
-        // Validate critical header - RFC 7516 requires rejecting tokens with
-        // unrecognized critical extensions
+        // RFC 7516 requires rejecting unrecognized critical extensions, and we support none.
         if let Some(ref crit) = header.critical {
             if !crit.is_empty() {
-                // We don't support any critical extensions
                 bail!(JWTError::UnknownCriticalExtension);
             }
         }
 
-        // Validate algorithm
         ensure!(
             header.algorithm == expected_alg,
             JWTError::AlgorithmMismatch
         );
 
-        // Validate key ID if required
         if let Some(required_key_id) = &options.required_key_id {
             if let Some(key_id) = &header.key_id {
                 ensure!(key_id == required_key_id, JWTError::KeyIdentifierMismatch);
@@ -207,26 +216,38 @@ impl JWEToken {
             }
         }
 
-        // Decode the encrypted key, IV, ciphertext, and tag
-        let encrypted_key = Base64UrlSafeNoPadding::decode_to_vec(encrypted_key_b64, None)?;
-        let iv = Base64UrlSafeNoPadding::decode_to_vec(iv_b64, None)?;
-        let ciphertext = Base64UrlSafeNoPadding::decode_to_vec(ciphertext_b64, None)?;
-        let tag = Base64UrlSafeNoPadding::decode_to_vec(tag_b64, None)?;
-
-        // Get the content encryption algorithm
         let content_encryption = ContentEncryption::from_alg_name(&header.encryption)?;
 
-        // Unwrap the CEK
+        // Every segment but the ciphertext has a size these algorithms fix, so an inflated one
+        // costs nothing to reject while still encoded.
+        ensure!(
+            encrypted_key_b64.len()
+                <= Base64UrlSafeNoPadding::encoded_len(MAX_JWE_ENCRYPTED_KEY_LENGTH)?,
+            JWTError::InvalidJWEFormat
+        );
+        ensure!(
+            iv_b64.len() == Base64UrlSafeNoPadding::encoded_len(content_encryption.iv_size())?,
+            JWTError::InvalidIV
+        );
+        ensure!(
+            tag_b64.len() == Base64UrlSafeNoPadding::encoded_len(content_encryption.tag_size())?,
+            JWTError::InvalidJWEAuthTag
+        );
+
+        // Nothing decodes the ciphertext until a CEK exists.
+        let encrypted_key = Base64UrlSafeNoPadding::decode_to_vec(encrypted_key_b64, None)?;
         let cek = CEK::new(key_unwrap_fn(&header, &encrypted_key)?);
+
+        let iv = Base64UrlSafeNoPadding::decode_to_vec(iv_b64, None)?;
+        let tag = Base64UrlSafeNoPadding::decode_to_vec(tag_b64, None)?;
+        let ciphertext = Base64UrlSafeNoPadding::decode_to_vec(ciphertext_b64, None)?;
 
         // The AAD is the ASCII bytes of the base64url-encoded header
         let aad = header_b64.as_bytes();
 
-        // Decrypt the ciphertext
         let plaintext = content_encryption.decrypt(cek.as_bytes(), &iv, aad, &ciphertext, &tag)?;
         drop(cek); // Zeroize CEK immediately after use
 
-        // Parse the claims
         let claims: JWTClaims<CustomClaims> = serde_json::from_slice(&plaintext)?;
 
         claims.validate(&options.claim_options.unwrap_or_default())?;
@@ -252,4 +273,78 @@ impl JWEToken {
 
         Ok(JWETokenMetadata { header })
     }
+}
+
+#[test]
+fn decrypt_enforces_size_limits_before_doing_work() {
+    use crate::{prelude::*, JWTError};
+
+    const ENCRYPTED_KEY: usize = 1;
+    const IV: usize = 2;
+    const CIPHERTEXT: usize = 3;
+    const TAG: usize = 4;
+
+    let key = A256KWKey::generate();
+    let token = key
+        .encrypt(Claims::create(Duration::from_hours(1)))
+        .unwrap();
+    let segments: Vec<&str> = token.split('.').collect();
+
+    let error_for = |patches: &[(usize, &str)]| {
+        let mut segments = segments.clone();
+        for &(index, segment) in patches {
+            segments[index] = segment;
+        }
+        key.decrypt_token::<NoCustomClaims>(&segments.join("."), None)
+            .unwrap_err()
+            .downcast::<JWTError>()
+            .unwrap()
+    };
+
+    let oversized_key =
+        "A".repeat(Base64UrlSafeNoPadding::encoded_len(MAX_JWE_ENCRYPTED_KEY_LENGTH).unwrap() + 1);
+    assert!(matches!(
+        error_for(&[(ENCRYPTED_KEY, &oversized_key)]),
+        JWTError::InvalidJWEFormat
+    ));
+    assert!(matches!(
+        error_for(&[(IV, &format!("{}AAAA", segments[IV]))]),
+        JWTError::InvalidIV
+    ));
+    assert!(matches!(
+        error_for(&[(TAG, &format!("{}AAAA", segments[TAG]))]),
+        JWTError::InvalidJWEAuthTag
+    ));
+
+    // The ciphertext here is not even valid base64, so failing at key unwrap is what proves
+    // nothing looked at it.
+    let bogus_key = Base64UrlSafeNoPadding::encode_to_string([0u8; 40]).unwrap();
+    assert!(matches!(
+        error_for(&[(ENCRYPTED_KEY, &bogus_key), (CIPHERTEXT, &"!".repeat(1024))]),
+        JWTError::KeyUnwrapFailed
+    ));
+
+    // The whole token gets the same default ceiling as a signed one, and lifting it keeps large
+    // tokens usable.
+    let issuer = "i".repeat(1_100_000);
+    let large = key
+        .encrypt(Claims::create(Duration::from_hours(1)).with_issuer(&issuer))
+        .unwrap();
+    assert!(large.len() > DEFAULT_MAX_TOKEN_LENGTH);
+    assert!(matches!(
+        key.decrypt_token::<NoCustomClaims>(&large, None)
+            .unwrap_err()
+            .downcast::<JWTError>()
+            .unwrap(),
+        JWTError::TokenTooLong
+    ));
+
+    let options = DecryptionOptions {
+        max_token_length: None,
+        ..Default::default()
+    };
+    let claims = key
+        .decrypt_token::<NoCustomClaims>(&large, Some(options))
+        .unwrap();
+    assert_eq!(claims.issuer.unwrap(), issuer);
 }

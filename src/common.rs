@@ -55,7 +55,8 @@ pub struct VerificationOptions {
     /// Reject tokens created more than `max_validity` ago
     pub max_validity: Option<Duration>,
 
-    /// Maximum token length to accept
+    /// Maximum token length to accept.
+    /// Defaults to `DEFAULT_MAX_TOKEN_LENGTH`; `None` accepts tokens of any size.
     pub max_token_length: Option<usize>,
 
     /// Maximum unsafe, untrusted, unverified JWT header length to accept
