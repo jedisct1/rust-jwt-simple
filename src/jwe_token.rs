@@ -167,15 +167,13 @@ impl JWEToken {
             ensure!(token.len() <= max_len, JWTError::TokenTooLong);
         }
 
-        // Split into 5 parts
-        let parts: Vec<&str> = token.split('.').collect();
-        ensure!(parts.len() == 5, JWTError::InvalidJWEFormat);
-
-        let header_b64 = parts[0];
-        let encrypted_key_b64 = parts[1];
-        let iv_b64 = parts[2];
-        let ciphertext_b64 = parts[3];
-        let tag_b64 = parts[4];
+        let mut parts = token.split('.');
+        let header_b64 = parts.next().ok_or(JWTError::InvalidJWEFormat)?;
+        let encrypted_key_b64 = parts.next().ok_or(JWTError::InvalidJWEFormat)?;
+        let iv_b64 = parts.next().ok_or(JWTError::InvalidJWEFormat)?;
+        let ciphertext_b64 = parts.next().ok_or(JWTError::InvalidJWEFormat)?;
+        let tag_b64 = parts.next().ok_or(JWTError::InvalidJWEFormat)?;
+        ensure!(parts.next().is_none(), JWTError::InvalidJWEFormat);
 
         // Check header length
         let max_header_len = options.max_header_length.unwrap_or(MAX_JWE_HEADER_LENGTH);
