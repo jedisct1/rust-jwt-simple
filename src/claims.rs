@@ -601,16 +601,17 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
             let issued_at = self.issued_at.ok_or(JWTError::OldTokenReused)?;
             ensure!(issued_at >= reject_before, JWTError::OldTokenReused);
         }
-        if let Some(time_issued) = self.issued_at {
-            if !options.accept_future {
+        if !options.accept_future {
+            if let Some(time_issued) = self.issued_at {
                 ensure!(time_issued <= now + time_tolerance, JWTError::ClockDrift);
             }
-            if let Some(max_validity) = options.max_validity {
-                ensure!(
-                    now <= time_issued || now - time_issued <= max_validity,
-                    JWTError::TokenIsTooOld
-                );
-            }
+        }
+        if let Some(max_validity) = options.max_validity {
+            let time_issued = self.issued_at.ok_or(JWTError::TokenIsTooOld)?;
+            ensure!(
+                now <= time_issued || now - time_issued <= max_validity,
+                JWTError::TokenIsTooOld
+            );
         }
         if !options.accept_future {
             if let Some(invalid_before) = self.invalid_before {
