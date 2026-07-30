@@ -5,10 +5,11 @@
 
 use ct_codecs::{Base64UrlSafeNoPadding, Decoder, Encoder};
 use p256::ecdh::EphemeralSecret;
-use p256::elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
+use p256::elliptic_curve::sec1::{FromSec1Point, ToSec1Point};
+use p256::elliptic_curve::Generate as _;
 use p256::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
-use p256::{EncodedPoint, NonZeroScalar, PublicKey, SecretKey};
-use rand::thread_rng;
+use p256::{NonZeroScalar, PublicKey, Sec1Point, SecretKey};
+use rand::rng;
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::json;
 use zeroize::Zeroize;
@@ -80,8 +81,8 @@ impl EcdhEsA256KWEncryptionKey {
 
     /// Create from SEC1-encoded bytes (compressed or uncompressed).
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
-        let point = EncodedPoint::from_bytes(bytes).map_err(|_| JWTError::InvalidPublicKey)?;
-        let pk = PublicKey::from_encoded_point(&point);
+        let point = Sec1Point::from_bytes(bytes).map_err(|_| JWTError::InvalidPublicKey)?;
+        let pk = PublicKey::from_sec1_point(&point);
         if pk.is_none().into() {
             bail!(JWTError::InvalidPublicKey);
         }
@@ -105,12 +106,12 @@ impl EcdhEsA256KWEncryptionKey {
 
     /// Export as SEC1 compressed bytes.
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.pk.to_encoded_point(true).as_bytes().to_vec()
+        self.pk.to_sec1_point(true).as_bytes().to_vec()
     }
 
     /// Export as SEC1 uncompressed bytes.
     pub fn to_bytes_uncompressed(&self) -> Vec<u8> {
-        self.pk.to_encoded_point(false).as_bytes().to_vec()
+        self.pk.to_sec1_point(false).as_bytes().to_vec()
     }
 
     /// Export as DER.
@@ -143,7 +144,7 @@ impl EcdhEsA256KWEncryptionKey {
     }
 
     fn build_epk_jwk(&self, ephemeral_pk: &PublicKey) -> serde_json::Value {
-        let point = ephemeral_pk.to_encoded_point(false);
+        let point = ephemeral_pk.to_sec1_point(false);
         let x = Base64UrlSafeNoPadding::encode_to_string(point.x().unwrap()).unwrap();
         let y = Base64UrlSafeNoPadding::encode_to_string(point.y().unwrap()).unwrap();
         json!({
@@ -170,7 +171,7 @@ impl EcdhEsA256KWEncryptionKey {
     ) -> Result<String, Error> {
         let content_encryption = options.content_encryption;
 
-        let ephemeral_secret = EphemeralSecret::random(&mut thread_rng());
+        let ephemeral_secret = EphemeralSecret::generate_from_rng(&mut rng());
         let ephemeral_pk = ephemeral_secret.public_key();
 
         let shared_secret = ephemeral_secret.diffie_hellman(&self.pk);
@@ -244,7 +245,7 @@ impl EcdhEsA256KWDecryptionKey {
 
     /// Generate a new key pair.
     pub fn generate() -> Self {
-        let sk = SecretKey::random(&mut thread_rng());
+        let sk = SecretKey::generate_from_rng(&mut rng());
         EcdhEsA256KWDecryptionKey { sk, key_id: None }
     }
 
@@ -326,8 +327,8 @@ impl EcdhEsA256KWDecryptionKey {
         point_bytes.extend_from_slice(&y_bytes);
 
         let point =
-            EncodedPoint::from_bytes(&point_bytes).map_err(|_| JWTError::InvalidEphemeralKey)?;
-        let pk = PublicKey::from_encoded_point(&point);
+            Sec1Point::from_bytes(&point_bytes).map_err(|_| JWTError::InvalidEphemeralKey)?;
+        let pk = PublicKey::from_sec1_point(&point);
         if pk.is_none().into() {
             bail!(JWTError::InvalidEphemeralKey);
         }
@@ -401,8 +402,8 @@ impl EcdhEsA128KWEncryptionKey {
 
     /// Create from SEC1-encoded bytes (compressed or uncompressed).
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
-        let point = EncodedPoint::from_bytes(bytes).map_err(|_| JWTError::InvalidPublicKey)?;
-        let pk = PublicKey::from_encoded_point(&point);
+        let point = Sec1Point::from_bytes(bytes).map_err(|_| JWTError::InvalidPublicKey)?;
+        let pk = PublicKey::from_sec1_point(&point);
         if pk.is_none().into() {
             bail!(JWTError::InvalidPublicKey);
         }
@@ -426,7 +427,7 @@ impl EcdhEsA128KWEncryptionKey {
 
     /// Export as SEC1 compressed bytes.
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.pk.to_encoded_point(true).as_bytes().to_vec()
+        self.pk.to_sec1_point(true).as_bytes().to_vec()
     }
 
     /// Export as DER.
@@ -459,7 +460,7 @@ impl EcdhEsA128KWEncryptionKey {
     }
 
     fn build_epk_jwk(&self, ephemeral_pk: &PublicKey) -> serde_json::Value {
-        let point = ephemeral_pk.to_encoded_point(false);
+        let point = ephemeral_pk.to_sec1_point(false);
         let x = Base64UrlSafeNoPadding::encode_to_string(point.x().unwrap()).unwrap();
         let y = Base64UrlSafeNoPadding::encode_to_string(point.y().unwrap()).unwrap();
         json!({
@@ -486,7 +487,7 @@ impl EcdhEsA128KWEncryptionKey {
     ) -> Result<String, Error> {
         let content_encryption = options.content_encryption;
 
-        let ephemeral_secret = EphemeralSecret::random(&mut thread_rng());
+        let ephemeral_secret = EphemeralSecret::generate_from_rng(&mut rng());
         let ephemeral_pk = ephemeral_secret.public_key();
 
         let shared_secret = ephemeral_secret.diffie_hellman(&self.pk);
@@ -560,7 +561,7 @@ impl EcdhEsA128KWDecryptionKey {
 
     /// Generate a new key pair.
     pub fn generate() -> Self {
-        let sk = SecretKey::random(&mut thread_rng());
+        let sk = SecretKey::generate_from_rng(&mut rng());
         EcdhEsA128KWDecryptionKey { sk, key_id: None }
     }
 
@@ -642,8 +643,8 @@ impl EcdhEsA128KWDecryptionKey {
         point_bytes.extend_from_slice(&y_bytes);
 
         let point =
-            EncodedPoint::from_bytes(&point_bytes).map_err(|_| JWTError::InvalidEphemeralKey)?;
-        let pk = PublicKey::from_encoded_point(&point);
+            Sec1Point::from_bytes(&point_bytes).map_err(|_| JWTError::InvalidEphemeralKey)?;
+        let pk = PublicKey::from_sec1_point(&point);
         if pk.is_none().into() {
             bail!(JWTError::InvalidEphemeralKey);
         }

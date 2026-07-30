@@ -1,6 +1,6 @@
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use hmac_sha512::sha384 as hmac_sha384;
-use rand::RngCore;
+use rand::Rng;
 use serde::{de::DeserializeOwned, Serialize};
 use zeroize::Zeroize;
 
@@ -66,7 +66,7 @@ impl HMACKey {
     /// Generate a random HMAC key.
     pub fn generate() -> Self {
         let mut raw_key = vec![0u8; 32];
-        rand::thread_rng().fill_bytes(&mut raw_key);
+        rand::rng().fill_bytes(&mut raw_key);
         HMACKey {
             raw_key,
             metadata: None,

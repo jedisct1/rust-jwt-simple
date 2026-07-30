@@ -4,6 +4,7 @@ version = "0.12.17"
 description = "Easy to use, secure, non opinionated JWT (JSON Web Tokens) implementation for Rust."
 authors = ["Frank Denis <github@pureftpd.org>"]
 edition = "2018"
+rust-version = "1.85"
 license = "ISC"
 repository = "https://github.com/jedisct1/rust-jwt-simple"
 homepage = "https://github.com/jedisct1/rust-jwt-simple"
@@ -13,7 +14,7 @@ readme = "README.md"
 include = ["src/**/*.rs", "benches/**/*.rs", "README.md", "LICENSE", "Cargo.toml"]
 
 [dependencies]
-anyhow = "1.0.103"
+anyhow = "1.0.104"
 blake2b_simd = "1.0.4"
 binstring = "0.1.7"
 ciborium = { version = "0.2.2", optional = true }
@@ -21,15 +22,15 @@ coarsetime = "0.1.37"
 ct-codecs = "1.1.7"
 ed25519-compact = { version = "2.3.1", features = ["pem"] }
 hmac-sha1-compact = "1.1.7"
-hmac-sha256 = { version = "1.1.14", features = ["traits010"] }
-hmac-sha512 = { version = "1.1.12", features = ["traits010", "sha384"] }
-k256 = { version = "0.13.4", features = ["ecdsa", "std", "pkcs8", "pem"] }
-p256 = { version = "0.13.2", features = ["ecdsa", "std", "pkcs8", "pem", "ecdh"] }
-p384 = { version = "0.13.1", features = ["ecdsa", "std", "pkcs8", "pem"] }
-rand = "^0.8.6"
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.150"
-thiserror = "2.0.18"
+hmac-sha256 = { version = "1.1.14", features = ["traits011"] }
+hmac-sha512 = { version = "1.1.12", features = ["traits011", "sha384"] }
+k256 = { version = "0.14.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
+p256 = { version = "0.14.0", features = ["ecdsa", "std", "pkcs8", "pem", "ecdh"] }
+p384 = { version = "0.14.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
+rand = "0.10.2"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+thiserror = "2.0.19"
 zeroize = "1.9.0"
 
 [target.'cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))'.dependencies]

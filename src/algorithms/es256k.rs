@@ -1,7 +1,8 @@
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use k256::ecdsa::{self, signature::DigestVerifier as _, signature::RandomizedDigestSigner as _};
+use k256::elliptic_curve::Generate as _;
 use k256::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 use serde::{de::DeserializeOwned, Serialize};
 
@@ -43,11 +44,11 @@ impl K256PublicKey {
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_encoded_point(false).as_bytes().to_vec()
+        self.0.to_sec1_point(false).as_bytes().to_vec()
     }
 
     pub fn to_bytes_uncompressed(&self) -> Vec<u8> {
-        self.0.to_encoded_point(false).as_bytes().to_vec()
+        self.0.to_sec1_point(false).as_bytes().to_vec()
     }
 
     pub fn to_der(&self) -> Result<Vec<u8>, Error> {
@@ -87,8 +88,8 @@ impl AsRef<ecdsa::SigningKey> for K256KeyPair {
 
 impl K256KeyPair {
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
-        let k256_sk =
-            ecdsa::SigningKey::from_bytes(raw.into()).map_err(|_| JWTError::InvalidKeyPair)?;
+        let raw: &k256::FieldBytes = raw.try_into().map_err(|_| JWTError::InvalidKeyPair)?;
+        let k256_sk = ecdsa::SigningKey::from_bytes(raw).map_err(|_| JWTError::InvalidKeyPair)?;
         Ok(K256KeyPair {
             k256_sk,
             metadata: None,
@@ -140,8 +141,8 @@ impl K256KeyPair {
     }
 
     pub fn generate() -> Self {
-        let mut rng = rand::thread_rng();
-        let k256_sk = ecdsa::SigningKey::random(&mut rng);
+        let mut rng = rand::rng();
+        let k256_sk = ecdsa::SigningKey::generate_from_rng(&mut rng);
         K256KeyPair {
             k256_sk,
             metadata: None,
@@ -172,13 +173,13 @@ pub trait ECDSAP256kKeyPairLike {
             .with_key_metadata(self.metadata())
             .with_options(opts);
         Token::build(&jwt_header, claims, |authenticated| {
-            let mut digest = hmac_sha256::Hash::new();
-            digest.update(authenticated.as_bytes());
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
             let signature: ecdsa::Signature = self
                 .key_pair()
                 .as_ref()
-                .sign_digest_with_rng(&mut rng, digest);
+                .sign_digest_with_rng(&mut rng, |digest: &mut hmac_sha256::Hash| {
+                    digest.update(authenticated.as_bytes())
+                });
             Ok(signature.to_vec())
         })
     }
@@ -202,11 +203,15 @@ pub trait ECDSAP256kPublicKeyLike {
             |authenticated, signature| {
                 let ecdsa_signature = ecdsa::Signature::try_from(signature)
                     .map_err(|_| JWTError::InvalidSignature)?;
-                let mut digest = hmac_sha256::Hash::new();
-                digest.update(authenticated.as_bytes());
                 self.public_key()
                     .as_ref()
-                    .verify_digest(digest, &ecdsa_signature)
+                    .verify_digest(
+                        |digest: &mut hmac_sha256::Hash| {
+                            digest.update(authenticated.as_bytes());
+                            Ok(())
+                        },
+                        &ecdsa_signature,
+                    )
                     .map_err(|_| JWTError::InvalidSignature)?;
                 Ok(())
             },
@@ -227,11 +232,15 @@ pub trait ECDSAP256kPublicKeyLike {
             |authenticated, signature| {
                 let ecdsa_signature = ecdsa::Signature::try_from(signature)
                     .map_err(|_| JWTError::InvalidSignature)?;
-                let mut digest = hmac_sha256::Hash::new();
-                digest.update(authenticated.as_bytes());
                 self.public_key()
                     .as_ref()
-                    .verify_digest(digest, &ecdsa_signature)
+                    .verify_digest(
+                        |digest: &mut hmac_sha256::Hash| {
+                            digest.update(authenticated.as_bytes());
+                            Ok(())
+                        },
+                        &ecdsa_signature,
+                    )
                     .map_err(|_| JWTError::InvalidSignature)?;
                 Ok(())
             },

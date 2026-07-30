@@ -6,7 +6,7 @@
 use superboring as boring;
 
 use boring::aes::{unwrap_key, wrap_key, AesKey};
-use rand::RngCore;
+use rand::Rng;
 use serde::{de::DeserializeOwned, Serialize};
 use zeroize::Zeroize;
 
@@ -56,7 +56,7 @@ impl A256KWKey {
     /// Generate a random key.
     pub fn generate() -> Self {
         let mut key = vec![0u8; Self::KEY_SIZE];
-        rand::thread_rng().fill_bytes(&mut key);
+        rand::rng().fill_bytes(&mut key);
         A256KWKey { key, key_id: None }
     }
 
@@ -189,7 +189,7 @@ impl A128KWKey {
     /// Generate a random key.
     pub fn generate() -> Self {
         let mut key = vec![0u8; Self::KEY_SIZE];
-        rand::thread_rng().fill_bytes(&mut key);
+        rand::rng().fill_bytes(&mut key);
         A128KWKey { key, key_id: None }
     }
 

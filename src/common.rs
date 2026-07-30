@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use coarsetime::{Duration, UnixTimeStamp};
 use ct_codecs::{Base64UrlSafeNoPadding, Decoder, Encoder, Hex};
-use rand::RngCore;
+use rand::Rng;
 
 use crate::{claims::DEFAULT_TIME_TOLERANCE_SECS, error::*};
 
@@ -128,7 +128,7 @@ impl Salt {
     /// Generate a new random salt.
     pub fn generate() -> Self {
         let mut salt = vec![0u8; 32];
-        rand::thread_rng().fill_bytes(&mut salt);
+        rand::rng().fill_bytes(&mut salt);
         Salt::Signer(salt)
     }
 }

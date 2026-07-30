@@ -3,7 +3,7 @@ use std::convert::TryInto;
 
 use coarsetime::{Clock, Duration, UnixTimeStamp};
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder, Hex};
-use rand::RngCore;
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 
 use crate::common::VerificationOptions;
@@ -882,7 +882,7 @@ impl<CustomClaims> JWTClaims<CustomClaims> {
     /// ```
     pub fn create_nonce(&mut self) -> String {
         let mut raw_nonce = [0u8; 24];
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         rng.fill_bytes(&mut raw_nonce);
         let nonce = Base64UrlSafeNoPadding::encode_to_string(raw_nonce).unwrap();
         self.nonce = Some(nonce);

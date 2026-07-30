@@ -7,7 +7,7 @@
 use superboring as boring;
 
 use boring::symm::{Cipher, Crypter, Mode};
-use rand::RngCore;
+use rand::Rng;
 use zeroize::Zeroize;
 
 use crate::error::*;
@@ -61,14 +61,14 @@ impl ContentEncryption {
     /// Generate a random Content Encryption Key (CEK) for this algorithm.
     pub fn generate_cek(&self) -> Vec<u8> {
         let mut cek = vec![0u8; self.key_size()];
-        rand::thread_rng().fill_bytes(&mut cek);
+        rand::rng().fill_bytes(&mut cek);
         cek
     }
 
     /// Generate a random IV for this algorithm.
     pub fn generate_iv(&self) -> Vec<u8> {
         let mut iv = vec![0u8; self.iv_size()];
-        rand::thread_rng().fill_bytes(&mut iv);
+        rand::rng().fill_bytes(&mut iv);
         iv
     }
 
