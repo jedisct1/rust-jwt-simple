@@ -60,6 +60,17 @@ pub const MAX_CUSTOM_CLAIMS_SIZE: usize = 16384;
 /// ```
 pub struct CWTToken;
 
+fn header_buckets_collide(
+    protected: &[(CBORValue, CBORValue)],
+    unprotected: &[(CBORValue, CBORValue)],
+) -> bool {
+    protected.iter().any(|(protected_key, _)| {
+        unprotected
+            .iter()
+            .any(|(unprotected_key, _)| unprotected_key == protected_key)
+    })
+}
+
 impl CWTToken {
     /// Decode CWT token metadata that can be useful prior to signature/tag verification
     ///
@@ -115,10 +126,14 @@ impl CWTToken {
             Cursor::new(parts_cbor[0].as_bytes().ok_or(JWTError::CWTDecodingError)?);
         let protected_cbor: CBORValue = from_cbor(&mut protected_reader)?;
         let protected = protected_cbor.as_map().ok_or(JWTError::CWTDecodingError)?;
-        jwt_header.mix_cwt(protected)?;
 
         // Parse unprotected header
         let unprotected = parts_cbor[1].as_map().ok_or(JWTError::CWTDecodingError)?;
+        ensure!(
+            !header_buckets_collide(protected, unprotected),
+            JWTError::CWTDecodingError
+        );
+        jwt_header.mix_cwt(protected)?;
         jwt_header.mix_cwt(unprotected)?;
 
         Ok(TokenMetadata { jwt_header })
@@ -194,9 +209,13 @@ impl CWTToken {
             Cursor::new(parts_cbor[0].as_bytes().ok_or(JWTError::CWTDecodingError)?);
         let protected_cbor: CBORValue = from_cbor(&mut protected_reader)?;
         let protected = protected_cbor.as_map().ok_or(JWTError::CWTDecodingError)?;
-        jwt_header.mix_cwt(protected)?;
 
         let unprotected = parts_cbor[1].as_map().ok_or(JWTError::CWTDecodingError)?;
+        ensure!(
+            !header_buckets_collide(protected, unprotected),
+            JWTError::CWTDecodingError
+        );
+        jwt_header.mix_cwt(protected)?;
         jwt_header.mix_cwt(unprotected)?;
 
         // Reject unsupported critical header extensions before accepting the token.
