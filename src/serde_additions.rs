@@ -1,4 +1,5 @@
 pub mod unix_timestamp {
+    use std::convert::TryFrom;
     use std::fmt;
 
     use coarsetime::UnixTimeStamp;
@@ -16,7 +17,9 @@ pub mod unix_timestamp {
         where
             E: DeError,
         {
-            Ok(UnixTimeStamp::from_secs(value as _))
+            let value = u64::try_from(value)
+                .map_err(|_| E::custom("Unix timestamp must not be negative"))?;
+            Ok(UnixTimeStamp::from_secs(value))
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E>
