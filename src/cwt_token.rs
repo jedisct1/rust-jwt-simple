@@ -1,9 +1,9 @@
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use std::io::Cursor;
 
 use anyhow::ensure;
 use binstring::*;
-use ciborium::de::from_reader as from_cbor;
+use ciborium::de::from_reader_with_recursion_limit;
 use ciborium::ser::into_writer as to_cbor;
 use ciborium::value::Value as CBORValue;
 use coarsetime::Duration;
@@ -18,6 +18,14 @@ use crate::token::TokenMetadata;
 pub const MAX_CWT_HEADER_LENGTH: usize = 4096;
 pub const MAX_CUSTOM_CLAIMS_COUNT: usize = 64;
 pub const MAX_CUSTOM_CLAIMS_SIZE: usize = 16384;
+
+/// Nesting depth accepted in a CWT, shared by the pre-scan and the decoder so neither can
+/// reject what the other would have taken.
+const MAX_CWT_DEPTH: usize = 16;
+
+fn from_cbor<T: DeserializeOwned, R: std::io::Read>(reader: R) -> Result<T, Error> {
+    from_reader_with_recursion_limit(reader, MAX_CWT_DEPTH).map_err(Error::new)
+}
 
 /// Utilities to get information about a CWT token
 ///
@@ -60,6 +68,185 @@ pub const MAX_CUSTOM_CLAIMS_SIZE: usize = 16384;
 /// ```
 pub struct CWTToken;
 
+struct CBORHead {
+    major: u8,
+    argument: u64,
+    indefinite: bool,
+    /// Offset of the first byte after the head.
+    body: usize,
+}
+
+fn read_cbor_head(cbor: &[u8], offset: usize) -> Result<CBORHead, Error> {
+    let initial = *cbor.get(offset).ok_or(JWTError::CWTDecodingError)?;
+    let major = initial >> 5;
+    let (argument, indefinite, body) = match initial & 0x1f {
+        info @ 0..=23 => (info as u64, false, offset + 1),
+        info @ 24..=27 => {
+            let width = 1usize << (info - 24);
+            let end = offset + 1 + width;
+            let encoded = cbor
+                .get(offset + 1..end)
+                .ok_or(JWTError::CWTDecodingError)?;
+            let mut buf = [0u8; 8];
+            buf[8 - width..].copy_from_slice(encoded);
+            (u64::from_be_bytes(buf), false, end)
+        }
+        // Only strings, arrays and maps may be indefinite-length.
+        31 if (2..=5).contains(&major) => (0, true, offset + 1),
+        _ => bail!(JWTError::CWTDecodingError),
+    };
+    Ok(CBORHead {
+        major,
+        argument,
+        indefinite,
+        body,
+    })
+}
+
+/// Offset just past a definite-length string, checked against the end of the buffer.
+fn end_of_cbor_string(cbor: &[u8], head: &CBORHead) -> Result<usize, Error> {
+    let len = usize::try_from(head.argument).map_err(|_| JWTError::CWTDecodingError)?;
+    let end = head
+        .body
+        .checked_add(len)
+        .ok_or(JWTError::CWTDecodingError)?;
+    ensure!(end <= cbor.len(), JWTError::CWTDecodingError);
+    Ok(end)
+}
+
+fn at_cbor_break(cbor: &[u8], offset: usize) -> Result<bool, Error> {
+    Ok(*cbor.get(offset).ok_or(JWTError::CWTDecodingError)? == 0xff)
+}
+
+/// Offset just past the break of an indefinite-length string, and its total content length.
+///
+/// `max_overhead` caps the bytes spent on chunk heads, which is what stops a string split
+/// into millions of one-byte chunks from turning the walk into a whole-token scan.
+fn walk_cbor_string_chunks(
+    cbor: &[u8],
+    start: usize,
+    major: u8,
+    max_overhead: usize,
+) -> Result<(usize, usize), Error> {
+    let mut at = start;
+    let mut content = 0usize;
+    let mut overhead = 0usize;
+    while !at_cbor_break(cbor, at)? {
+        let chunk = read_cbor_head(cbor, at)?;
+        ensure!(
+            chunk.major == major && !chunk.indefinite,
+            JWTError::CWTDecodingError
+        );
+        overhead += chunk.body - at;
+        ensure!(overhead <= max_overhead, JWTError::CWTDecodingError);
+        let end = end_of_cbor_string(cbor, &chunk)?;
+        content += end - chunk.body;
+        at = end;
+    }
+    Ok((at + 1, content))
+}
+
+/// Offset just past the CBOR item starting at `offset`, without decoding or allocating.
+///
+/// Announced element counts are not trusted; the walk just runs out of input and fails.
+/// Every item it accepts costs at least one byte, so it can never visit more items than
+/// `cbor` has bytes, which is what makes it safe on a truncated view of a hostile token.
+fn skip_cbor_item(cbor: &[u8], offset: usize, depth: usize) -> Result<usize, Error> {
+    ensure!(depth <= MAX_CWT_DEPTH, JWTError::CWTDecodingError);
+    let head = read_cbor_head(cbor, offset)?;
+    match head.major {
+        2 | 3 if !head.indefinite => end_of_cbor_string(cbor, &head),
+        2 | 3 => Ok(walk_cbor_string_chunks(cbor, head.body, head.major, cbor.len())?.0),
+        4 | 5 if !head.indefinite => {
+            let items = if head.major == 5 {
+                head.argument
+                    .checked_mul(2)
+                    .ok_or(JWTError::CWTDecodingError)?
+            } else {
+                head.argument
+            };
+            let mut at = head.body;
+            for _ in 0..items {
+                at = skip_cbor_item(cbor, at, depth + 1)?;
+            }
+            Ok(at)
+        }
+        4 | 5 => {
+            let mut at = head.body;
+            while !at_cbor_break(cbor, at)? {
+                at = skip_cbor_item(cbor, at, depth + 1)?;
+                if head.major == 5 {
+                    ensure!(!at_cbor_break(cbor, at)?, JWTError::CWTDecodingError);
+                    at = skip_cbor_item(cbor, at, depth + 1)?;
+                }
+            }
+            Ok(at + 1)
+        }
+        6 => skip_cbor_item(cbor, head.body, depth + 1),
+        _ => Ok(head.body),
+    }
+}
+
+/// Length of the payload byte string, after checking the COSE framing around it.
+///
+/// Runs before the decoder, which would otherwise materialize an announced array of
+/// millions of one-byte elements before anything got to reject it. Payload size stays
+/// unbounded: CWT is binary and a token carrying gigabytes of claims is legitimate.
+fn scan_cwt_envelope(token: &[u8]) -> Result<usize, Error> {
+    let outer = read_cbor_head(token, 0)?;
+    ensure!(outer.major == 6, JWTError::CWTDecodingError);
+    let (tag, tagged_at) = if outer.argument == 61 {
+        let inner = read_cbor_head(token, outer.body)?;
+        ensure!(inner.major == 6, JWTError::CWTDecodingError);
+        (inner.argument, inner.body)
+    } else {
+        (outer.argument, outer.body)
+    };
+    ensure!(tag == 17 || tag == 18, JWTError::CWTDecodingError);
+
+    let array = read_cbor_head(token, tagged_at)?;
+    ensure!(
+        array.major == 4 && (array.indefinite || array.argument == 4),
+        JWTError::CWTDecodingError
+    );
+
+    // Everything but the payload has to fit in the header budget, so walking the slots
+    // around it through windows of that size is lossless for well-formed tokens and caps
+    // the walk for everything else, however large the token is.
+    let header_window = window_from(token, tagged_at);
+    let after_protected = skip_cbor_item(header_window, array.body, 0)?;
+    let payload_at = skip_cbor_item(header_window, after_protected, 0)?;
+
+    let payload = read_cbor_head(token, payload_at)?;
+    ensure!(payload.major == 2, JWTError::CWTDecodingError);
+    let (payload_end, payload_len) = if payload.indefinite {
+        walk_cbor_string_chunks(token, payload.body, 2, MAX_CWT_HEADER_LENGTH)?
+    } else {
+        let end = end_of_cbor_string(token, &payload)?;
+        (end, end - payload.body)
+    };
+
+    // The budget is computed by subtracting the payload from the token, so it only sees
+    // bytes that are present. Walk the signature slot too, or a ten-byte token announcing
+    // millions of absent elements sails past it.
+    skip_cbor_item(window_from(token, payload_end), payload_end, 0)?;
+
+    Ok(payload_len)
+}
+
+fn window_from(token: &[u8], offset: usize) -> &[u8] {
+    &token[..offset
+        .saturating_add(MAX_CWT_HEADER_LENGTH)
+        .min(token.len())]
+}
+
+/// Reject a hostile envelope before the decoder is handed the token.
+fn ensure_cwt_header_budget(token: &[u8]) -> Result<(), Error> {
+    let header_len = token.len().saturating_sub(scan_cwt_envelope(token)?);
+    ensure!(header_len > 0 && header_len <= MAX_CWT_HEADER_LENGTH);
+    Ok(())
+}
+
 fn header_buckets_collide(
     protected: &[(CBORValue, CBORValue)],
     unprotected: &[(CBORValue, CBORValue)],
@@ -77,7 +264,7 @@ impl CWTToken {
     /// Similar to `Token::decode_metadata` but for CWT tokens.
     pub fn decode_metadata(token: impl AsRef<[u8]>) -> Result<TokenMetadata, Error> {
         let token = token.as_ref();
-        let token_len = token.len();
+        ensure_cwt_header_budget(token)?;
 
         let mut parts_reader = Cursor::new(token);
         let parts_cbor_tagged = from_cbor(&mut parts_reader)?;
@@ -111,13 +298,6 @@ impl CWTToken {
         };
 
         ensure!(parts_cbor.len() == 4, JWTError::CWTDecodingError);
-        let header_len = token_len.saturating_sub(
-            parts_cbor[2]
-                .as_bytes()
-                .ok_or(JWTError::CWTDecodingError)?
-                .len(),
-        );
-        ensure!(header_len > 0 && header_len <= MAX_CWT_HEADER_LENGTH);
 
         let mut jwt_header = JWTHeader::default();
 
@@ -163,6 +343,8 @@ impl CWTToken {
             ensure!(token_len <= max_token_length, JWTError::TokenTooLong);
         }
 
+        ensure_cwt_header_budget(token)?;
+
         let mut parts_reader = Cursor::new(token);
         let parts_cbor_tagged = from_cbor(&mut parts_reader)?;
 
@@ -194,13 +376,6 @@ impl CWTToken {
             }
         };
         ensure!(parts_cbor.len() == 4, JWTError::CWTDecodingError);
-        let header_len = token_len.saturating_sub(
-            parts_cbor[2]
-                .as_bytes()
-                .ok_or(JWTError::CWTDecodingError)?
-                .len(),
-        );
-        ensure!(header_len > 0 && header_len <= MAX_CWT_HEADER_LENGTH);
 
         let mut jwt_header = JWTHeader::default();
         let mut claims = JWTClaims::<CustomClaims>::new();
@@ -730,6 +905,168 @@ fn decode_cwt_metadata() {
     // Test metadata extraction for tag 61 wrapped token
     let metadata = key.decode_cwt_metadata(token).unwrap();
     assert_eq!(metadata.algorithm(), "HS256");
+}
+
+#[cfg(test)]
+fn encode_cbor(value: &CBORValue) -> Vec<u8> {
+    let mut encoded = vec![];
+    to_cbor(value, &mut encoded).unwrap();
+    encoded
+}
+
+/// A COSE_Mac0 CWT carrying `issuer` as its only claim.
+#[cfg(test)]
+fn hs256_cwt(key: &crate::algorithms::HS256Key, issuer: &str) -> Vec<u8> {
+    use crate::algorithms::MACLike;
+
+    let protected = encode_cbor(&CBORValue::Map(vec![(
+        CBORValue::Integer(1.into()),
+        CBORValue::Integer(5.into()),
+    )]));
+    let payload = encode_cbor(&CBORValue::Map(vec![(
+        CBORValue::Integer(I_ISS.into()),
+        CBORValue::Text(issuer.to_string()),
+    )]));
+    let mac_structure = encode_cbor(&CBORValue::Array(vec![
+        CBORValue::Text("MAC0".into()),
+        CBORValue::Bytes(protected.clone()),
+        CBORValue::Bytes(vec![]),
+        CBORValue::Bytes(payload.clone()),
+    ]));
+    let tag = key.authentication_tag(&mac_structure);
+
+    let mut token = vec![0xd1];
+    token.extend_from_slice(&encode_cbor(&CBORValue::Array(vec![
+        CBORValue::Bytes(protected),
+        CBORValue::Map(vec![]),
+        CBORValue::Bytes(payload),
+        CBORValue::Bytes(tag),
+    ])));
+    token
+}
+
+#[test]
+fn large_cwt_payload_is_accepted() {
+    use crate::prelude::*;
+
+    // CWT is binary and its payload is legitimately unbounded, so a token past
+    // DEFAULT_MAX_TOKEN_LENGTH still has to decode and verify.
+    let key = HS256Key::generate();
+    let issuer = "i".repeat(1_100_000);
+    let token = hs256_cwt(&key, &issuer);
+    assert!(token.len() > DEFAULT_MAX_TOKEN_LENGTH);
+
+    assert_eq!(
+        CWTToken::decode_metadata(&token).unwrap().algorithm(),
+        "HS256"
+    );
+
+    let options = VerificationOptions {
+        max_token_length: None,
+        ..Default::default()
+    };
+    let claims = key.verify_cwt_token(&token, Some(options)).unwrap();
+    assert_eq!(claims.issuer.unwrap(), issuer);
+}
+
+#[test]
+fn envelope_scan_rejects_hostile_shapes() {
+    // One shape per guard in the scan. Each announces far more than it carries, so a scan
+    // that took announced counts at their word would walk millions of items for a handful
+    // of bytes.
+
+    // Five million elements claimed by the outer array, settled from its head alone.
+    let mut arity = vec![0xd2, 0x9a];
+    arity.extend_from_slice(&5_000_000u32.to_be_bytes());
+
+    // The same trick in the unprotected header, where the window runs out instead.
+    let mut header_count = vec![0xd2, 0x84, 0x40, 0x9b];
+    header_count.extend_from_slice(&u64::MAX.to_be_bytes());
+    header_count.resize(header_count.len() + 2 * MAX_CWT_HEADER_LENGTH, 0xf6);
+
+    // Nested arrays, one per byte. Well-formed and complete, so only the depth limit
+    // stands between it and acceptance.
+    let mut header_depth = vec![0xd2, 0x84, 0x40, 0xa1, 0x18, 0x63];
+    header_depth.resize(header_depth.len() + 2 * MAX_CWT_DEPTH, 0x81);
+    header_depth.extend_from_slice(&[0xf6, 0x41, 0x2a, 0x40]);
+
+    // An indefinite payload chopped fine enough that its chunk heads blow the budget.
+    let mut payload_chunks = vec![0xd2, 0x84, 0x40, 0xa0, 0x5f];
+    for _ in 0..2 * MAX_CWT_HEADER_LENGTH {
+        payload_chunks.extend_from_slice(&[0x41, 0x2a]);
+    }
+    payload_chunks.extend_from_slice(&[0xff, 0x40]);
+
+    // Ten bytes announcing five million absent elements in the signature slot. Subtracting
+    // the payload from the token length cannot catch this: those elements never reach the
+    // wire, so they cost the sender nothing.
+    let mut trailing_slot = vec![0xd2, 0x84, 0x40, 0xa0, 0x40, 0x9a];
+    trailing_slot.extend_from_slice(&5_000_000u32.to_be_bytes());
+
+    for (guard, token) in [
+        ("outer array arity", arity),
+        ("announced header count", header_count),
+        ("header nesting depth", header_depth),
+        ("chunked payload overhead", payload_chunks),
+        ("announced count after the payload", trailing_slot),
+    ] {
+        assert!(scan_cwt_envelope(&token).is_err(), "accepted {}", guard);
+    }
+}
+
+#[test]
+fn envelope_scan_depth_limit_matches_the_decoder() {
+    // A token the scan rejects but the decoder would have taken is a regression, whatever
+    // the nesting depth.
+    let deeply_nested = |levels: usize| {
+        let mut token = vec![0xd2, 0x84, 0x43, 0xa1, 0x01, 0x05, 0xa1, 0x18, 0x63];
+        token.resize(token.len() + levels, 0x81);
+        token.extend_from_slice(&[0xf6, 0x41, 0x2a, 0x40]);
+        token
+    };
+
+    for levels in [2, 8, 11, 12, 13, 14, 16, 20, 40] {
+        let token = deeply_nested(levels);
+        let decoded: Result<ciborium::tag::Captured<CBORValue>, _> =
+            from_cbor(Cursor::new(token.as_slice()));
+        if decoded.is_ok() {
+            assert!(
+                scan_cwt_envelope(&token).is_ok(),
+                "the scan rejected {} levels, which the decoder accepts",
+                levels
+            );
+        }
+    }
+    assert!(CWTToken::decode_metadata(deeply_nested(4)).is_ok());
+}
+
+#[test]
+fn envelope_scan_accepts_indefinite_length_encodings() {
+    use ct_codecs::{Decoder, Hex};
+
+    use crate::prelude::*;
+
+    // The token from should_verify_token: d1 84 43a10105 a0 5835<53 bytes> 5820<32 bytes>
+    let token_hex = "d18443a10105a05835a60172636f6170733a2f2f61732e6578616d706c65026764616a69616a690743313233041a6296121f051a6296040f061a6296040f58206b310798de7f6b2aeff832344c2ea37674807b72a8a2cc263f1d31b1eb86139b";
+    let definite = Hex::decode_to_vec(token_hex, None).unwrap();
+    let payload = &definite[9..9 + 53];
+    let tag = &definite[9 + 53 + 2..];
+
+    // Re-encoded with an indefinite-length outer array and a payload split in two chunks.
+    // Unusual, but legal CBOR, and the scan has to keep accepting it.
+    let mut token = vec![0xd1, 0x9f, 0x43, 0xa1, 0x01, 0x05, 0xa0, 0x5f, 0x58, 26];
+    token.extend_from_slice(&payload[..26]);
+    token.extend_from_slice(&[0x58, 27]);
+    token.extend_from_slice(&payload[26..]);
+    token.extend_from_slice(&[0xff, 0x58, 32]);
+    token.extend_from_slice(tag);
+    token.push(0xff);
+
+    assert_eq!(scan_cwt_envelope(&token).unwrap(), 53);
+    assert_eq!(
+        CWTToken::decode_metadata(&token).unwrap().algorithm(),
+        "HS256"
+    );
 }
 
 #[test]
