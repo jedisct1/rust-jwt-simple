@@ -242,9 +242,27 @@ Available verification options are identical to the ones used with symmetric alg
 
 While JWT signatures provide authenticity (verifying who created the token), JWE provides confidentiality by encrypting the token content. Use JWE when the claims contain sensitive data that should not be visible to intermediaries.
 
+Decryption alone does not tell you who created a token.
+What it proves depends on the key management mode:
+
+| Mode                               | Successful decryption proves       |
+| ---------------------------------- | ---------------------------------- |
+| `A128KW`, `A256KW`                 | The sender knows the shared secret |
+| `RSA-OAEP`                         | Nothing about the sender           |
+| `ECDH-ES+A128KW`, `ECDH-ES+A256KW` | Nothing about the sender           |
+
+With `RSA-OAEP` and `ECDH-ES`, the encryption key is public.
+Anyone holding it can mint a token that decrypts successfully, with any claims they want: a fresh expiration, the expected issuer, the right audience.
+Claim validation runs after decryption, but in these modes every claim it checks was chosen by whoever built the token.
+The AES-GCM tag protects the ciphertext against tampering; it does not authenticate the sender.
+
+If the application needs to know who sent a token, it has to establish that itself.
+Either use the AES key wrap modes, where producing a decryptable token requires the shared secret, or have the sender sign the data and verify that signature after decryption, for example by carrying a signed token in a custom claim.
+
 ### RSA-OAEP key management
 
 RSA-OAEP uses asymmetric encryption: anyone with the public key can encrypt tokens, but only the private key holder can decrypt them.
+This is anonymous encryption: a token that decrypts correctly can come from anyone holding the public key, so pair it with a signature check when the sender matters.
 
 ```rust
 use jwt_simple::prelude::*;
@@ -289,7 +307,8 @@ let claims: JWTClaims<NoCustomClaims> = key.decrypt_token(&token, None)?;
 
 ### ECDH-ES key agreement
 
-ECDH-ES uses elliptic curve Diffie-Hellman for key agreement. Like RSA-OAEP, it uses asymmetric keys but is more efficient:
+ECDH-ES uses elliptic curve Diffie-Hellman for key agreement. Like RSA-OAEP, it uses asymmetric keys but is more efficient.
+It is anonymous in the same way: decryption does not authenticate the sender.
 
 ```rust
 use jwt_simple::prelude::*;

@@ -354,6 +354,10 @@ impl EcdhEsA256KWDecryptionKey {
     }
 
     /// Decrypt a JWE token and return the claims.
+    ///
+    /// Decryption does not authenticate the sender: the encryption key is public,
+    /// so anyone can mint a token that decrypts successfully, with any claims.
+    /// Do not treat the result as trusted input without a separate signature check.
     pub fn decrypt_token<CustomClaims: DeserializeOwned>(
         &self,
         token: &str,
@@ -670,6 +674,10 @@ impl EcdhEsA128KWDecryptionKey {
     }
 
     /// Decrypt a JWE token and return the claims.
+    ///
+    /// Decryption does not authenticate the sender: the encryption key is public,
+    /// so anyone can mint a token that decrypts successfully, with any claims.
+    /// Do not treat the result as trusted input without a separate signature check.
     pub fn decrypt_token<CustomClaims: DeserializeOwned>(
         &self,
         token: &str,

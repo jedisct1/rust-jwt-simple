@@ -25,6 +25,21 @@
 //! - `A256GCM` - AES-256-GCM (default, recommended)
 //! - `A128GCM` - AES-128-GCM
 //!
+//! # Sender Authentication
+//!
+//! Authenticated encryption authenticates the ciphertext, not the sender.
+//! With the asymmetric modes (`RSA-OAEP` and `ECDH-ES`), the encryption key is public,
+//! so anyone can produce a token that decrypts successfully, carrying any claims.
+//! Successful decryption in these modes proves nothing about who sent the token,
+//! and checking issuer or audience claims is no substitute, since the sender picked them too.
+//!
+//! The AES key wrap modes (`A128KW`, `A256KW`) are different: producing a decryptable
+//! token requires the shared secret, so decryption authenticates the sender as one of
+//! the key holders.
+//!
+//! When the sender's identity matters with the asymmetric modes, verify a signature
+//! after decryption, for example a signed token carried in a custom claim.
+//!
 //! # Examples
 //!
 //! ## RSA-OAEP
