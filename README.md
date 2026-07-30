@@ -464,7 +464,7 @@ As a temporary workaround for portability issues with one of the dependencies (t
 
 In order to do so, import the crate with `default-features = false, features = ["pure-rust"]` in your Cargo configuration.
 
-Do not do it unconditionally. This is only required for very specific setups and targets, and only until issues with the `boring` crate have been solved. The way to configure this in Cargo may also change in future versions.
+Do not do it unconditionally. Consider this unsupported. This is only required for very specific setups and targets, and only until issues with the `boring` crate have been solved. The way to configure this in Cargo may also change in future versions.
 
 Static builds targeting the `musl` library don't require that workaround. Just use [`cargo-zigbuild`](https://github.com/rust-cross/cargo-zigbuild) to build your project.
 
