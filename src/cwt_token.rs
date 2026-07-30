@@ -531,15 +531,7 @@ fn deserialize_custom_claims<T: DeserializeOwned + Default>(
         bail!(JWTError::CWTDecodingError);
     }
 
-    // Deserialize into the custom type
-    let result = from_cbor::<T, _>(std::io::Cursor::new(bytes));
-    match result {
-        Ok(custom) => Ok(custom),
-        Err(_) => {
-            // Fall back to default on deserialization errors
-            Ok(T::default())
-        }
-    }
+    from_cbor::<T, _>(std::io::Cursor::new(bytes)).map_err(|_| JWTError::CWTDecodingError.into())
 }
 
 /// Recursively convert all integer keys in CBOR maps to string keys
@@ -917,16 +909,27 @@ fn encode_cbor(value: &CBORValue) -> Vec<u8> {
 /// A COSE_Mac0 CWT carrying `issuer` as its only claim.
 #[cfg(test)]
 fn hs256_cwt(key: &crate::algorithms::HS256Key, issuer: &str) -> Vec<u8> {
+    hs256_cwt_with_claims(
+        key,
+        vec![(
+            CBORValue::Integer(I_ISS.into()),
+            CBORValue::Text(issuer.to_string()),
+        )],
+    )
+}
+
+#[cfg(test)]
+fn hs256_cwt_with_claims(
+    key: &crate::algorithms::HS256Key,
+    claims: Vec<(CBORValue, CBORValue)>,
+) -> Vec<u8> {
     use crate::algorithms::MACLike;
 
     let protected = encode_cbor(&CBORValue::Map(vec![(
-        CBORValue::Integer(1.into()),
-        CBORValue::Integer(5.into()),
+        CBORValue::Integer(I_ALG.into()),
+        CBORValue::Integer(I_HS256.into()),
     )]));
-    let payload = encode_cbor(&CBORValue::Map(vec![(
-        CBORValue::Integer(I_ISS.into()),
-        CBORValue::Text(issuer.to_string()),
-    )]));
+    let payload = encode_cbor(&CBORValue::Map(claims));
     let mac_structure = encode_cbor(&CBORValue::Array(vec![
         CBORValue::Text("MAC0".into()),
         CBORValue::Bytes(protected.clone()),
@@ -1128,17 +1131,95 @@ fn verify_cwt_with_custom_claims() {
     // This should fail since token was created with HS256, not Blake2b
     assert!(claims_blake.is_err());
 
-    // Create a more complex custom claims type that should fail
     #[derive(Debug, Serialize, Deserialize, Default, PartialEq)]
     struct ComplexCustomData {
         required_field: String,
     }
 
-    // Trying to parse as a different custom claims type should give default values (fail gracefully)
+    // This token carries no custom claim, so nothing is deserialized into `ComplexCustomData`.
     let complex_claims = key
         .verify_cwt_token_with_custom_claims::<ComplexCustomData>(token, Some(options))
         .unwrap();
     assert_eq!(complex_claims.custom, ComplexCustomData::default());
+}
+
+#[test]
+fn custom_claims_incompatible_with_the_token_fail_closed() {
+    use serde::Deserialize;
+
+    use crate::prelude::*;
+
+    #[derive(Debug, Deserialize, PartialEq)]
+    struct Authz {
+        #[serde(rename = "500")]
+        is_admin: bool,
+    }
+
+    impl Default for Authz {
+        fn default() -> Self {
+            Authz { is_admin: true }
+        }
+    }
+
+    let key = HS256Key::from_bytes(&[0x42u8; 32]);
+    let token = hs256_cwt_with_claims(
+        &key,
+        vec![
+            (
+                CBORValue::Integer(I_ISS.into()),
+                CBORValue::Text("issuer".into()),
+            ),
+            (
+                CBORValue::Integer(500.into()),
+                CBORValue::Text("not-a-bool".into()),
+            ),
+        ],
+    );
+
+    let err = key
+        .verify_cwt_token_with_custom_claims::<Authz>(&token, None)
+        .unwrap_err();
+    match err.downcast::<JWTError>() {
+        Ok(JWTError::CWTDecodingError) => {}
+        Ok(err) => panic!("Expected CWTDecodingError, got: {:?}", err),
+        Err(err) => panic!("Expected JWTError, got: {:?}", err),
+    }
+
+    // `NoCustomClaims` asks for no custom claim, so the same token has to keep verifying.
+    let claims = key.verify_cwt_token(&token, None).unwrap();
+    assert_eq!(claims.issuer.unwrap(), "issuer");
+}
+
+#[test]
+fn compatible_custom_claims_still_deserialize() {
+    use serde::Deserialize;
+
+    use crate::prelude::*;
+
+    #[derive(Debug, Default, Deserialize, PartialEq)]
+    struct Authz {
+        #[serde(rename = "500")]
+        is_admin: bool,
+        #[serde(rename = "501")]
+        scope: Option<String>,
+    }
+
+    let key = HS256Key::from_bytes(&[0x42u8; 32]);
+    let token = hs256_cwt_with_claims(
+        &key,
+        vec![(CBORValue::Integer(500.into()), CBORValue::Bool(true))],
+    );
+
+    let claims = key
+        .verify_cwt_token_with_custom_claims::<Authz>(&token, None)
+        .unwrap();
+    assert_eq!(
+        claims.custom,
+        Authz {
+            is_admin: true,
+            scope: None
+        }
+    );
 }
 
 #[test]
