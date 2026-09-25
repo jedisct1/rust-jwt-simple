@@ -1,6 +1,6 @@
 [package]
 name = "jwt-simple"
-version = "0.13.1"
+version = "0.13.2"
 description = "JWT (JSON Web Token) creation and verification made simple. Supports JWT signatures (JWS), encryption (JWE), and custom claims."
 authors = ["Frank Denis <github@pureftpd.org>"]
 edition = "2018"
