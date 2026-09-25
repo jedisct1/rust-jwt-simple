@@ -7,28 +7,28 @@
 <!-- code_chunk_output -->
 
 - [JWT-Simple](#jwt-simple)
-  - [Usage](#usage)
-  - [Authentication (symmetric, `HS*` JWT algorithms) example](#authentication-symmetric-hs-jwt-algorithms-example)
-    - [Keys and tokens creation](#keys-and-tokens-creation)
-    - [Token verification](#token-verification)
-  - [Signatures (asymmetric, `RS*`, `PS*`, `ES*`, `EdDSA` and `ML-DSA` algorithms) example](#signatures-asymmetric-rs-ps-es-eddsa-and-ml-dsa-algorithms-example)
-    - [Key pairs and tokens creation](#key-pairs-and-tokens-creation)
+  - [Using jwt-simple](#using-jwt-simple)
+  - [JWT authentication with symmetric keys (`HS*` algorithms)](#jwt-authentication-with-symmetric-keys-hs-algorithms)
+    - [Creating a shared key and a JWT](#creating-a-shared-key-and-a-jwt)
+    - [Verifying a JWT](#verifying-a-jwt)
+  - [JWT signatures with asymmetric keys (`RS*`, `PS*`, `ES*`, `EdDSA` and `ML-DSA` algorithms)](#jwt-signatures-with-asymmetric-keys-rs-ps-es-eddsa-and-ml-dsa-algorithms)
+    - [Creating a key pair and signing a JWT](#creating-a-key-pair-and-signing-a-jwt)
       - [ES256](#es256)
       - [ES384](#es384)
       - [ML-DSA](#ml-dsa)
-  - [JWE (Encrypted tokens)](#jwe-encrypted-tokens)
+  - [JWT encryption with JWE](#jwt-encryption-with-jwe)
     - [RSA-OAEP key management](#rsa-oaep-key-management)
     - [AES Key Wrap](#aes-key-wrap)
     - [ECDH-ES key agreement](#ecdh-es-key-agreement)
-  - [Advanced usage](#advanced-usage)
-    - [Custom claims](#custom-claims)
-    - [Peeking at metadata before verification](#peeking-at-metadata-before-verification)
-    - [Creating and attaching key identifiers](#creating-and-attaching-key-identifiers)
-    - [Mitigations against replay attacks](#mitigations-against-replay-attacks)
+  - [Advanced JWT usage](#advanced-jwt-usage)
+    - [Custom JWT claims](#custom-jwt-claims)
+    - [Reading JWT metadata before verification](#reading-jwt-metadata-before-verification)
+    - [JWT key identifiers](#jwt-key-identifiers)
+    - [Mitigating JWT replay attacks](#mitigating-jwt-replay-attacks)
     - [Salted keys](#salted-keys)
     - [CWT (CBOR) support](#cwt-cbor-support)
-    - [Specifying header options](#specifying-header-options)
-    - [Validating content and signature types](#validating-content-and-signature-types)
+    - [Setting JWT header options](#setting-jwt-header-options)
+    - [Validating JWT content and signature types](#validating-jwt-content-and-signature-types)
   - [Working around compilation issues with the `boring` crate](#working-around-compilation-issues-with-the-boring-crate)
   - [Faster and safer crypto on WASI with WASI-Crypto](#faster-and-safer-crypto-on-wasi-with-wasi-crypto)
   - [Usage in Web browsers](#usage-in-web-browsers)
@@ -38,7 +38,8 @@
 
 # JWT-Simple
 
-A new JWT (JSON Web Tokens) implementation for Rust that focuses on simplicity, while avoiding common JWT security pitfalls.
+`jwt-simple` is a Rust library for creating and verifying JWT (JSON Web Token) authentication tokens.
+It supports signing with JWS, encryption with JWE, and custom claims, while avoiding common JWT security pitfalls.
 
 `jwt-simple` is unopinionated and supports all commonly deployed authentication and signature algorithms:
 
@@ -76,9 +77,10 @@ Content encryption uses AES-GCM (A256GCM or A128GCM).
 
 `jwt-simple` can be compiled out of the box to WebAssembly/WASI. It is fully compatible with Fastly _Compute_ service. On WASI runtimes that support it, the [`wasi-crypto` feature](#faster-and-safer-crypto-on-wasi-with-wasi-crypto) offloads RSA and AES-GCM operations to the host, making them both much faster and safer against side-channel attacks.
 
-Important: JWT's purpose is to verify that data has been created by a party knowing a secret key. It does not provide any kind of confidentiality: JWT data is simply encoded as Base64, and is not encrypted.
+The claims in a signed JWT are Base64url-encoded and can be read without a key.
+Use JWE when the claims must be encrypted.
 
-## Usage
+## Using jwt-simple
 
 `cargo.toml`:
 
@@ -95,11 +97,11 @@ use jwt_simple::prelude::*;
 
 Errors are returned as `jwt_simple::Error` values (alias for the `Error` type of the `anyhow` crate).
 
-## Authentication (symmetric, `HS*` JWT algorithms) example
+## JWT authentication with symmetric keys (`HS*` algorithms)
 
 Authentication schemes use the same key for creating and verifying tokens. In other words, both parties need to ultimately trust each other, or else the verifier could also create arbitrary tokens.
 
-### Keys and tokens creation
+### Creating a shared key and a JWT
 
 Key creation:
 
@@ -117,15 +119,15 @@ Token creation:
 ```rust
 // create claims valid for 2 hours
 let claims = Claims::create(Duration::from_hours(2));
-let token = key.authenticate(claims)?;
+let jwt = key.authenticate(claims)?;
 ```
 
 -> Done!
 
-### Token verification
+### Verifying a JWT
 
 ```rust
-let claims = key.verify_token::<NoCustomClaims>(&token, None)?;
+let claims = key.verify_token::<NoCustomClaims>(&jwt, None)?;
 ```
 
 -> Done! No additional steps required.
@@ -151,18 +153,18 @@ options.allowed_issuers = Some(HashSet::from_strings(&["example app"]));
 
 // see the documentation for the full list of available options
 
-let claims = key.verify_token::<NoCustomClaims>(&token, Some(options))?;
+let claims = key.verify_token::<NoCustomClaims>(&jwt, Some(options))?;
 ```
 
 Note that `allowed_issuers` and `allowed_audiences` are not strings, but sets of strings (using the `HashSet` type from the Rust standard library), as the application can allow multiple values.
 
-## Signatures (asymmetric, `RS*`, `PS*`, `ES*`, `EdDSA` and `ML-DSA` algorithms) example
+## JWT signatures with asymmetric keys (`RS*`, `PS*`, `ES*`, `EdDSA` and `ML-DSA` algorithms)
 
 A signature requires a key pair: a secret key used to create tokens, and a public key, that can only verify them.
 
 Always use a signature scheme if both parties do not ultimately trust each other, such as tokens exchanged between clients and API providers.
 
-### Key pairs and tokens creation
+### Creating a key pair and signing a JWT
 
 Key creation:
 
@@ -227,18 +229,18 @@ Token creation:
 ```rust
 // create claims valid for 2 hours
 let claims = Claims::create(Duration::from_hours(2));
-let token = key_pair.sign(claims)?;
+let jwt = key_pair.sign(claims)?;
 ```
 
 Token verification:
 
 ```rust
-let claims = public_key.verify_token::<NoCustomClaims>(&token, None)?;
+let claims = public_key.verify_token::<NoCustomClaims>(&jwt, None)?;
 ```
 
 Available verification options are identical to the ones used with symmetric algorithms.
 
-## JWE (Encrypted tokens)
+## JWT encryption with JWE
 
 While JWT signatures provide authenticity (verifying who created the token), JWE provides confidentiality by encrypting the token content. Use JWE when the claims contain sensitive data that should not be visible to intermediaries.
 
@@ -274,10 +276,10 @@ let encryption_key = decryption_key.encryption_key();
 // Encrypt a token
 let claims = Claims::create(Duration::from_hours(1))
     .with_subject("user@example.com");
-let token = encryption_key.encrypt(claims)?;
+let jwt = encryption_key.encrypt(claims)?;
 
 // Decrypt the token
-let claims: JWTClaims<NoCustomClaims> = decryption_key.decrypt_token(&token, None)?;
+let claims: JWTClaims<NoCustomClaims> = decryption_key.decrypt_token(&jwt, None)?;
 ```
 
 Keys can be exported and imported using PEM or DER formats, similar to RSA signature keys.
@@ -297,10 +299,10 @@ let key = A256KWKey::from_bytes(&raw_key_bytes)?;
 
 // Encrypt
 let claims = Claims::create(Duration::from_hours(1));
-let token = key.encrypt(claims)?;
+let jwt = key.encrypt(claims)?;
 
 // Decrypt
-let claims: JWTClaims<NoCustomClaims> = key.decrypt_token(&token, None)?;
+let claims: JWTClaims<NoCustomClaims> = key.decrypt_token(&jwt, None)?;
 ```
 
 `A128KWKey` is also available for 128-bit keys.
@@ -319,17 +321,17 @@ let encryption_key = decryption_key.encryption_key();
 
 // Encrypt
 let claims = Claims::create(Duration::from_hours(1));
-let token = encryption_key.encrypt(claims)?;
+let jwt = encryption_key.encrypt(claims)?;
 
 // Decrypt
-let claims: JWTClaims<NoCustomClaims> = decryption_key.decrypt_token(&token, None)?;
+let claims: JWTClaims<NoCustomClaims> = decryption_key.decrypt_token(&jwt, None)?;
 ```
 
 JWE tokens support the same claim types and custom claims as JWT signatures. Decryption options allow validating claims, requiring specific key IDs, and limiting token size.
 
-## Advanced usage
+## Advanced JWT usage
 
-### Custom claims
+### Custom JWT claims
 
 Claim objects support all the standard claims by default, and they can be set directly or via convenient helpers:
 
@@ -361,16 +363,16 @@ let claims = Claims::with_custom_claims(my_additional_data, Duration::from_secs(
 Claim verification with custom data. Note the presence of the custom data type:
 
 ```rust
-let claims = public_key.verify_token::<MyAdditionalData>(&token, None)?;
+let claims = public_key.verify_token::<MyAdditionalData>(&jwt, None)?;
 let user_is_admin = claims.custom.user_is_admin;
 ```
 
-### Peeking at metadata before verification
+### Reading JWT metadata before verification
 
 Properties such as the key identifier can be useful prior to tag or signature verification in order to pick the right key out of a set.
 
 ```rust
-let metadata = Token::decode_metadata(&token)?;
+let metadata = Token::decode_metadata(&jwt)?;
 let key_id = metadata.key_id();
 let algorithm = metadata.algorithm();
 // all other standard properties are also accessible
@@ -383,7 +385,7 @@ Similarly, `key_id` should be used only to select a key in a set of keys made fo
 
 At the bare minimum, verification using `HS*` must be prohibited if a signature scheme was originally used to create the token.
 
-### Creating and attaching key identifiers
+### JWT key identifiers
 
 Key identifiers indicate to verifiers what public key (or shared key) should be used for verification.
 They can be attached at any time to existing shared keys, key pairs and public keys:
@@ -402,7 +404,7 @@ This creates a text-encoded identifier for the key, attaches it, and returns it.
 
 If an identifier has been attached to a shared key or a key pair, tokens created with them will include it.
 
-### Mitigations against replay attacks
+### Mitigating JWT replay attacks
 
 `jwt-simple` includes mechanisms to mitigate replay attacks:
 
@@ -430,7 +432,7 @@ Example usage:
 // Create a random key and a signer salt
 let key = HS256Key::generate_with_salt();
 let claims = Claims::create(Duration::from_secs(86400));
-let token = key.authenticate(claims).unwrap();
+let jwt = key.authenticate(claims).unwrap();
 ```
 
 A salt is a `Salt` enum, because it can be either a salt for signing, or a salt for verification.
@@ -457,7 +459,7 @@ Verification:
 ```rust
 let verifier_salt = Salt::Verifier(verifier_salt_bytes);
 key.attach_salt(verifier_salt)?;
-let claims = key.verify_token::<NoCustomClaims>(&token, None)?;
+let claims = key.verify_token::<NoCustomClaims>(&jwt, None)?;
 ```
 
 ### CWT (CBOR) support
@@ -470,7 +472,7 @@ Also, the existing Rust crates for JSON and CBOR deserialization are not safe. A
 
 As a mitigation, we highly recommend rejecting tokens that would be too large in the context of your application. That can be done with the `max_token_length` verification option.
 
-### Specifying header options
+### Setting JWT header options
 
 It is possible to change the content type (`cty`) and signature type (`typ`) fields of a signed JWT by using the `sign_with_options`/`authenticate_with_options` functions and passing in a `HeaderOptions` struct:
 
@@ -485,7 +487,7 @@ key_pair.sign_with_options(claims, &options).unwrap();
 
 By default, generated JWTs will have a signature type field containing the string "JWT", and the content type field will not be present.
 
-### Validating content and signature types
+### Validating JWT content and signature types
 
 By default, `jwt_simple` ignores the `content_type` field when doing validation, and checks `signature_type` to ensure it is either exactly `JWT` or ends in `+JWT`, case insensitive, if it is present. Both fields may instead be case-insensitively compared against an expected string:
 

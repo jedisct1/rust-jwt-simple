@@ -1,7 +1,7 @@
 [package]
 name = "jwt-simple"
 version = "0.13.1"
-description = "Easy to use, secure, non opinionated JWT (JSON Web Tokens) implementation for Rust."
+description = "JWT (JSON Web Token) creation and verification made simple. Supports JWT signatures (JWS), encryption (JWE), and custom claims."
 authors = ["Frank Denis <github@pureftpd.org>"]
 edition = "2018"
 rust-version = "1.85"
@@ -9,7 +9,7 @@ license = "ISC"
 repository = "https://github.com/jedisct1/rust-jwt-simple"
 homepage = "https://github.com/jedisct1/rust-jwt-simple"
 categories = ["wasm", "api-bindings", "web-programming", "cryptography"]
-keywords = ["jwt", "jws", "authentication", "tokens", "json"]
+keywords = ["jwt", "jws", "jwe", "authentication", "tokens"]
 readme = "README.md"
 include = ["src/**/*.rs", "benches/**/*.rs", "README.md", "LICENSE", "Cargo.toml"]
 
