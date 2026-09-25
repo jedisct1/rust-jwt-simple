@@ -497,7 +497,7 @@
 //!
 //! This crate is not an endorsement of JWT. JWT is [an awful design](https://tools.ietf.org/html/rfc8725), and one of the many examples that "but this is a standard" doesn't necessarily mean that it is good.
 //!
-//! I would highly recommend [PASETO](https://github.com/paragonie/paseto) or [Biscuit](https://github.com/CleverCloud/biscuit) instead if you control both token creation and verification.
+//! I would highly recommend [PASETO](https://github.com/paragonie/paseto) or [Biscuit](https://github.com/eclipse-biscuit/biscuit) instead if you control both token creation and verification.
 //!
 //! However, JWT is still widely used in the industry, and remains absolutely mandatory to communicate with popular APIs.
 //!
