@@ -1,6 +1,6 @@
 [package]
 name = "jwt-simple"
-version = "0.14.0"
+version = "0.15.0"
 description = "JWT authentication with JSON Web Token signing and verification (JWS), encryption (JWE), and custom claims. Supports RSA, ECDSA, Ed25519, and ML-DSA."
 authors = ["Frank Denis <github@pureftpd.org>"]
 edition = "2018"
