@@ -138,6 +138,32 @@ impl Token {
         AuthenticationOrSignatureFn: FnOnce(&str, &[u8]) -> Result<(), Error>,
         SaltCheckFn: FnOnce(Option<&[u8]>) -> Result<(), Error>,
     {
+        Self::verify_with_algorithms(
+            &[jwt_alg_name],
+            token,
+            options,
+            authentication_or_signature_fn,
+            salt_check_fn,
+        )
+    }
+
+    /// Accepts alternate names for one algorithm, such as `EdDSA` and `Ed25519`.
+    /// All names must use the same verification method.
+    pub(crate) fn verify_with_algorithms<
+        AuthenticationOrSignatureFn,
+        SaltCheckFn,
+        CustomClaims: DeserializeOwned,
+    >(
+        jwt_alg_names: &[&'static str],
+        token: &str,
+        options: Option<VerificationOptions>,
+        authentication_or_signature_fn: AuthenticationOrSignatureFn,
+        salt_check_fn: SaltCheckFn,
+    ) -> Result<JWTClaims<CustomClaims>, Error>
+    where
+        AuthenticationOrSignatureFn: FnOnce(&str, &[u8]) -> Result<(), Error>,
+        SaltCheckFn: FnOnce(Option<&[u8]>) -> Result<(), Error>,
+    {
         let options = options.unwrap_or_default();
 
         if let Some(max_token_length) = options.max_token_length {
@@ -195,7 +221,7 @@ impl Token {
         }
 
         ensure!(
-            jwt_header.algorithm == jwt_alg_name,
+            jwt_alg_names.contains(&jwt_header.algorithm.as_str()),
             JWTError::AlgorithmMismatch
         );
         if let Some(required_key_id) = &options.required_key_id {

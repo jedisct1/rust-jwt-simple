@@ -1,4 +1,7 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::Value;
+
+use crate::algorithms::jwk::UniqueMembers;
 
 /// JWE (JSON Web Encryption) header structure.
 ///
@@ -27,7 +30,14 @@ pub struct JWEHeader {
     pub content_type: Option<String>,
 
     /// Ephemeral public key (for ECDH key agreement)
-    #[serde(rename = "epk", default, skip_serializing_if = "Option::is_none")]
+    ///
+    /// Duplicate members are rejected, including in nested objects.
+    #[serde(
+        rename = "epk",
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_without_duplicates"
+    )]
     pub ephemeral_public_key: Option<serde_json::Value>,
 
     /// Agreement PartyUInfo (for ECDH)
@@ -132,4 +142,11 @@ impl Default for JWEHeader {
     fn default() -> Self {
         JWEHeader::new("RSA-OAEP", "A256GCM")
     }
+}
+
+fn deserialize_without_duplicates<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<Value>, D::Error> {
+    let value = UniqueMembers::deserialize(deserializer)?.0;
+    Ok(if value.is_null() { None } else { Some(value) })
 }

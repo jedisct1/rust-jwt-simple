@@ -20,6 +20,8 @@
     - [RSA-OAEP key management](#rsa-oaep-key-management)
     - [AES Key Wrap](#aes-key-wrap)
     - [ECDH-ES key agreement](#ecdh-es-key-agreement)
+    - [Encryption with X25519](#encryption-with-x25519)
+  - [JSON Web Keys (JWK)](#json-web-keys-jwk)
   - [Advanced JWT usage](#advanced-jwt-usage)
     - [Custom JWT claims](#custom-jwt-claims)
     - [Reading JWT metadata before verification](#reading-jwt-metadata-before-verification)
@@ -65,13 +67,13 @@ It supports signing with JWS, encryption with JWE, and custom claims, while avoi
 
 JWE (JSON Web Encryption) is also supported with the following key management algorithms:
 
-| JWE algorithm name | Description                                 |
-| ------------------ | ------------------------------------------- |
-| `RSA-OAEP`         | RSA with OAEP using SHA-1 (not recommended) |
-| `A256KW`           | AES-256 Key Wrap                            |
-| `A128KW`           | AES-128 Key Wrap                            |
-| `ECDH-ES+A256KW`   | ECDH with AES-256 Key Wrap                  |
-| `ECDH-ES+A128KW`   | ECDH with AES-128 Key Wrap                  |
+| JWE algorithm name | Description                                  |
+| ------------------ | -------------------------------------------- |
+| `RSA-OAEP`         | RSA with OAEP using SHA-1 (not recommended)  |
+| `A256KW`           | AES-256 Key Wrap                             |
+| `A128KW`           | AES-128 Key Wrap                             |
+| `ECDH-ES+A256KW`   | ECDH (P-256 or X25519) with AES-256 Key Wrap |
+| `ECDH-ES+A128KW`   | ECDH (P-256 or X25519) with AES-128 Key Wrap |
 
 Content encryption uses AES-GCM (A256GCM or A128GCM).
 
@@ -209,6 +211,7 @@ let public_key = key_pair.public_key();
 `MLDSA65KeyPair` and `MLDSA87KeyPair` are also available, for the `ML-DSA-65` and `ML-DSA-87` algorithms. ML-DSA-44 is the recommended choice: its security level is good enough for all practical purposes, and it is much faster than the other variants.
 
 Keys can be exported as bytes for later reuse, and imported from bytes or, for RSA, from individual parameters, DER-encoded data or PEM-encoded data.
+These keys can also be saved and loaded as [JSON Web Keys](#json-web-keys-jwk).
 
 RSA key pair creation, using OpenSSL and PEM importation of the secret key:
 
@@ -221,6 +224,9 @@ openssl rsa -in private.pem -outform PEM -pubout -out public.pem
 let key_pair = RS384KeyPair::from_pem(private_pem_file_content)?;
 let public_key = RS384PublicKey::from_pem(public_pem_file_content)?;
 ```
+
+RSA keys must be between 2048 and 4096 bits long.
+Invalid or unsupported keys are rejected when loaded.
 
 Token creation and verification work the same way as with `HS*` algorithms, except that tokens are created with a key pair, and verified using the corresponding public key.
 
@@ -327,7 +333,61 @@ let jwt = encryption_key.encrypt(claims)?;
 let claims: JWTClaims<NoCustomClaims> = decryption_key.decrypt_token(&jwt, None)?;
 ```
 
+### Encryption with X25519
+
+To use X25519 with the example above, create the key with:
+
+```rust
+let decryption_key = X25519EcdhEsA256KWDecryptionKey::generate();
+```
+
+`X25519EcdhEsA128KWDecryptionKey` is also available for `ECDH-ES+A128KW`.
+Keys can be saved and loaded as bytes, DER, PEM or [JWK](#json-web-keys-jwk).
+
 JWE tokens support the same claim types and custom claims as JWT signatures. Decryption options allow validating claims, requiring specific key IDs, and limiting token size.
+
+## JSON Web Keys (JWK)
+
+JWK is a JSON format for storing and sharing keys.
+Use `to_jwk()` to export a key and `from_jwk()` to load one:
+
+```rust
+use jwt_simple::prelude::*;
+
+let key_pair = ES256KeyPair::generate().with_key_id("2026-09");
+
+// Publish the public key.
+let public_jwk = key_pair.public_key().to_jwk();
+
+// Load it on the verifier side.
+let public_key = ES256PublicKey::from_jwk(&public_jwk)?;
+
+// Keep this private.
+let private_jwk = key_pair.to_jwk();
+let key_pair = ES256KeyPair::from_jwk(&private_jwk)?;
+```
+
+These methods work with all public keys and key pairs, including encryption keys.
+Shared secret keys do not support JWK.
+
+Exporting a key pair or a decryption key includes the private key, so keep that
+output secret.
+Use `public_key().to_jwk()` or `encryption_key().to_jwk()` to share only the public key.
+
+When loading a key from another service, use the key type that service expects,
+such as `RS256PublicKey`.
+If it provides a key set, select the entry you trust and pass that entry to `from_jwk()`.
+The library checks that the key is valid for that type.
+See the [API documentation](https://docs.rs/jwt-simple/) for the full import rules.
+
+`jwk_thumbprint()` creates a stable identifier for a key that other libraries can
+compute too.
+Use it as the key ID when sharing keys between applications:
+
+```rust
+let thumbprint = key_pair.jwk_thumbprint();
+let key_pair = key_pair.with_key_id(&thumbprint);
+```
 
 ## Advanced JWT usage
 
@@ -401,6 +461,9 @@ let key_id = public_key.create_key_id();
 ```
 
 This creates a text-encoded identifier for the key, attaches it, and returns it.
+
+For an identifier that other libraries can compute too, use `jwk_thumbprint()` as
+shown in the [JWK example](#json-web-keys-jwk).
 
 If an identifier has been attached to a shared key or a key pair, tokens created with them will include it.
 

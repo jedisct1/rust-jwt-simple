@@ -7,6 +7,10 @@ use p384::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePub
 use p384::NonZeroScalar;
 use serde::{de::DeserializeOwned, Serialize};
 
+use crate::algorithms::jwk::{
+    decode_secret, ec_export, ec_point, ec_point_matches, ec_thumbprint, Jwk, JwkDescriptor,
+    KeyRole, KeyType,
+};
 use crate::claims::*;
 use crate::common::*;
 #[cfg(feature = "cwt")]
@@ -14,6 +18,14 @@ use crate::cwt_token::*;
 use crate::error::*;
 use crate::jwt_header::*;
 use crate::token::*;
+
+const ES384_PUBLIC_JWK: JwkDescriptor = JwkDescriptor::new(
+    KeyType::Ec,
+    Some("P-384"),
+    "ES384",
+    KeyRole::SignaturePublic,
+);
+const ES384_PRIVATE_JWK: JwkDescriptor = ES384_PUBLIC_JWK.with_role(KeyRole::SignaturePrivate);
 
 #[doc(hidden)]
 #[derive(Debug, Clone)]
@@ -26,6 +38,26 @@ impl AsRef<ecdsa::VerifyingKey> for P384PublicKey {
 }
 
 impl P384PublicKey {
+    pub(crate) fn from_jwk(jwk: &str) -> Result<(Self, Option<String>), Error> {
+        let jwk = Jwk::parse(jwk, &ES384_PUBLIC_JWK)?;
+        let point = ec_point(&jwk, 48).ok_or(JWTError::InvalidPublicKey)?;
+        let pk = Self::from_bytes(&point)?;
+        Ok((pk, jwk.kid().map(Into::into)))
+    }
+
+    pub(crate) fn to_jwk(&self, key_id: Option<&str>) -> String {
+        ec_export(
+            &ES384_PUBLIC_JWK,
+            &self.to_bytes_uncompressed(),
+            None,
+            key_id,
+        )
+    }
+
+    pub(crate) fn jwk_thumbprint(&self) -> String {
+        ec_thumbprint("P-384", &self.to_bytes_uncompressed())
+    }
+
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
         let p384_pk =
             ecdsa::VerifyingKey::from_sec1_bytes(raw).map_err(|_| JWTError::InvalidPublicKey)?;
@@ -88,6 +120,23 @@ impl AsRef<ecdsa::SigningKey> for P384KeyPair {
 }
 
 impl P384KeyPair {
+    pub(crate) fn from_jwk(jwk: &str) -> Result<(Self, Option<String>), Error> {
+        let jwk = Jwk::parse(jwk, &ES384_PRIVATE_JWK)?;
+        let d = decode_secret(jwk.d(), 48).ok_or(JWTError::InvalidKeyPair)?;
+        let key_pair = Self::from_bytes(&d)?;
+        ensure!(
+            ec_point_matches(&jwk, &key_pair.public_key().to_bytes_uncompressed()),
+            JWTError::InvalidKeyPair
+        );
+        Ok((key_pair, jwk.kid().map(Into::into)))
+    }
+
+    pub(crate) fn to_jwk(&self, key_id: Option<&str>) -> String {
+        let point = self.public_key().to_bytes_uncompressed();
+        let d = zeroize::Zeroizing::new(self.p384_sk.to_bytes().to_vec());
+        ec_export(&ES384_PRIVATE_JWK, &point, Some(&d), key_id)
+    }
+
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
         let raw: &p384::FieldBytes = raw.try_into().map_err(|_| JWTError::InvalidKeyPair)?;
         let p384_sk = ecdsa::SigningKey::from_bytes(raw).map_err(|_| JWTError::InvalidKeyPair)?;
@@ -367,6 +416,26 @@ impl ES384KeyPair {
         self.key_id = Some(key_id.to_string());
         self
     }
+
+    /// Import a key pair from a private JWK (`kty: EC`, `crv: P-384`).
+    ///
+    /// See [strict JWK validation](crate#strict-jwk-validation) for the rules.
+    pub fn from_jwk(jwk: &str) -> Result<Self, Error> {
+        let (key_pair, key_id) = P384KeyPair::from_jwk(jwk)?;
+        Ok(ES384KeyPair { key_pair, key_id })
+    }
+
+    /// Export the key pair as a JWK, private key included.
+    ///
+    /// Use `public_key().to_jwk()` to share the public key.
+    pub fn to_jwk(&self) -> String {
+        self.key_pair.to_jwk(self.key_id.as_deref())
+    }
+
+    /// The JWK thumbprint of the public key.
+    pub fn jwk_thumbprint(&self) -> String {
+        self.key_pair.public_key().jwk_thumbprint()
+    }
 }
 
 impl ECDSAP384PublicKeyLike for ES384PublicKey {
@@ -424,5 +493,23 @@ impl ES384PublicKey {
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
+    }
+
+    /// Import a public key from a JWK (`kty: EC`, `crv: P-384`).
+    ///
+    /// See [strict JWK validation](crate#strict-jwk-validation) for the rules.
+    pub fn from_jwk(jwk: &str) -> Result<Self, Error> {
+        let (pk, key_id) = P384PublicKey::from_jwk(jwk)?;
+        Ok(ES384PublicKey { pk, key_id })
+    }
+
+    /// Export the public key as a JWK, with `alg: ES384` and `use: sig`.
+    pub fn to_jwk(&self) -> String {
+        self.pk.to_jwk(self.key_id.as_deref())
+    }
+
+    /// The JWK thumbprint of the key.
+    pub fn jwk_thumbprint(&self) -> String {
+        self.pk.jwk_thumbprint()
     }
 }

@@ -20,6 +20,10 @@
 //! - [RSA-OAEP key management](#rsa-oaep-key-management)
 //! - [AES Key Wrap](#aes-key-wrap)
 //! - [ECDH-ES key agreement](#ecdh-es-key-agreement)
+//! - [ECDH-ES key agreement with X25519](#ecdh-es-key-agreement-with-x25519)
+//! - [JSON Web Keys (JWK)](#json-web-keys-jwk)
+//! - [Strict JWK validation](#strict-jwk-validation)
+//! - [JWK thumbprints](#jwk-thumbprints)
 //! - [Advanced usage](#advanced-usage)
 //! - [Custom claims](#custom-claims)
 //! - [Peeking at metadata before verification](#peeking-at-metadata-before-verification)
@@ -63,13 +67,13 @@
 //!
 //! JWE (JSON Web Encryption) is also supported with the following key management algorithms:
 //!
-//! | JWE algorithm name | Description                                 |
-//! | ------------------ | ------------------------------------------- |
-//! | `RSA-OAEP`         | RSA with OAEP using SHA-1 (not recommended) |
-//! | `A256KW`           | AES-256 Key Wrap                            |
-//! | `A128KW`           | AES-128 Key Wrap                            |
-//! | `ECDH-ES+A256KW`   | ECDH with AES-256 Key Wrap                  |
-//! | `ECDH-ES+A128KW`   | ECDH with AES-128 Key Wrap                  |
+//! | JWE algorithm name | Description                                  |
+//! | ------------------ | -------------------------------------------- |
+//! | `RSA-OAEP`         | RSA with OAEP using SHA-1 (not recommended)  |
+//! | `A256KW`           | AES-256 Key Wrap                             |
+//! | `A128KW`           | AES-128 Key Wrap                             |
+//! | `ECDH-ES+A256KW`   | ECDH (P-256 or X25519) with AES-256 Key Wrap |
+//! | `ECDH-ES+A128KW`   | ECDH (P-256 or X25519) with AES-128 Key Wrap |
 //!
 //! Content encryption uses AES-GCM (A256GCM or A128GCM).
 //!
@@ -206,6 +210,8 @@
 //! `MLDSA65KeyPair` and `MLDSA87KeyPair` are also available, for the `ML-DSA-65` and `ML-DSA-87` algorithms. ML-DSA-44 is the recommended choice: its security level is good enough for all practical purposes, and it is much faster than the other variants. A key pair is serialized as its 32-byte seed (`to_bytes()`/`from_bytes()`), and a public key as its raw byte representation.
 //!
 //! Keys can be exported as bytes for later reuse, and imported from bytes or, for RSA, from individual parameters, DER-encoded data or PEM-encoded data.
+//! Every asymmetric key can also be imported and exported as a
+//! [JSON Web Key](#json-web-keys-jwk).
 //!
 //! RSA key pair creation, using OpenSSL and PEM importation of the secret key:
 //!
@@ -218,6 +224,29 @@
 //! let key_pair = RS384KeyPair::from_pem(private_pem_file_content)?;
 //! let public_key = RS384PublicKey::from_pem(public_pem_file_content)?;
 //! ```
+//!
+//! RSA keys must have a modulus of 2048 to 4096 bits, and a public exponent of 65537.
+//! This applies to every format, and to RSA-OAEP keys as well.
+//! There is no option to accept keys outside these bounds.
+//!
+//! Smaller moduli fail with `JWTError::WeakKey`, and other exponents with
+//! `JWTError::InvalidPublicKey` or `JWTError::InvalidKeyPair`.
+//! Larger moduli fail with `JWTError::UnsupportedRSAModulus`, except DER and PEM public
+//! keys with the pure-Rust backend, whose parser rejects them with its own error.
+//!
+//! A few providers still publish weaker keys.
+//! For example, the [Yahoo key set](https://api.login.yahoo.com/openid/v1/certs) only
+//! served 1024-bit RSA keys when it was checked on 2026-09-25.
+//! Loading these keys fails with `WeakKey`, so tokens from Sign in with Yahoo can't be
+//! verified.
+//!
+//! Key sets rotate, so check the keys that are currently published rather than relying
+//! on this example.
+//!
+//! Ed25519 public keys that are not canonically encoded, or that are points of small
+//! order, are rejected by every constructor.
+//! Ed25519 key pairs imported from raw bytes must contain the public key that their
+//! seed derives.
 //!
 //! Token creation and verification work the same way as with `HS*` algorithms, except that tokens are created with a key pair, and verified using the corresponding public key.
 //!
@@ -263,6 +292,9 @@
 //!
 //! Keys can be exported and imported using PEM or DER formats, similar to RSA signature keys.
 //!
+//! `RSA-OAEP` uses SHA-1 inside OAEP, so tokens work with other
+//! JOSE implementations.
+//!
 //! ### AES Key Wrap
 //!
 //! For symmetric encryption where the same key is used for both encryption and decryption:
@@ -305,7 +337,160 @@
 //! let claims: JWTClaims<NoCustomClaims> = decryption_key.decrypt_token(&token, None)?;
 //! ```
 //!
+//! When a received token includes `apu` and `apv`, they are used to derive the key.
+//! They must be valid base64url, and different from each other when both are present.
+//! Tokens created by `jwt-simple` don't include them.
+//!
+//! ### ECDH-ES key agreement with X25519
+//!
+//! The same key agreement modes work with X25519 keys, which are smaller and faster
+//! than P-256 keys:
+//!
+//! ```rust,ignore
+//! use jwt_simple::prelude::*;
+//!
+//! let decryption_key = X25519EcdhEsA256KWDecryptionKey::generate();
+//! let encryption_key = decryption_key.encryption_key();
+//!
+//! let claims = Claims::create(Duration::from_hours(1));
+//! let token = encryption_key.encrypt(claims)?;
+//!
+//! let claims: JWTClaims<NoCustomClaims> = decryption_key.decrypt_token(&token, None)?;
+//! ```
+//!
+//! `X25519EcdhEsA128KWDecryptionKey` and `X25519EcdhEsA128KWEncryptionKey` implement
+//! `ECDH-ES+A128KW`.
+//! Keys can be imported and exported as raw bytes, DER, PEM or JWK.
+//!
+//! Public keys must be canonically encoded (top bit clear, value below 2^255 - 19), and
+//! points of small order are rejected.
+//! The same checks apply to the ephemeral key of every received token.
+//!
 //! JWE tokens support the same claim types and custom claims as JWT signatures. Decryption options allow validating claims, requiring specific key IDs, and limiting token size.
+//!
+//! ## JSON Web Keys (JWK)
+//!
+//! Every asymmetric key type supports JSON Web Key import and export,
+//! and can compute its JWK thumbprint:
+//!
+//! ```rust
+//! use jwt_simple::prelude::*;
+//!
+//! let key_pair = ES256KeyPair::generate().with_key_id("2026-09");
+//!
+//! // Publish the public key, and load it on the verifier side.
+//! let public_jwk = key_pair.public_key().to_jwk();
+//! let public_key = ES256PublicKey::from_jwk(&public_jwk)?;
+//! let token = key_pair.sign(Claims::create(Duration::from_hours(1)))?;
+//! public_key.verify_token::<NoCustomClaims>(&token, None)?;
+//!
+//! // Keep this private.
+//! let private_jwk = key_pair.to_jwk();
+//! let key_pair = ES256KeyPair::from_jwk(&private_jwk)?;
+//! assert_eq!(key_pair.jwk_thumbprint(), public_key.jwk_thumbprint());
+//!
+//! # Ok::<(), jwt_simple::Error>(())
+//! ```
+//!
+//! The same `from_jwk()`, `to_jwk()` and `jwk_thumbprint()` methods exist on the
+//! Ed25519, ES256, ES384, ES256K, RS*, PS* and ML-DSA key types, and on the RSA-OAEP,
+//! ECDH-ES and X25519 JWE keys.
+//! Symmetric keys have no JWK support.
+//!
+//! `to_jwk()` on a key pair or a decryption key exports the private key.
+//! Treat its output as the secret it is, and use `public_key().to_jwk()` or
+//! `encryption_key().to_jwk()` to share a key.
+//!
+//! `jwt-simple` wipes its own temporary copies of private keys when it can, but the
+//! application is responsible for the strings and bytes it gets back.
+//!
+//! A JWK is only accepted by the key type it describes.
+//! There is no generic key type that picks an algorithm from the `alg` member of a key.
+//! An application that receives a key set picks the entry it trusts, usually by `kid`,
+//! and passes its JSON to the key type it expects.
+//!
+//! Exported keys include `alg`, `use` (`sig` for signature keys, `enc` for encryption
+//! keys) and, if one is set, the key identifier as `kid`.
+//! This keeps other implementations from using a key for something else.
+//!
+//! Ed25519 keys are exported with `alg` set to `EdDSA`, the name deployed verifiers
+//! expect.
+//! `Ed25519` is accepted on import as well, and Ed25519 public keys verify
+//! tokens using either name.
+//!
+//! ### Strict JWK validation
+//!
+//! Imports are strict, and there is no way to relax them:
+//!
+//! - Documents larger than 8192 bytes (`MAX_JWK_LENGTH`) are rejected before being
+//!   parsed, whitespace and unknown members included.
+//!   A complete 4096-bit RSA private key takes about 3.2 KB.
+//!
+//! - A document must be a single JSON object without duplicate member names.
+//!   Known members must have the right type, and are never allowed to be `null`.
+//!
+//! - Key material must be canonical, unpadded base64url, with the exact size the key
+//!   type requires.
+//!
+//! - Members that belong to other key types are rejected, and a public key can't
+//!   include any private member, not even an empty one.
+//!
+//! - A private key must be complete, and its public members must be the ones its
+//!   private part derives.
+//!
+//! - `alg`, `use` and `key_ops` are optional, but must match the key type when present.
+//!   `key_ops` can only list operations the key performs, private keys must list at
+//!   least one, and signing keys must include `sign`.
+//!   This metadata can only narrow what a key is used for.
+//!   It can't turn an ES256 key into an ECDH key, or an RS256 key into a PS256 or
+//!   RSA-OAEP key.
+//!
+//! - A `kid` becomes the key identifier.
+//!   Other members, such as `ext` or `x5c`, are ignored.
+//!
+//! - Keys go through the same checks as in other formats.
+//!   Invalid or small-order Ed25519 and X25519 points, EC points that are not on the
+//!   curve, and RSA keys outside the size and exponent policy are rejected.
+//!
+//! | Key types            | `kty`, `crv`                      | Public members | Private members                 |
+//! | -------------------- | --------------------------------- | -------------- | ------------------------------- |
+//! | Ed25519              | `OKP`, `Ed25519`                  | `x`            | `d`, the 32-byte seed           |
+//! | X25519               | `OKP`, `X25519`                   | `x`            | `d`                             |
+//! | ES256, ES384, ES256K | `EC`, `P-256`/`P-384`/`secp256k1` | `x`, `y`       | `d`                             |
+//! | ECDH-ES              | `EC`, `P-256`                     | `x`, `y`       | `d`                             |
+//! | RS\*, PS\*, RSA-OAEP | `RSA`                             | `n`, `e`       | `d`, `p`, `q`, `dp`, `dq`, `qi` |
+//! | ML-DSA               | `AKP` (`alg` is required)         | `pub`          | `priv`, the 32-byte seed        |
+//!
+//! EC coordinates keep their leading zeros, and each coordinate is checked on its own.
+//!
+//! Java exports of RSA keys sometimes put a zero byte in front of the modulus when its
+//! top bit is set.
+//! Exactly one such byte is accepted in `n`, and dropped.
+//! The other RSA values must be minimally encoded, and multi-prime keys (`oth`) are not
+//! supported.
+//!
+//! ### JWK thumbprints
+//!
+//! `jwk_thumbprint()` returns the JWK thumbprint of a key: the SHA-256 hash of its
+//! required public members, base64url-encoded.
+//! A key pair and its public key have the same thumbprint, which doesn't depend on
+//! `kid` or any other metadata.
+//!
+//! The thumbprint of an ML-DSA key also covers its algorithm.
+//!
+//! A thumbprint makes a good key identifier:
+//!
+//! ```rust,ignore
+//! let thumbprint = key_pair.jwk_thumbprint();
+//! let key_pair = key_pair.with_key_id(&thumbprint);
+//! ```
+//!
+//! `create_key_id()` keeps its original definition, a hash of the raw public key, so
+//! that existing identifiers don't change.
+//!
+//! The `sha1_thumbprint()` and `sha256_thumbprint()` methods of Ed25519 and RSA public
+//! keys hash their DER encoding.
+//! They are not JWK thumbprints.
 //!
 //! ## Advanced usage
 //!
@@ -379,6 +564,9 @@
 //! ```
 //!
 //! This creates a text-encoded identifier for the key, attaches it, and returns it.
+//!
+//! For a standard identifier that other implementations can compute too, use the key's
+//! [JWK thumbprint](#jwk-thumbprints).
 //!
 //! If an identifier has been attached to a shared key or a key pair, tokens created with them will include it.
 //!

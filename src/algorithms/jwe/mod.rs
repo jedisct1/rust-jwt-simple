@@ -19,6 +19,9 @@
 //! - `ECDH-ES+A256KW` - ECDH with AES-256 Key Wrap (recommended)
 //! - `ECDH-ES+A128KW` - ECDH with AES-128 Key Wrap
 //!
+//! Both are available with P-256 keys (`EcdhEs*`) and X25519 keys (`X25519EcdhEs*`).
+//! The `apu` and `apv` parameters of a received token are used in the key derivation.
+//!
 //! # Content Encryption
 //!
 //! All key management algorithms support these content encryption algorithms:
@@ -92,11 +95,53 @@
 //! // Decrypt
 //! let claims = decryption_key.decrypt_token::<NoCustomClaims>(&token, None).unwrap();
 //! ```
+//!
+//! ## ECDH-ES+A256KW with X25519, and JWK
+//!
+//! Asymmetric keys can be shared as JSON Web Keys.
+//!
+//! ```rust
+//! use jwt_simple::prelude::*;
+//!
+//! // The recipient publishes its public key.
+//! let decryption_key = X25519EcdhEsA256KWDecryptionKey::generate().with_key_id("recipient");
+//! let jwk = decryption_key.encryption_key().to_jwk();
+//!
+//! // The sender encrypts with the public key.
+//! let encryption_key = X25519EcdhEsA256KWEncryptionKey::from_jwk(&jwk).unwrap();
+//! let claims = Claims::create(Duration::from_hours(1));
+//! let token = encryption_key.encrypt(claims).unwrap();
+//!
+//! let claims = decryption_key.decrypt_token::<NoCustomClaims>(&token, None).unwrap();
+//! ```
+//!
+//! The P-256 and RSA-OAEP keys work the same way:
+//!
+//! ```rust
+//! use jwt_simple::prelude::*;
+//!
+//! let decryption_key = EcdhEsA128KWDecryptionKey::generate();
+//! let jwk = decryption_key.encryption_key().to_jwk();
+//! let encryption_key = EcdhEsA128KWEncryptionKey::from_jwk(&jwk).unwrap();
+//! let token = encryption_key
+//!     .encrypt(Claims::create(Duration::from_hours(1)))
+//!     .unwrap();
+//! decryption_key.decrypt_token::<NoCustomClaims>(&token, None).unwrap();
+//!
+//! let decryption_key = RsaOaepDecryptionKey::generate(2048).unwrap();
+//! let private_jwk = decryption_key.to_jwk();
+//! let decryption_key = RsaOaepDecryptionKey::from_jwk(&private_jwk).unwrap();
+//! let public_jwk = decryption_key.encryption_key().to_jwk();
+//! let encryption_key = RsaOaepEncryptionKey::from_jwk(&public_jwk).unwrap();
+//! assert_eq!(encryption_key.jwk_thumbprint(), decryption_key.jwk_thumbprint());
+//! ```
 
 pub mod aes_kw;
 pub mod content;
 pub mod ecdh_es;
+mod kdf;
 pub mod rsa_oaep;
+pub mod x25519;
 
 pub use aes_kw::{A128KWKey, A256KWKey};
 pub use content::ContentEncryption;
@@ -105,3 +150,7 @@ pub use ecdh_es::{
     EcdhEsA256KWEncryptionKey,
 };
 pub use rsa_oaep::{RsaOaepDecryptionKey, RsaOaepEncryptionKey};
+pub use x25519::{
+    X25519EcdhEsA128KWDecryptionKey, X25519EcdhEsA128KWEncryptionKey,
+    X25519EcdhEsA256KWDecryptionKey, X25519EcdhEsA256KWEncryptionKey,
+};

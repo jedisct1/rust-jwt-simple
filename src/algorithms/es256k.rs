@@ -6,6 +6,10 @@ use k256::elliptic_curve::Generate as _;
 use k256::pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey};
 use serde::{de::DeserializeOwned, Serialize};
 
+use crate::algorithms::jwk::{
+    decode_secret, ec_export, ec_point, ec_point_matches, ec_thumbprint, Jwk, JwkDescriptor,
+    KeyRole, KeyType,
+};
 use crate::claims::*;
 use crate::common::*;
 #[cfg(feature = "cwt")]
@@ -13,6 +17,14 @@ use crate::cwt_token::*;
 use crate::error::*;
 use crate::jwt_header::*;
 use crate::token::*;
+
+const ES256K_PUBLIC_JWK: JwkDescriptor = JwkDescriptor::new(
+    KeyType::Ec,
+    Some("secp256k1"),
+    "ES256K",
+    KeyRole::SignaturePublic,
+);
+const ES256K_PRIVATE_JWK: JwkDescriptor = ES256K_PUBLIC_JWK.with_role(KeyRole::SignaturePrivate);
 
 #[doc(hidden)]
 #[derive(Debug, Clone)]
@@ -25,6 +37,26 @@ impl AsRef<ecdsa::VerifyingKey> for K256PublicKey {
 }
 
 impl K256PublicKey {
+    pub(crate) fn from_jwk(jwk: &str) -> Result<(Self, Option<String>), Error> {
+        let jwk = Jwk::parse(jwk, &ES256K_PUBLIC_JWK)?;
+        let point = ec_point(&jwk, 32).ok_or(JWTError::InvalidPublicKey)?;
+        let pk = Self::from_bytes(&point)?;
+        Ok((pk, jwk.kid().map(Into::into)))
+    }
+
+    pub(crate) fn to_jwk(&self, key_id: Option<&str>) -> String {
+        ec_export(
+            &ES256K_PUBLIC_JWK,
+            &self.to_bytes_uncompressed(),
+            None,
+            key_id,
+        )
+    }
+
+    pub(crate) fn jwk_thumbprint(&self) -> String {
+        ec_thumbprint("secp256k1", &self.to_bytes_uncompressed())
+    }
+
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
         let k256_pk =
             ecdsa::VerifyingKey::from_sec1_bytes(raw).map_err(|_| JWTError::InvalidPublicKey)?;
@@ -87,6 +119,23 @@ impl AsRef<ecdsa::SigningKey> for K256KeyPair {
 }
 
 impl K256KeyPair {
+    pub(crate) fn from_jwk(jwk: &str) -> Result<(Self, Option<String>), Error> {
+        let jwk = Jwk::parse(jwk, &ES256K_PRIVATE_JWK)?;
+        let d = decode_secret(jwk.d(), 32).ok_or(JWTError::InvalidKeyPair)?;
+        let key_pair = Self::from_bytes(&d)?;
+        ensure!(
+            ec_point_matches(&jwk, &key_pair.public_key().to_bytes_uncompressed()),
+            JWTError::InvalidKeyPair
+        );
+        Ok((key_pair, jwk.kid().map(Into::into)))
+    }
+
+    pub(crate) fn to_jwk(&self, key_id: Option<&str>) -> String {
+        let point = self.public_key().to_bytes_uncompressed();
+        let d = zeroize::Zeroizing::new(self.k256_sk.to_bytes().to_vec());
+        ec_export(&ES256K_PRIVATE_JWK, &point, Some(&d), key_id)
+    }
+
     pub fn from_bytes(raw: &[u8]) -> Result<Self, Error> {
         let raw: &k256::FieldBytes = raw.try_into().map_err(|_| JWTError::InvalidKeyPair)?;
         let k256_sk = ecdsa::SigningKey::from_bytes(raw).map_err(|_| JWTError::InvalidKeyPair)?;
@@ -356,6 +405,26 @@ impl ES256kKeyPair {
         self.key_id = Some(key_id.to_string());
         self
     }
+
+    /// Import a key pair from a private JWK (`kty: EC`, `crv: secp256k1`).
+    ///
+    /// See [strict JWK validation](crate#strict-jwk-validation) for the rules.
+    pub fn from_jwk(jwk: &str) -> Result<Self, Error> {
+        let (key_pair, key_id) = K256KeyPair::from_jwk(jwk)?;
+        Ok(ES256kKeyPair { key_pair, key_id })
+    }
+
+    /// Export the key pair as a JWK, private key included.
+    ///
+    /// Use `public_key().to_jwk()` to share the public key.
+    pub fn to_jwk(&self) -> String {
+        self.key_pair.to_jwk(self.key_id.as_deref())
+    }
+
+    /// The JWK thumbprint of the public key.
+    pub fn jwk_thumbprint(&self) -> String {
+        self.key_pair.public_key().jwk_thumbprint()
+    }
 }
 
 impl ECDSAP256kPublicKeyLike for ES256kPublicKey {
@@ -413,5 +482,23 @@ impl ES256kPublicKey {
     pub fn with_key_id(mut self, key_id: &str) -> Self {
         self.key_id = Some(key_id.to_string());
         self
+    }
+
+    /// Import a public key from a JWK (`kty: EC`, `crv: secp256k1`).
+    ///
+    /// See [strict JWK validation](crate#strict-jwk-validation) for the rules.
+    pub fn from_jwk(jwk: &str) -> Result<Self, Error> {
+        let (pk, key_id) = K256PublicKey::from_jwk(jwk)?;
+        Ok(ES256kPublicKey { pk, key_id })
+    }
+
+    /// Export the public key as a JWK, with `alg: ES256K` and `use: sig`.
+    pub fn to_jwk(&self) -> String {
+        self.pk.to_jwk(self.key_id.as_deref())
+    }
+
+    /// The JWK thumbprint of the key.
+    pub fn jwk_thumbprint(&self) -> String {
+        self.pk.jwk_thumbprint()
     }
 }
