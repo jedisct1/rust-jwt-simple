@@ -43,7 +43,7 @@ superboring = "0.1.17"
 superboring = "0.1.17"
 
 [dev-dependencies]
-benchmark-simple = "0.1.11"
+benchmark-simple = "0.2.0"
 
 [features]
 default = ["optimal", "jwe"]
