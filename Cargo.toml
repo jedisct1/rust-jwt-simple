@@ -1,13 +1,12 @@
 [package]
 name = "jwt-simple"
-version = "0.15.0"
+version = "0.15.1"
 description = "JWT authentication with JSON Web Token signing and verification (JWS), encryption (JWE), and custom claims. Supports RSA, ECDSA, Ed25519, and ML-DSA."
 authors = ["Frank Denis <github@pureftpd.org>"]
 edition = "2018"
 rust-version = "1.89"
 license = "ISC"
 repository = "https://github.com/jedisct1/rust-jwt-simple"
-homepage = "https://github.com/jedisct1/rust-jwt-simple"
 categories = ["wasm", "api-bindings", "web-programming", "cryptography"]
 keywords = ["jwt", "jws", "jwe", "authentication", "tokens"]
 readme = "README.md"
@@ -16,7 +15,7 @@ include = ["src/**/*.rs", "benches/**/*.rs", "README.md", "LICENSE", "Cargo.toml
 [dependencies]
 anyhow = "1.0.104"
 blake2b_simd = "1.0.5"
-binstring = "0.1.8"
+binstring = { version = "0.1.8", optional = true }
 ciborium = { version = "0.2.2", optional = true }
 coarsetime = "0.1.38"
 ct-codecs = "1.1.8"
@@ -45,7 +44,7 @@ benchmark-simple = "0.2.0"
 
 [features]
 default = ["optimal", "jwe"]
-cwt = ["ciborium"]
+cwt = ["ciborium", "dep:binstring"]
 jwe = []
 optimal = ["boring"]
 # Note: to emulate boringssl, "default-features = false" is required in addition to "pure-rust".
@@ -64,3 +63,6 @@ panic = "abort"
 
 [profile.bench]
 codegen-units = 1
+
+[lints.clippy]
+field_reassign_with_default = "allow"
