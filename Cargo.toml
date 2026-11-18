@@ -33,11 +33,9 @@ serde_json = "1.0.154"
 thiserror = "2.0.21"
 zeroize = "1.9.2"
 
-# For now, superboring is not optional: the current `boring` crate does not implement ML-DSA yet,
-# so ML-DSA signatures always use a Rust implementation until a new version of the crate is out.
 [target.'cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))'.dependencies]
-boring = { version = "5.5.1", optional = true }
-superboring = "0.1.18"
+boring = { version = "5.5.1", optional = true, features = ["mldsa"] }
+superboring = { version = "0.1.18", optional = true }
 
 [target.'cfg(any(target_arch = "wasm32", target_arch = "wasm64"))'.dependencies]
 superboring = "0.1.18"
@@ -51,9 +49,9 @@ cwt = ["ciborium"]
 jwe = []
 optimal = ["boring"]
 # Note: to emulate boringssl, "default-features = false" is required in addition to "pure-rust".
-pure-rust = []
+pure-rust = ["superboring"]
 wasi-abi2 = ["coarsetime/wasi-abi2"]
-wasi-crypto = ["superboring/wasi-crypto"]
+wasi-crypto = ["superboring?/wasi-crypto"]
 
 [[bench]]
 name = "benchmark"

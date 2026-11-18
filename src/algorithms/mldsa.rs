@@ -1,8 +1,11 @@
 use std::convert::TryInto;
 
+#[cfg(any(feature = "pure-rust", target_arch = "wasm32", target_arch = "wasm64"))]
+use superboring as boring;
+
+use boring::mldsa::{Algorithm, MlDsaPrivateKey, MlDsaPublicKey};
 use ct_codecs::{Base64UrlSafeNoPadding, Encoder};
 use serde::{de::DeserializeOwned, Serialize};
-use superboring::mldsa::{Algorithm, MlDsaPrivateKey, MlDsaPublicKey};
 
 use crate::algorithms::jwk::{
     decode_fixed, decode_secret, encode, encode_secret, is_encoding_of, thumbprint, Jwk,
