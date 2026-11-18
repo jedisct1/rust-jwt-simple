@@ -456,9 +456,6 @@ mod tests {
     /// Check for SHA-1 and an empty OAEP label without either backend's OAEP code.
     fn unwrap_with_oaep_sha1(private_pem: &str, token: &str) -> Vec<u8> {
         use hmac_sha1_compact::Hash as SHA1;
-        use superboring::reexports::rsa::pkcs1::DecodeRsaPrivateKey;
-        use superboring::reexports::rsa::traits::{PrivateKeyParts, PublicKeyParts};
-        use superboring::reexports::rsa::{BigUint, RsaPrivateKey};
 
         let mgf1 = |seed: &[u8], len: usize| -> Vec<u8> {
             (0u32..)
@@ -474,13 +471,13 @@ mod tests {
         let xor =
             |a: &[u8], b: Vec<u8>| -> Vec<u8> { a.iter().zip(b).map(|(x, y)| x ^ y).collect() };
 
-        let key = RsaPrivateKey::from_pkcs1_pem(private_pem).unwrap();
+        let key = Rsa::private_key_from_pem(private_pem.as_bytes()).unwrap();
         let encrypted_key = unb64(token.split('.').nth(1).unwrap());
-        let m = BigUint::from_bytes_be(&encrypted_key)
-            .modpow(key.d(), key.n())
-            .to_bytes_be();
-        let mut em = vec![0u8; key.size()];
-        em[key.size() - m.len()..].copy_from_slice(&m);
+        let mut em = vec![0u8; key.size() as usize];
+        let em_len = key
+            .private_decrypt(&encrypted_key, &mut em, Padding::NONE)
+            .unwrap();
+        assert_eq!(em_len, em.len());
 
         assert_eq!(em[0], 0);
         let (masked_seed, masked_db) = em[1..].split_at(20);

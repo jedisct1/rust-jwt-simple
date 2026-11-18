@@ -16,34 +16,34 @@ include = ["src/**/*.rs", "benches/**/*.rs", "README.md", "LICENSE", "Cargo.toml
 [dependencies]
 anyhow = "1.0.104"
 blake2b_simd = "1.0.5"
-binstring = "0.1.7"
+binstring = "0.1.8"
 ciborium = { version = "0.2.2", optional = true }
-coarsetime = "0.1.37"
-ct-codecs = "1.1.7"
-ed25519-compact = { version = "2.6.0", features = ["pem"] }
-hmac-sha1-compact = "1.1.7"
-hmac-sha256 = { version = "1.1.14", features = ["traits011"] }
-hmac-sha512 = { version = "1.1.12", features = ["traits011", "sha384"] }
+coarsetime = "0.1.38"
+ct-codecs = "1.1.8"
+ed25519-compact = { version = "2.6.1", features = ["pem"] }
+hmac-sha1-compact = "1.1.9"
+hmac-sha256 = { version = "1.1.15", features = ["traits011"] }
+hmac-sha512 = { version = "1.1.13", features = ["traits011", "sha384"] }
 k256 = { version = "0.14.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
 p256 = { version = "0.14.0", features = ["ecdsa", "std", "pkcs8", "pem", "ecdh"] }
 p384 = { version = "0.14.0", features = ["ecdsa", "std", "pkcs8", "pem"] }
-rand = "0.10.3"
+rand = "0.10.4"
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0.151"
+serde_json = "1.0.154"
 thiserror = "2.0.21"
-zeroize = "1.9.0"
+zeroize = "1.9.2"
 
 # For now, superboring is not optional: the current `boring` crate does not implement ML-DSA yet,
 # so ML-DSA signatures always use a Rust implementation until a new version of the crate is out.
 [target.'cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))'.dependencies]
-boring = { version = "5.2.0", optional = true }
-superboring = "0.1.17"
+boring = { version = "5.5.1", optional = true }
+superboring = "0.1.18"
 
 [target.'cfg(any(target_arch = "wasm32", target_arch = "wasm64"))'.dependencies]
-superboring = "0.1.17"
+superboring = "0.1.18"
 
 [dev-dependencies]
-benchmark-simple = "0.1.11"
+benchmark-simple = "0.2.0"
 
 [features]
 default = ["optimal", "jwe"]
