@@ -599,9 +599,7 @@ where
                             let ts: u64 = if let Some(ts) = value.as_integer() {
                                 ts.try_into().map_err(|_| JWTError::CWTDecodingError)?
                             } else if let Some(ts) = value.as_float() {
-                                let f: f64 =
-                                    ts.try_into().map_err(|_| JWTError::CWTDecodingError)?;
-                                f.round() as _
+                                ts.round() as _
                             } else {
                                 bail!(JWTError::CWTDecodingError)
                             };
@@ -611,9 +609,7 @@ where
                             let ts: u64 = if let Some(ts) = value.as_integer() {
                                 ts.try_into().map_err(|_| JWTError::CWTDecodingError)?
                             } else if let Some(ts) = value.as_float() {
-                                let f: f64 =
-                                    ts.try_into().map_err(|_| JWTError::CWTDecodingError)?;
-                                f.round() as _
+                                ts.round() as _
                             } else {
                                 bail!(JWTError::CWTDecodingError)
                             };
@@ -623,9 +619,7 @@ where
                             let ts: u64 = if let Some(ts) = value.as_integer() {
                                 ts.try_into().map_err(|_| JWTError::CWTDecodingError)?
                             } else if let Some(ts) = value.as_float() {
-                                let f: f64 =
-                                    ts.try_into().map_err(|_| JWTError::CWTDecodingError)?;
-                                f.round() as _
+                                ts.round() as _
                             } else {
                                 bail!(JWTError::CWTDecodingError)
                             };
@@ -1236,19 +1230,18 @@ fn test_duplicate_cwt_claim_key() {
     let mut claims = JWTClaims::<NoCustomClaims>::new();
 
     // Create a CBOR map with duplicate keys
-    let mut cwt = Vec::new();
-
-    // Standard claim key
-    cwt.push((
-        CBORValue::Integer(123.into()),
-        CBORValue::Text("value1".into()),
-    ));
-
-    // Duplicate claim key (same integer key)
-    cwt.push((
-        CBORValue::Integer(123.into()),
-        CBORValue::Text("value2".into()),
-    ));
+    let cwt = vec![
+        // Standard claim key
+        (
+            CBORValue::Integer(123.into()),
+            CBORValue::Text("value1".into()),
+        ),
+        // Duplicate claim key (same integer key)
+        (
+            CBORValue::Integer(123.into()),
+            CBORValue::Text("value2".into()),
+        ),
+    ];
 
     // Attempt to mix the claims - should return a DuplicateCWTClaimKey error
     let result = claims.mix_cwt(&cwt);
@@ -1265,15 +1258,16 @@ fn test_duplicate_cwt_claim_key() {
     }
 
     // Test with duplicate text keys
-    let mut cwt = Vec::new();
-    cwt.push((
-        CBORValue::Text("test_key".into()),
-        CBORValue::Text("value1".into()),
-    ));
-    cwt.push((
-        CBORValue::Text("test_key".into()),
-        CBORValue::Text("value2".into()),
-    ));
+    let cwt = vec![
+        (
+            CBORValue::Text("test_key".into()),
+            CBORValue::Text("value1".into()),
+        ),
+        (
+            CBORValue::Text("test_key".into()),
+            CBORValue::Text("value2".into()),
+        ),
+    ];
 
     let result = claims.mix_cwt(&cwt);
 
@@ -1289,15 +1283,16 @@ fn test_duplicate_cwt_claim_key() {
     }
 
     // Test with non-duplicate keys (should succeed)
-    let mut cwt = Vec::new();
-    cwt.push((
-        CBORValue::Integer(123.into()),
-        CBORValue::Text("value1".into()),
-    ));
-    cwt.push((
-        CBORValue::Integer(124.into()),
-        CBORValue::Text("value2".into()),
-    ));
+    let cwt = vec![
+        (
+            CBORValue::Integer(123.into()),
+            CBORValue::Text("value1".into()),
+        ),
+        (
+            CBORValue::Integer(124.into()),
+            CBORValue::Text("value2".into()),
+        ),
+    ];
 
     let result = claims.mix_cwt(&cwt);
     assert!(result.is_ok());
